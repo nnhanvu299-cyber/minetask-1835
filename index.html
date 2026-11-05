@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>MineTask: Gamified 8-Bit Workflow</title>
+    
+    <!-- PWA & Mobile Web Meta -->
+    <meta name="theme-color" content="#2bb3bd" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="MineTask" />
+    <link rel="manifest" href="./manifest.json" />
+
+    <!-- Google Pixel Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&display=swap" rel="stylesheet" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23191526'/><rect x='4' y='4' width='24' height='24' fill='%234dedf4'/><rect x='8' y='8' width='16' height='16' fill='%231a8794'/><rect x='10' y='10' width='6' height='6' fill='%23ffffff'/></svg>" />
+  </head>
+  <body class="pixel-antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Register Service Worker for PWA
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js').then(
+            (reg) => console.log('ServiceWorker registered with scope:', reg.scope),
+            (err) => console.warn('ServiceWorker registration failed:', err)
+          );
+        });
+      }
+    </script>
+  </body>
+</html>

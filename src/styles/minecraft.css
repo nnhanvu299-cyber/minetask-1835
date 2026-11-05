@@ -1,0 +1,375 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&display=swap');
+@import "tailwindcss";
+
+:root {
+  --mc-diamond-light: #a8fcff;
+  --mc-diamond-main: #4dedf4;
+  --mc-diamond-dark: #1a8794;
+  --mc-diamond-shadow: #0f4b52;
+
+  --mc-obsidian-light: #382d54;
+  --mc-obsidian-main: #191526;
+  --mc-obsidian-dark: #100c1a;
+  --mc-obsidian-black: #08060d;
+
+  --mc-iron-light: #ffffff;
+  --mc-iron-main: #d8d8d8;
+  --mc-iron-dark: #8f8f8f;
+  --mc-iron-shadow: #545454;
+
+  --mc-stone-light: #8b8b8b;
+  --mc-stone-main: #737373;
+  --mc-stone-dark: #373737;
+
+  --mc-gold-light: #fff899;
+  --mc-gold-main: #fcdc3b;
+  --mc-gold-dark: #b59218;
+
+  --mc-emerald-light: #7cf6a5;
+  --mc-emerald-main: #17dd62;
+  --mc-emerald-dark: #0a7d34;
+
+  --mc-redstone-light: #ff7373;
+  --mc-redstone-main: #ff2200;
+  --mc-redstone-dark: #8b0000;
+
+  --mc-font-pixel: 'Press Start 2P', 'VT323', monospace;
+  --mc-font-retro: 'Silkscreen', 'VT323', monospace;
+}
+
+/* Force 100% Voxel Square Geometry (Zero Border Radius Everywhere) */
+*, *::before, *::after {
+  box-sizing: border-box;
+  border-radius: 0 !important;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--mc-obsidian-dark);
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(30, 24, 46, 0.7) 0%, rgba(12, 9, 20, 0.98) 100%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.015) 0px, rgba(255, 255, 255, 0.015) 2px, transparent 2px, transparent 4px);
+  color: #f4f9fd;
+  font-family: var(--mc-font-pixel);
+  min-height: 100vh;
+  -webkit-font-smoothing: none;
+  image-rendering: pixelated;
+  overflow-x: hidden;
+}
+
+/* Custom Minecraft 8-Bit Pixel Scrollbars */
+::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+::-webkit-scrollbar-track {
+  background: #151121;
+  border: 2px solid #08060d;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #474747;
+  border-top: 2px solid #8e8e8e;
+  border-left: 2px solid #8e8e8e;
+  border-bottom: 2px solid #222222;
+  border-right: 2px solid #222222;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #5a5a5a;
+}
+
+/* Minecraft Outset / Inset 3D Panels */
+.mc-panel {
+  background-color: #29243b;
+  border-top: 4px solid #4a3e6b;
+  border-left: 4px solid #4a3e6b;
+  border-right: 4px solid #120e1d;
+  border-bottom: 4px solid #120e1d;
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.5);
+  position: relative;
+}
+
+.mc-panel-dark {
+  background-color: #171224;
+  border-top: 4px solid #281f3d;
+  border-left: 4px solid #281f3d;
+  border-right: 4px solid #08060e;
+  border-bottom: 4px solid #08060e;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.6);
+}
+
+.mc-panel-diamond {
+  background-color: #142833;
+  border-top: 4px solid var(--mc-diamond-main);
+  border-left: 4px solid var(--mc-diamond-main);
+  border-right: 4px solid #091319;
+  border-bottom: 4px solid #091319;
+  box-shadow: 0 0 16px rgba(77, 237, 244, 0.25);
+}
+
+.mc-panel-inset {
+  background-color: #110d1c;
+  border-top: 4px solid #08060e;
+  border-left: 4px solid #08060e;
+  border-right: 4px solid #2e2447;
+  border-bottom: 4px solid #2e2447;
+}
+
+/* 3D Voxel Interactive Buttons */
+.mc-btn {
+  font-family: var(--mc-font-pixel);
+  font-size: 11px;
+  line-height: 1.4;
+  padding: 10px 16px;
+  background-color: #727272;
+  color: #ffffff;
+  text-shadow: 2px 2px 0 #2b2b2b;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  user-select: none;
+  transition: transform 0.05s ease;
+  position: relative;
+  text-decoration: none;
+
+  /* 3D Outset Block Border */
+  border-top: 4px solid #adadad;
+  border-left: 4px solid #adadad;
+  border-right: 4px solid #373737;
+  border-bottom: 4px solid #373737;
+  box-shadow: 0 4px 0 #1a1a1a;
+}
+
+.mc-btn:hover {
+  background-color: #838383;
+  filter: brightness(1.08);
+}
+
+/* Press Sink-in Effect */
+.mc-btn:active, .mc-btn.pressed {
+  border-top: 4px solid #262626;
+  border-left: 4px solid #262626;
+  border-right: 4px solid #adadad;
+  border-bottom: 4px solid #adadad;
+  box-shadow: 0 0 0 transparent;
+  transform: translateY(4px);
+}
+
+/* Diamond Variant (Primary Call to Action) */
+.mc-btn-diamond {
+  background-color: #279ca3;
+  color: #ffffff;
+  text-shadow: 2px 2px 0 #0d4e53;
+  border-top: 4px solid var(--mc-diamond-light);
+  border-left: 4px solid var(--mc-diamond-light);
+  border-right: 4px solid var(--mc-diamond-shadow);
+  border-bottom: 4px solid var(--mc-diamond-shadow);
+  box-shadow: 0 4px 0 #082d31, 0 0 12px rgba(77, 237, 244, 0.4);
+}
+
+.mc-btn-diamond:hover {
+  background-color: #2fb4bd;
+}
+
+.mc-btn-diamond:active {
+  border-top: 4px solid #0d4e53;
+  border-left: 4px solid #0d4e53;
+  border-right: 4px solid var(--mc-diamond-light);
+  border-bottom: 4px solid var(--mc-diamond-light);
+}
+
+/* Emerald Variant (Success / Mining Complete) */
+.mc-btn-emerald {
+  background-color: #1aa64e;
+  color: #ffffff;
+  text-shadow: 2px 2px 0 #0b4e23;
+  border-top: 4px solid var(--mc-emerald-light);
+  border-left: 4px solid var(--mc-emerald-light);
+  border-right: 4px solid var(--mc-emerald-dark);
+  border-bottom: 4px solid var(--mc-emerald-dark);
+  box-shadow: 0 4px 0 #062b14;
+}
+
+.mc-btn-emerald:hover {
+  background-color: #22bf5b;
+}
+
+/* Redstone / Danger Variant */
+.mc-btn-redstone {
+  background-color: #b52210;
+  color: #ffffff;
+  text-shadow: 2px 2px 0 #4f0a00;
+  border-top: 4px solid var(--mc-redstone-light);
+  border-left: 4px solid var(--mc-redstone-light);
+  border-right: 4px solid var(--mc-redstone-dark);
+  border-bottom: 4px solid var(--mc-redstone-dark);
+  box-shadow: 0 4px 0 #310400;
+}
+
+.mc-btn-redstone:hover {
+  background-color: #cc2712;
+}
+
+/* Obsidian Variant (Dark Stealth) */
+.mc-btn-obsidian {
+  background-color: #221b36;
+  color: #d1c8ea;
+  text-shadow: 2px 2px 0 #0b0713;
+  border-top: 4px solid #45376c;
+  border-left: 4px solid #45376c;
+  border-right: 4px solid #0c0816;
+  border-bottom: 4px solid #0c0816;
+  box-shadow: 0 4px 0 #050309;
+}
+
+.mc-btn-obsidian:hover {
+  background-color: #2f254a;
+}
+
+/* Gold Variant */
+.mc-btn-gold {
+  background-color: #cca31b;
+  color: #221b06;
+  text-shadow: 1px 1px 0 #fff7a1;
+  border-top: 4px solid var(--mc-gold-light);
+  border-left: 4px solid var(--mc-gold-light);
+  border-right: 4px solid var(--mc-gold-dark);
+  border-bottom: 4px solid var(--mc-gold-dark);
+  box-shadow: 0 4px 0 #574404;
+}
+
+/* Minecraft Form Inputs */
+.mc-input, .mc-select, .mc-textarea {
+  font-family: var(--mc-font-pixel);
+  font-size: 11px;
+  background-color: #0d0a17;
+  color: #ffffff;
+  padding: 10px 12px;
+  border-top: 3px solid #050409;
+  border-left: 3px solid #050409;
+  border-right: 3px solid #332850;
+  border-bottom: 3px solid #332850;
+  outline: none;
+  width: 100%;
+}
+
+.mc-input:focus, .mc-select:focus, .mc-textarea:focus {
+  border-color: var(--mc-diamond-main);
+  box-shadow: 0 0 8px rgba(77, 237, 244, 0.4);
+}
+
+/* Authentic Minecraft XP Bar */
+.mc-xp-container {
+  position: relative;
+  width: 100%;
+}
+
+.mc-xp-bar-bg {
+  width: 100%;
+  height: 14px;
+  background-color: #0b1a0d;
+  border: 2px solid #040905;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.9);
+  position: relative;
+  overflow: hidden;
+}
+
+.mc-xp-bar-fill {
+  height: 100%;
+  background: repeating-linear-gradient(
+    90deg,
+    #55ff55 0px,
+    #55ff55 18px,
+    #2aaa2a 18px,
+    #2aaa2a 20px
+  );
+  box-shadow: 0 0 10px #55ff55;
+  transition: width 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.mc-xp-level-badge {
+  font-family: var(--mc-font-pixel);
+  font-size: 14px;
+  font-weight: 700;
+  color: #55ff55;
+  text-shadow: 
+    2px 2px 0 #000000,
+    -1px -1px 0 #000000,
+    1px -1px 0 #000000,
+    -1px 1px 0 #000000,
+    0 0 8px #55ff55;
+  letter-spacing: 1px;
+}
+
+/* Minecraft Avatar Frame */
+.mc-avatar-frame {
+  border-top: 3px solid #4a3e6b;
+  border-left: 3px solid #4a3e6b;
+  border-right: 3px solid #100b1a;
+  border-bottom: 3px solid #100b1a;
+  background: #191427;
+  padding: 2px;
+}
+
+/* Block Wobble & Mining Crack Animation */
+@keyframes blockMiningWobble {
+  0% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(0.97) rotate(-2deg); }
+  50% { transform: scale(1.02) rotate(2deg); }
+  75% { transform: scale(0.98) rotate(-1deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.mc-mining-active {
+  animation: blockMiningWobble 0.15s infinite;
+  filter: brightness(1.2);
+}
+
+/* Block Broken Particles Explosion */
+@keyframes voxelShatter {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.3) translateY(24px) rotate(45deg);
+  }
+}
+
+.mc-block-shattered {
+  animation: voxelShatter 0.35s ease-out forwards;
+}
+
+/* Level Up / World Cleared Text Pulse */
+@keyframes mcBlinkPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    text-shadow: 0 0 20px #fcdc3b, 4px 4px 0 #000;
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.06);
+    text-shadow: 0 0 35px #4dedf4, 4px 4px 0 #000;
+  }
+}
+
+.mc-level-up-banner {
+  font-family: var(--mc-font-pixel);
+  animation: mcBlinkPulse 0.9s infinite ease-in-out;
+}
+
+/* 8-bit text stroke utility */
+.mc-text-shadow {
+  text-shadow: 2px 2px 0 #000000;
+}
+
+.mc-text-glow {
+  text-shadow: 0 0 8px currentColor, 2px 2px 0 #000000;
+}
