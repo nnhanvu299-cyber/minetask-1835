@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { BiomeType } from '../types';
 import { BIOME_CONFIGS } from '../utils/pixelBlocks';
+import { Crown } from 'lucide-react';
 
 interface CreateWorldModalProps {
   isOpen: boolean;
@@ -14,7 +15,7 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
   onClose,
   onWorldCreated,
 }) => {
-  const { createWorld, createTask, currentUser } = useApp();
+  const { createWorld, createTask, currentUser, isBoss } = useApp();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -29,6 +30,11 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
     e.preventDefault();
     if (!name.trim()) return;
 
+    if (!isBoss) {
+      alert('Chỉ Boss (Steve) mới có quyền tạo Thế giới mới!');
+      return;
+    }
+
     const newWorld = createWorld({
       name: name.trim(),
       description: description.trim(),
@@ -37,12 +43,12 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
       targetDeadline: targetDeadline || undefined,
     });
 
-    // Tùy chọn tự tạo 3 khối quặng khởi đầu
+    // Mọi Thế giới mới tạo khởi điểm ở Level 0 (0% XP) với các task todo chưa đào
     if (createStarterTasks) {
       createTask({
         worldId: newWorld.id,
-        title: 'Khảo Sát Phạm Vi & Thu Thập Tài Nguyên',
-        description: 'Xác định kiến trúc hệ thống và phân chia vai trò cho 4 thợ mỏ.',
+        title: 'Khảo sát yêu cầu & Lập kế hoạch sprint',
+        description: 'Phân tích phạm vi dự án và giao việc cho 4 thợ mỏ.',
         blockType: 'iron',
         xpValue: 80,
         assigneeId: currentUser.id,
@@ -51,8 +57,8 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
 
       createTask({
         worldId: newWorld.id,
-        title: 'Rèn Luyện & Đào Khối Tính Năng Chính',
-        description: 'Xây dựng logic nghiệp vụ và chế tác các giao diện voxel 8-bit.',
+        title: 'Xây dựng tính năng trọng tâm của thế giới',
+        description: 'Triển khai các khối kiến trúc và logic nghiệp vụ chính.',
         blockType: 'diamond',
         xpValue: 220,
         assigneeId: currentUser.id === 'alex' ? 'steve' : 'alex',
@@ -61,8 +67,8 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
 
       createTask({
         worldId: newWorld.id,
-        title: 'Kiểm Thử Toàn Diện & Phát Hành Bản APK',
-        description: 'Xác nhận tiến độ đạt 100%, triển khai bản PWA và xuất gói APK.',
+        title: 'Kiểm thử chất lượng & Bàn giao sản phẩm',
+        description: 'Khai thác khối kiểm thử cuối cùng và xuất bản cập nhật.',
         blockType: 'emerald',
         xpValue: 260,
         assigneeId: 'luna',
@@ -81,17 +87,25 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-      <div className="mc-panel w-full max-w-xl p-6 text-white max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+      <div className="mc-panel w-full max-w-xl p-6 bg-[#FDF7E7] text-[#2D1A11] max-h-[90vh] overflow-y-auto border-4 border-[#2D1A11]">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 mb-4 border-b-2 border-[#4a3e6b]">
+        <div className="flex items-center justify-between pb-3 mb-4 border-b-2 border-[#2D1A11]">
           <div className="flex items-center gap-2">
-            <span className="text-xl">🌍</span>
-            <h2 className="text-sm md:text-base font-bold text-[#4dedf4]">
-              TẠO THẾ GIỚI MỚI (DỰ ÁN)
-            </h2>
+            <span className="text-2xl">🌍</span>
+            <div>
+              <h2 className="text-lg font-bold text-[#2D1A11] flex items-center gap-1.5">
+                TẠO THẾ GIỚI MỚI (DỰ ÁN)
+                <span className="text-[10px] bg-[#F37022] text-white font-bold px-1.5 py-0.2 border border-[#2D1A11] inline-flex items-center gap-0.5">
+                  <Crown size={10} /> QUYỀN BOSS
+                </span>
+              </h2>
+              <p className="text-xs text-[#52372A]">
+                Thế giới mới tạo sẽ khởi điểm từ Level 0 (0% XP)
+              </p>
+            </div>
           </div>
-          <button onClick={onClose} className="mc-btn mc-btn-obsidian px-2.5 py-1 text-xs">
+          <button onClick={onClose} className="mc-btn mc-btn-obsidian px-2.5 py-1 text-sm">
             ✕
           </button>
         </div>
@@ -99,36 +113,36 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* World Name */}
           <div>
-            <label className="block text-[10px] text-slate-300 font-bold mb-1">
+            <label className="block text-xs font-bold text-[#2D1A11] mb-1">
               TÊN THẾ GIỚI (DỰ ÁN) *
             </label>
             <input
               type="text"
               required
-              placeholder="Ví dụ: Ứng dụng Di động v2.0 Release"
+              placeholder="Ví dụ: Chiến dịch Q4, Nâng cấp Hạ Tầng Cloud 1835s..."
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mc-input"
+              className="mc-input text-sm font-medium"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-[10px] text-slate-300 font-bold mb-1">
+            <label className="block text-xs font-bold text-[#2D1A11] mb-1">
               MỤC TIÊU & NHIỆM VỤ CỦA THẾ GIỚI
             </label>
             <textarea
               rows={2}
-              placeholder="Mô tả mục tiêu của sprint hoặc dự án..."
+              placeholder="Mô tả mục tiêu của sprint hoặc dự án mới này..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="mc-textarea"
+              className="mc-textarea text-xs"
             />
           </div>
 
           {/* Biome Selection */}
           <div>
-            <label className="block text-[10px] text-slate-300 font-bold mb-1.5">
+            <label className="block text-xs font-bold text-[#2D1A11] mb-1.5">
               CHỌN VÙNG ĐẤT (BIOME THEME)
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -142,16 +156,16 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
                     onClick={() => setBiome(bKey)}
                     className={`p-2.5 cursor-pointer border-2 transition-all flex items-center gap-2.5 ${
                       isSelected
-                        ? 'border-[#4dedf4] bg-[#142938]'
-                        : 'border-[#322550] bg-[#140f21] hover:border-[#675494]'
+                        ? 'border-[#2D1A11] bg-[#FAF2DC] shadow-[2px_2px_0px_#2D1A11]'
+                        : 'border-[#E5D6B6] bg-[#FFFDF7] hover:border-[#2D1A11]'
                     }`}
                   >
                     <span className="text-xl flex-shrink-0">{bCfg.iconSvg}</span>
                     <div className="min-w-0">
-                      <div className="text-[9px] font-bold text-white truncate">
+                      <div className="text-xs font-bold text-[#2D1A11] truncate">
                         {bCfg.name}
                       </div>
-                      <div className="text-[8px] text-slate-400 truncate">
+                      <div className="text-[11px] text-[#52372A] truncate">
                         {bCfg.description}
                       </div>
                     </div>
@@ -164,13 +178,13 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
           {/* Difficulty & Deadline */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-[10px] text-slate-300 font-bold mb-1">
+              <label className="block text-xs font-bold text-[#2D1A11] mb-1">
                 ĐỘ KHÓ DỰ ÁN
               </label>
               <select
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value as 'Peaceful' | 'Normal' | 'Hardcore')}
-                className="mc-select"
+                className="mc-select text-xs font-medium"
               >
                 <option value="Peaceful">Nhàn Nhã (Tiến độ thoải mái)</option>
                 <option value="Normal">Tiêu Chuẩn (Sprint bình thường)</option>
@@ -179,46 +193,46 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-[10px] text-slate-300 font-bold mb-1">
+              <label className="block text-xs font-bold text-[#2D1A11] mb-1">
                 HẠN CHÓT DỰ KIẾN
               </label>
               <input
                 type="date"
                 value={targetDeadline}
                 onChange={(e) => setTargetDeadline(e.target.value)}
-                className="mc-input"
+                className="mc-input text-xs"
               />
             </div>
           </div>
 
           {/* Starter Tasks Checkbox */}
-          <div className="p-3 bg-[#130f21] border border-[#2e2348] flex items-center gap-2.5">
+          <div className="p-3 bg-[#FAF2DC] border-2 border-[#2D1A11] flex items-center gap-2.5">
             <input
               type="checkbox"
               id="starter-tasks"
               checked={createStarterTasks}
               onChange={(e) => setCreateStarterTasks(e.target.checked)}
-              className="w-4 h-4 cursor-pointer accent-[#279ca3]"
+              className="w-4 h-4 cursor-pointer accent-[#F37022]"
             />
-            <label htmlFor="starter-tasks" className="text-[9px] text-slate-300 cursor-pointer">
-              Tự động sinh sẵn 3 khối quặng khởi đầu (Sắt, Kim Cương, Ngọc Lục Bảo)
+            <label htmlFor="starter-tasks" className="text-xs text-[#2D1A11] font-medium cursor-pointer">
+              Tự động sinh sẵn 3 khối quặng khởi đầu ở trạng thái chưa đào (Khởi điểm Level 0)
             </label>
           </div>
 
           {/* Form Actions */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t-2 border-[#322550]">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t-2 border-[#2D1A11]/20">
             <button
               type="button"
               onClick={onClose}
-              className="mc-btn mc-btn-obsidian text-[10px] px-4 py-2"
+              className="mc-btn mc-btn-obsidian text-sm px-4 py-2"
             >
               HỦY BỎ
             </button>
             <button
               type="submit"
-              className="mc-btn mc-btn-diamond text-[10px] px-5 py-2"
+              className="mc-btn mc-btn-1835 text-sm px-5 py-2 font-bold tracking-wide"
             >
-              TẠO THẾ GIỚI
+              TẠO THẾ GIỚI (LEVEL 0)
             </button>
           </div>
         </form>

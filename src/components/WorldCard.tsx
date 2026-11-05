@@ -12,7 +12,7 @@ interface WorldCardProps {
 }
 
 export const WorldCard: React.FC<WorldCardProps> = ({ world, onSelect }) => {
-  const { tasks, deleteWorld, getWorldProgress } = useApp();
+  const { tasks, deleteWorld, getWorldProgress, isBoss } = useApp();
   const progress = getWorldProgress(world.id);
   const biomeCfg = BIOME_CONFIGS[world.biome] || BIOME_CONFIGS.diamond_cavern;
 
@@ -22,6 +22,10 @@ export const WorldCard: React.FC<WorldCardProps> = ({ world, onSelect }) => {
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (!isBoss) {
+      alert('Chỉ Boss (Steve) mới có quyền xóa Thế giới này!');
+      return;
+    }
     if (window.confirm(`Xác nhận xóa Thế giới "${world.name}" và tất cả khối tài nguyên bên trong?`)) {
       deleteWorld(world.id);
     }
@@ -35,38 +39,38 @@ export const WorldCard: React.FC<WorldCardProps> = ({ world, onSelect }) => {
   return (
     <div
       onClick={handleEnterWorld}
-      className={`mc-panel cursor-pointer group transition-transform hover:-translate-y-1 relative overflow-hidden flex flex-col justify-between ${
-        progress.isCleared ? 'border-[#55ff55] shadow-[0_0_15px_rgba(85,255,85,0.25)]' : ''
+      className={`mc-panel cursor-pointer group transition-transform hover:-translate-y-1 relative overflow-hidden flex flex-col justify-between bg-[#FDF7E7] border-4 border-[#2D1A11] ${
+        progress.isCleared ? 'shadow-[0_0_15px_rgba(243,112,34,0.35)]' : ''
       }`}
     >
       {/* Biome Top Visual Banner */}
       <div
-        className={`h-20 w-full bg-gradient-to-r ${biomeCfg.gradient} p-3 flex items-start justify-between border-b-4 border-[#140e21] relative`}
+        className={`h-20 w-full bg-gradient-to-r ${biomeCfg.gradient} p-3 flex items-start justify-between border-b-4 border-[#2D1A11] relative`}
       >
         {/* Biome Icon & Title */}
         <div className="flex items-center gap-2 z-10">
-          <div className="w-10 h-10 bg-black/40 border-2 border-white/20 flex items-center justify-center text-xl shadow-inner">
+          <div className="w-10 h-10 bg-black/40 border-2 border-white/40 flex items-center justify-center text-xl shadow-inner">
             {biomeCfg.iconSvg}
           </div>
           <div>
-            <span className="text-[8px] uppercase tracking-wider text-white/80 font-mono">
+            <span className="text-[10px] uppercase tracking-wider text-white font-bold drop-shadow">
               {biomeCfg.name}
             </span>
             <div className="flex items-center gap-1.5 mt-0.5">
               <span
-                className={`text-[8px] px-1.5 py-0.2 border uppercase font-bold ${
+                className={`text-[9px] px-1.5 py-0.2 border border-[#2D1A11] font-bold uppercase ${
                   world.difficulty === 'Hardcore'
-                    ? 'bg-[#4d1010] border-[#ff4d4d] text-[#ff7373]'
+                    ? 'bg-[#ED1B24] text-white'
                     : world.difficulty === 'Normal'
-                    ? 'bg-[#473910] border-[#fcdc3b] text-[#fcdc3b]'
-                    : 'bg-[#103a1d] border-[#55ff55] text-[#7cf6a5]'
+                    ? 'bg-[#F37022] text-white'
+                    : 'bg-[#FAF2DC] text-[#2D1A11]'
                 }`}
               >
                 <ShieldAlert size={10} className="inline mr-0.5 -mt-0.5" />
                 {world.difficulty === 'Hardcore' ? 'Cực Khó' : world.difficulty === 'Normal' ? 'Tiêu Chuẩn' : 'Nhàn Nhã'}
               </span>
               {progress.isCleared && (
-                <span className="text-[8px] bg-[#1a6e2e] border border-[#55ff55] text-[#55ff55] px-1 py-0.2">
+                <span className="text-[9px] bg-gradient-to-r from-[#F37022] to-[#ED1B24] border border-[#2D1A11] text-white font-bold px-1.5 py-0.2">
                   HOÀN THÀNH ⭐
                 </span>
               )}
@@ -74,42 +78,44 @@ export const WorldCard: React.FC<WorldCardProps> = ({ world, onSelect }) => {
           </div>
         </div>
 
-        {/* Delete Quick Trigger */}
-        <button
-          onClick={handleDelete}
-          className="mc-btn mc-btn-obsidian px-2 py-1 text-[9px] text-slate-400 hover:text-red-400 z-10"
-          title="Xóa Thế giới"
-        >
-          <Trash2 size={12} />
-        </button>
+        {/* Delete Quick Trigger (Boss only) */}
+        {isBoss && (
+          <button
+            onClick={handleDelete}
+            className="mc-btn mc-btn-obsidian px-2 py-1 text-xs text-[#E5D6B6] hover:text-[#ED1B24] z-10"
+            title="Xóa Thế giới (Quyền Boss)"
+          >
+            <Trash2 size={12} />
+          </button>
+        )}
 
         {/* Subtle Pixel Grid overlay */}
-        <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:12px_12px] opacity-10 pointer-events-none" />
+        <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:12px_12px] opacity-15 pointer-events-none" />
       </div>
 
       {/* World Body Content */}
       <div className="p-4 flex-1 flex flex-col justify-between">
         <div>
-          <h3 className="text-xs md:text-sm font-bold text-white group-hover:text-[#4dedf4] transition-colors leading-snug">
+          <h3 className="text-base font-bold text-[#2D1A11] group-hover:text-[#F37022] transition-colors leading-snug">
             {world.name}
           </h3>
-          <p className="text-[10px] text-slate-400 mt-1 line-clamp-2 leading-relaxed">
+          <p className="text-xs text-[#52372A] mt-1 line-clamp-2 leading-relaxed">
             {world.description || biomeCfg.description}
           </p>
         </div>
 
-        {/* Team Progress XP Meter */}
-        <div className="mt-4 pt-3 border-t-2 border-[#1c152d]">
-          <div className="flex items-center justify-between text-[9px] mb-1.5">
-            <span className="text-slate-300 font-bold">
+        {/* Team Progress XP Meter with 1835s Gradient */}
+        <div className="mt-4 pt-3 border-t-2 border-[#2D1A11]/20">
+          <div className="flex items-center justify-between text-xs mb-1 font-semibold">
+            <span className="text-[#2D1A11] font-bold">
               ⛏️ ĐÃ ĐÀO: {progress.completedTasks}/{progress.totalTasks}
             </span>
-            <span className="text-[#55ff55] font-bold">
+            <span className="text-[#F37022] font-bold">
               {progress.earnedXp}/{progress.totalXp} XP ({progress.percentage}%)
             </span>
           </div>
 
-          <div className="mc-xp-bar-bg h-3.5">
+          <div className="mc-xp-bar-bg h-4">
             <div
               className="mc-xp-bar-fill"
               style={{ width: `${progress.percentage}%` }}
@@ -118,7 +124,7 @@ export const WorldCard: React.FC<WorldCardProps> = ({ world, onSelect }) => {
         </div>
 
         {/* Footer: Assignees & Enter World Button */}
-        <div className="mt-4 pt-3 border-t-2 border-[#1c152d] flex items-center justify-between gap-2">
+        <div className="mt-4 pt-3 border-t-2 border-[#2D1A11]/20 flex items-center justify-between gap-2">
           {/* Assigned Minions */}
           <div className="flex items-center -space-x-1.5 overflow-hidden">
             {assignedUserIds.length > 0 ? (
@@ -128,19 +134,19 @@ export const WorldCard: React.FC<WorldCardProps> = ({ world, onSelect }) => {
                 </div>
               ))
             ) : (
-              <span className="text-[8px] text-slate-500 italic">Chưa giao thợ mỏ</span>
+              <span className="text-[10px] text-[#836251] italic">Chưa giao thợ mỏ</span>
             )}
           </div>
 
-          {/* Enter World Action */}
+          {/* Enter World Action with 1835s Gradient */}
           <button
             onClick={(e) => {
               e.stopPropagation();
               handleEnterWorld();
             }}
-            className="mc-btn mc-btn-diamond text-[9px] px-3 py-1.5"
+            className="mc-btn mc-btn-1835 text-xs px-3.5 py-1.5 font-bold"
           >
-            <Play size={11} className="inline fill-current" />
+            <Play size={12} className="inline fill-current mr-1" />
             VÀO THẾ GIỚI
           </button>
         </div>

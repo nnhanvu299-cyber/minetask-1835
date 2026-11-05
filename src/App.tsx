@@ -22,7 +22,7 @@ const MainContent: React.FC = () => {
   const [isWinStateOpen, setIsWinStateOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#100c1a] text-white">
+    <div className="min-h-screen flex flex-col bg-[#FDF7E7] text-[#2D1A11]">
       {/* Top Header */}
       <Header
         onOpenLogin={() => setIsLoginOpen(true)}
@@ -47,20 +47,20 @@ const MainContent: React.FC = () => {
         )}
       </main>
 
-      {/* Minecraft Footer */}
-      <footer className="mt-auto py-4 px-4 bg-[#0a0712] border-t-2 border-[#221836] text-center text-[9px] text-slate-500">
-        <div className="flex flex-wrap items-center justify-center gap-4 max-w-4xl mx-auto">
-          <span>⛏️ Động cơ Voxel MineTask v1.0</span>
+      {/* Minecraft & 1835s Brand Footer */}
+      <footer className="mt-auto py-4 px-4 bg-[#FAF2DC] border-t-4 border-[#2D1A11] text-center text-xs text-[#52372A]">
+        <div className="flex flex-wrap items-center justify-center gap-4 max-w-4xl mx-auto font-medium">
+          <span className="font-bold text-[#2D1A11]">⛏️ Động cơ Voxel MineTask 1835s</span>
           <span>•</span>
-          <span>Ma Trận 4 Thợ Mỏ Nội Bộ</span>
+          <span>Màu Nền Ngà (#FDF7E7) & Chữ Nâu Mực (#2D1A11)</span>
           <span>•</span>
-          <span>Hỗ Trợ Triển Khai PWA & Đóng Gói APK Android</span>
+          <span className="text-[#F37022] font-semibold">Dải Màu Gradient 1835s</span>
           <span>•</span>
           <button
             onClick={() => setIsApkModalOpen(true)}
-            className="text-[#4dedf4] hover:underline"
+            className="text-[#0072CE] font-bold hover:underline"
           >
-            Xuất APK & Cài Đặt PWA
+            Xuất File APK Android & Cài Đặt PWA
           </button>
         </div>
       </footer>

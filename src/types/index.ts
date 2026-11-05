@@ -11,6 +11,7 @@ export interface UserProfile {
   tasksMined: number;
   totalXp: number;
   primaryColor: string;
+  isBoss: boolean; // Boss phân quyền
 }
 
 export type BiomeType = 'overworld' | 'diamond_cavern' | 'nether' | 'the_end' | 'lush_caves';
@@ -27,7 +28,7 @@ export interface BlockConfig {
   label: string;
 }
 
-export type TaskStatus = 'todo' | 'done';
+export type TaskStatus = 'todo' | 'in_progress' | 'done';
 
 export interface Task {
   id: string;
@@ -42,6 +43,10 @@ export interface Task {
   completedAt?: number;
   completedBy?: UserId;
   priority: 'low' | 'normal' | 'high' | 'legendary';
+  // Ghi chú tiến độ mô phỏng trang sách / bảng gỗ
+  progressNote?: string;
+  progressUpdatedAt?: number;
+  progressUpdatedBy?: UserId;
 }
 
 export interface World {
@@ -53,6 +58,7 @@ export interface World {
   createdAt: number;
   targetDeadline?: string;
   icon?: string;
+  createdBy: UserId;
 }
 
 export interface AppState {

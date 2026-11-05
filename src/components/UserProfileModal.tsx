@@ -2,6 +2,7 @@ import React from 'react';
 import { useApp } from '../context/AppContext';
 import { PixelAvatar } from '../utils/pixelAvatars';
 import { XPBar } from './XPBar';
+import { Crown } from 'lucide-react';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -20,7 +21,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
   const userTasks = tasks.filter((t) => t.assigneeId === currentUser.id);
   const minedTasks = userTasks.filter((t) => t.status === 'done');
-  const pendingTasks = userTasks.filter((t) => t.status === 'todo');
+  const pendingTasks = userTasks.filter((t) => t.status !== 'done');
 
   const nextLevelXp = (currentUser.level + 1) * 250;
   const currentLevelBaseXp = currentUser.level * 250;
@@ -29,32 +30,36 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const levelPercentage = Math.min(100, Math.max(0, Math.round((progressInLevel / levelXpSpan) * 100)));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-      <div className="mc-panel w-full max-w-xl p-6 text-white max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+      <div className="mc-panel w-full max-w-xl p-6 bg-[#FDF7E7] text-[#2D1A11] max-h-[90vh] overflow-y-auto border-4 border-[#2D1A11]">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 mb-4 border-b-2 border-[#4a3e6b]">
+        <div className="flex items-center justify-between pb-3 mb-4 border-b-2 border-[#2D1A11]">
           <div className="flex items-center gap-2">
-            <span className="text-lg">📜</span>
-            <h2 className="text-xs md:text-sm font-bold text-[#4dedf4]">
-              THỐNG KÊ & DANH HIỆU THỢ MỎ
+            <span className="text-xl">📜</span>
+            <h2 className="text-base font-bold text-[#2D1A11]">
+              THỐNG KÊ & DANH HIỆU THỢ MỎ 1835s
             </h2>
           </div>
-          <button onClick={onClose} className="mc-btn mc-btn-obsidian px-2.5 py-1 text-xs">
+          <button onClick={onClose} className="mc-btn mc-btn-obsidian px-2.5 py-1 text-sm">
             ✕
           </button>
         </div>
 
         {/* Profile Identity Hero */}
-        <div className="p-4 bg-[#140f21] border-2 border-[#2f2249] flex flex-col sm:flex-row items-center gap-4">
+        <div className="p-4 bg-[#FAF2DC] border-2 border-[#2D1A11] flex flex-col sm:flex-row items-center gap-4">
           <PixelAvatar userId={currentUser.id} size={72} />
           <div className="flex-1 text-center sm:text-left">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-              <h3 className="text-base font-bold text-white">{currentUser.name}</h3>
-              <span className="bg-[#1a8794] text-[#a8fcff] text-[9px] px-2 py-0.5 border border-[#4dedf4] inline-block">
-                {currentUser.title}
-              </span>
+              <h3 className="text-lg font-bold text-[#2D1A11] flex items-center justify-center sm:justify-start gap-1.5">
+                {currentUser.name}
+                {currentUser.isBoss && (
+                  <span className="bg-[#F37022] text-white text-[11px] px-2 py-0.5 border border-[#2D1A11] font-bold inline-flex items-center gap-1">
+                    <Crown size={12} /> BOSS / TRƯỞNG NHÓM
+                  </span>
+                )}
+              </h3>
             </div>
-            <p className="text-[10px] text-slate-400 mt-1">{currentUser.role}</p>
+            <p className="text-xs text-[#52372A] font-medium mt-1">{currentUser.role} • {currentUser.title}</p>
 
             <div className="mt-3">
               <XPBar
@@ -71,21 +76,21 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
         {/* Statistics Grid */}
         <div className="grid grid-cols-3 gap-3 my-4">
-          <div className="p-3 bg-[#171226] border-2 border-[#332650] text-center">
-            <div className="text-[8px] text-slate-400">TỔNG XP</div>
-            <div className="text-xs font-bold text-[#4dedf4] mt-1 mc-text-shadow">
-              {currentUser.totalXp}
+          <div className="p-3 bg-[#FAF2DC] border-2 border-[#2D1A11] text-center">
+            <div className="text-[10px] text-[#52372A] font-bold">TỔNG XP</div>
+            <div className="text-sm font-bold text-[#F37022] mt-0.5">
+              {currentUser.totalXp} XP
             </div>
           </div>
-          <div className="p-3 bg-[#171226] border-2 border-[#332650] text-center">
-            <div className="text-[8px] text-slate-400">KHỐI ĐÃ ĐÀO</div>
-            <div className="text-xs font-bold text-[#55ff55] mt-1 mc-text-shadow">
+          <div className="p-3 bg-[#FAF2DC] border-2 border-[#2D1A11] text-center">
+            <div className="text-[10px] text-[#52372A] font-bold">KHỐI ĐÃ ĐÀO</div>
+            <div className="text-sm font-bold text-[#2D1A11] mt-0.5">
               {currentUser.tasksMined}
             </div>
           </div>
-          <div className="p-3 bg-[#171226] border-2 border-[#332650] text-center">
-            <div className="text-[8px] text-slate-400">VIỆC CHƯA XONG</div>
-            <div className="text-xs font-bold text-[#fcdc3b] mt-1 mc-text-shadow">
+          <div className="p-3 bg-[#FAF2DC] border-2 border-[#2D1A11] text-center">
+            <div className="text-[10px] text-[#52372A] font-bold">VIỆC ĐƯỢC GIAO</div>
+            <div className="text-sm font-bold text-[#0072CE] mt-0.5">
               {pendingTasks.length}
             </div>
           </div>
@@ -93,37 +98,37 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
         {/* Miner Badges / Inventory */}
         <div className="mb-4">
-          <div className="text-[10px] font-bold text-slate-300 mb-2">⛏️ VŨ KHÍ & DANH HIỆU THỢ MỎ</div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[9px]">
-            <div className="p-2 bg-[#1b152d] border border-[#3e305e] flex items-center gap-2">
+          <div className="text-xs font-bold text-[#2D1A11] mb-2">⛏️ KHO VŨ KHÍ & DANH HIỆU 1835s</div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+            <div className="p-2 bg-[#FAF2DC] border border-[#2D1A11] flex items-center gap-1.5 font-medium">
               <span>💎</span>
-              <span className="text-[#a8fcff]">Cuốc Kim Cương</span>
+              <span className="text-[#2D1A11]">Cuốc Kim Cương</span>
             </div>
-            <div className="p-2 bg-[#1b152d] border border-[#3e305e] flex items-center gap-2">
+            <div className="p-2 bg-[#FAF2DC] border border-[#2D1A11] flex items-center gap-1.5 font-medium">
               <span>⚡</span>
-              <span className="text-[#ff7373]">Đuốc Redstone</span>
+              <span className="text-[#ED1B24]">Đuốc Redstone</span>
             </div>
-            <div className="p-2 bg-[#1b152d] border border-[#3e305e] flex items-center gap-2">
+            <div className="p-2 bg-[#FAF2DC] border border-[#2D1A11] flex items-center gap-1.5 font-medium">
               <span>🛡️</span>
-              <span className="text-[#fcdc3b]">Giáp Netherite</span>
+              <span className="text-[#753B94]">Giáp Netherite</span>
             </div>
-            <div className="p-2 bg-[#1b152d] border border-[#3e305e] flex items-center gap-2">
+            <div className="p-2 bg-[#FAF2DC] border border-[#2D1A11] flex items-center gap-1.5 font-medium">
               <span>🍎</span>
-              <span className="text-[#7cf6a5]">Táo Vàng Phép</span>
+              <span className="text-[#F37022]">Táo Vàng Phép</span>
             </div>
           </div>
         </div>
 
-        {/* User's Task Breakdown */}
+        {/* User's Task Breakdown with Progress Notes */}
         <div className="mb-4">
-          <div className="flex items-center justify-between text-[10px] font-bold text-slate-300 mb-2">
-            <span>NHIỆM VỤ ĐƯỢC GIAO ({userTasks.length})</span>
-            <span className="text-[#55ff55]">{minedTasks.length} / {userTasks.length} Đã đào</span>
+          <div className="flex items-center justify-between text-xs font-bold text-[#2D1A11] mb-2">
+            <span>NHIỆM VỤ ĐƯỢC PHÂN CÔNG ({userTasks.length})</span>
+            <span className="text-[#1aa64e]">{minedTasks.length} / {userTasks.length} Đã đào</span>
           </div>
 
-          <div className="max-h-40 overflow-y-auto space-y-1.5 p-2 bg-[#120e1d] border-2 border-[#2b2044]">
+          <div className="max-h-40 overflow-y-auto space-y-1.5 p-2 bg-[#FAF2DC] border-2 border-[#2D1A11]">
             {userTasks.length === 0 ? (
-              <div className="text-center py-4 text-[9px] text-slate-500">
+              <div className="text-center py-4 text-xs text-[#836251]">
                 Chưa có nhiệm vụ nào được phân công cho thợ mỏ này.
               </div>
             ) : (
@@ -134,29 +139,38 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 return (
                   <div
                     key={t.id}
-                    className={`flex items-center justify-between p-2 border ${
+                    className={`p-2 border ${
                       isDone
-                        ? 'bg-[#152417] border-[#29522d] text-slate-400'
-                        : 'bg-[#191427] border-[#382b54] text-slate-200'
+                        ? 'bg-[#EFE4CA] border-[#8A6851] text-[#836251]'
+                        : 'bg-[#FFFDF7] border-[#2D1A11] text-[#2D1A11]'
                     }`}
                   >
-                    <div className="min-w-0 pr-2">
-                      <div className={`text-[9px] font-bold truncate ${isDone ? 'line-through' : ''}`}>
-                        {t.title}
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0 pr-2">
+                        <div className={`text-xs font-bold truncate ${isDone ? 'line-through' : ''}`}>
+                          {t.title}
+                        </div>
+                        <div className="text-[10px] text-[#52372A] truncate">
+                          {world ? world.name : 'Thế giới'}
+                        </div>
                       </div>
-                      <div className="text-[8px] text-slate-400 truncate">
-                        {world ? world.name : 'Thế giới'}
-                      </div>
+                      <span
+                        className={`text-[10px] px-2 py-0.5 border font-bold flex-shrink-0 ${
+                          isDone
+                            ? 'bg-[#FAF2DC] border-[#2D1A11] text-[#1aa64e]'
+                            : 'bg-[#FAF2DC] border-[#2D1A11] text-[#F37022]'
+                        }`}
+                      >
+                        {isDone ? 'ĐÃ ĐÀO' : `+${t.xpValue} XP`}
+                      </span>
                     </div>
-                    <span
-                      className={`text-[8px] px-1.5 py-0.5 border flex-shrink-0 ${
-                        isDone
-                          ? 'bg-[#1e4d25] border-[#55ff55] text-[#55ff55]'
-                          : 'bg-[#3b2b11] border-[#fcdc3b] text-[#fcdc3b]'
-                      }`}
-                    >
-                      {isDone ? 'ĐÃ ĐÀO' : `+${t.xpValue} XP`}
-                    </span>
+
+                    {/* Show progress note if exists */}
+                    {t.progressNote && (
+                      <div className="mt-1.5 text-[11px] text-[#52372A] italic bg-[#FAF2DC] p-1 border-l-2 border-[#F37022]">
+                        📜 "{t.progressNote}"
+                      </div>
+                    )}
                   </div>
                 );
               })
@@ -165,17 +179,17 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between pt-3 border-t-2 border-[#332650]">
+        <div className="flex items-center justify-between pt-3 border-t-2 border-[#2D1A11]/20">
           <button
             onClick={() => {
               onClose();
               onOpenSwitchLogin();
             }}
-            className="mc-btn mc-btn-diamond text-[9px] px-3 py-1.5"
+            className="mc-btn mc-btn-1835 text-xs px-3 py-1.5 font-bold"
           >
             ĐỔI SANG THỢ MỎ KHÁC
           </button>
-          <button onClick={onClose} className="mc-btn mc-btn-obsidian text-[9px] px-4 py-1.5">
+          <button onClick={onClose} className="mc-btn mc-btn-obsidian text-xs px-4 py-1.5">
             XONG
           </button>
         </div>

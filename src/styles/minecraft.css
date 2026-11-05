@@ -1,40 +1,29 @@
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&family=VT323&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,400&family=VT323&display=swap');
 @import "tailwindcss";
 
 :root {
-  --mc-diamond-light: #a8fcff;
-  --mc-diamond-main: #4dedf4;
-  --mc-diamond-dark: #1a8794;
-  --mc-diamond-shadow: #0f4b52;
+  /* 1835s Brand Palette */
+  --c-ivory-bg: #FDF7E7;
+  --c-ivory-card: #F6EDD7;
+  --c-ivory-accent: #EFE4CA;
+  --c-ivory-border: #E5D6B6;
 
-  --mc-obsidian-light: #382d54;
-  --mc-obsidian-main: #191526;
-  --mc-obsidian-dark: #100c1a;
-  --mc-obsidian-black: #08060d;
+  --c-ink-brown: #2D1A11;
+  --c-ink-brown-light: #52372A;
+  --c-ink-brown-muted: #836251;
 
-  --mc-iron-light: #ffffff;
-  --mc-iron-main: #d8d8d8;
-  --mc-iron-dark: #8f8f8f;
-  --mc-iron-shadow: #545454;
+  /* 1835s Gradient Colors: Cam #F37022 -> Đỏ #ED1B24 -> Magenta #D10074 -> Tím #753B94 -> Xanh #0072CE */
+  --c-1835-orange: #F37022;
+  --c-1835-red: #ED1B24;
+  --c-1835-magenta: #D10074;
+  --c-1835-purple: #753B94;
+  --c-1835-blue: #0072CE;
+  --c-1835-gradient: linear-gradient(90deg, #F37022 0%, #ED1B24 25%, #D10074 50%, #753B94 75%, #0072CE 100%);
+  --c-1835-gradient-hover: linear-gradient(90deg, #ff8038 0%, #ff2e37 25%, #e60080 50%, #8745aa 75%, #0a82e4 100%);
 
-  --mc-stone-light: #8b8b8b;
-  --mc-stone-main: #737373;
-  --mc-stone-dark: #373737;
-
-  --mc-gold-light: #fff899;
-  --mc-gold-main: #fcdc3b;
-  --mc-gold-dark: #b59218;
-
-  --mc-emerald-light: #7cf6a5;
-  --mc-emerald-main: #17dd62;
-  --mc-emerald-dark: #0a7d34;
-
-  --mc-redstone-light: #ff7373;
-  --mc-redstone-main: #ff2200;
-  --mc-redstone-dark: #8b0000;
-
-  --mc-font-pixel: 'Press Start 2P', 'VT323', monospace;
-  --mc-font-retro: 'Silkscreen', 'VT323', monospace;
+  /* Typography */
+  --mc-font-heading: 'VT323', monospace;
+  --mc-font-body: 'Montserrat', sans-serif;
 }
 
 /* Force 100% Voxel Square Geometry (Zero Border Radius Everywhere) */
@@ -46,224 +35,206 @@
 body {
   margin: 0;
   padding: 0;
-  background-color: var(--mc-obsidian-dark);
+  background-color: var(--c-ivory-bg);
   background-image: 
-    radial-gradient(circle at 50% 50%, rgba(30, 24, 46, 0.7) 0%, rgba(12, 9, 20, 0.98) 100%),
-    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.015) 0px, rgba(255, 255, 255, 0.015) 2px, transparent 2px, transparent 4px);
-  color: #f4f9fd;
-  font-family: var(--mc-font-pixel);
+    radial-gradient(circle at 50% 50%, rgba(243, 112, 34, 0.03) 0%, rgba(45, 26, 17, 0.05) 100%),
+    repeating-linear-gradient(0deg, rgba(45, 26, 17, 0.02) 0px, rgba(45, 26, 17, 0.02) 2px, transparent 2px, transparent 4px);
+  color: var(--c-ink-brown);
+  font-family: var(--mc-font-body);
   min-height: 100vh;
-  -webkit-font-smoothing: none;
-  image-rendering: pixelated;
+  -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
 
-/* Custom Minecraft 8-Bit Pixel Scrollbars */
+/* Titles & Pixel Headers use VT323 */
+h1, h2, h3, h4, .mc-font-pixel, .mc-btn, .mc-badge, .mc-title {
+  font-family: var(--mc-font-heading);
+  letter-spacing: 0.5px;
+}
+
+/* Paragraphs, descriptions, inputs use Montserrat */
+p, span, label, input, textarea, select, .mc-font-body {
+  font-family: var(--mc-font-body);
+}
+
+/* Custom 1835s Pixel Scrollbars */
 ::-webkit-scrollbar {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #151121;
-  border: 2px solid #08060d;
+  background: #EFE4CA;
+  border: 2px solid var(--c-ink-brown);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #474747;
-  border-top: 2px solid #8e8e8e;
-  border-left: 2px solid #8e8e8e;
-  border-bottom: 2px solid #222222;
-  border-right: 2px solid #222222;
+  background: #CDBA96;
+  border-top: 2px solid #FFF9EC;
+  border-left: 2px solid #FFF9EC;
+  border-bottom: 2px solid var(--c-ink-brown);
+  border-right: 2px solid var(--c-ink-brown);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #5a5a5a;
+  background: #BAA47D;
 }
 
-/* Minecraft Outset / Inset 3D Panels */
+/* 3D Voxel Outset / Inset Panels with Ivory Background and Ink-Brown 3D Borders */
 .mc-panel {
-  background-color: #29243b;
-  border-top: 4px solid #4a3e6b;
-  border-left: 4px solid #4a3e6b;
-  border-right: 4px solid #120e1d;
-  border-bottom: 4px solid #120e1d;
-  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.5);
+  background-color: var(--c-ivory-card);
+  border-top: 3px solid #FFFFFF;
+  border-left: 3px solid #FFFFFF;
+  border-right: 4px solid var(--c-ink-brown);
+  border-bottom: 4px solid var(--c-ink-brown);
+  box-shadow: 4px 4px 0px rgba(45, 26, 17, 0.15);
   position: relative;
 }
 
 .mc-panel-dark {
-  background-color: #171224;
-  border-top: 4px solid #281f3d;
-  border-left: 4px solid #281f3d;
-  border-right: 4px solid #08060e;
-  border-bottom: 4px solid #08060e;
-  box-shadow: 0 6px 0 rgba(0, 0, 0, 0.6);
-}
-
-.mc-panel-diamond {
-  background-color: #142833;
-  border-top: 4px solid var(--mc-diamond-main);
-  border-left: 4px solid var(--mc-diamond-main);
-  border-right: 4px solid #091319;
-  border-bottom: 4px solid #091319;
-  box-shadow: 0 0 16px rgba(77, 237, 244, 0.25);
+  background-color: #EFE4CA;
+  border-top: 3px solid #FFF8EC;
+  border-left: 3px solid #FFF8EC;
+  border-right: 4px solid var(--c-ink-brown);
+  border-bottom: 4px solid var(--c-ink-brown);
+  box-shadow: 3px 3px 0px rgba(45, 26, 17, 0.12);
 }
 
 .mc-panel-inset {
-  background-color: #110d1c;
-  border-top: 4px solid #08060e;
-  border-left: 4px solid #08060e;
-  border-right: 4px solid #2e2447;
-  border-bottom: 4px solid #2e2447;
+  background-color: #E9DCBD;
+  border-top: 3px solid var(--c-ink-brown);
+  border-left: 3px solid var(--c-ink-brown);
+  border-right: 3px solid #FFFFFF;
+  border-bottom: 3px solid #FFFFFF;
 }
 
 /* 3D Voxel Interactive Buttons */
 .mc-btn {
-  font-family: var(--mc-font-pixel);
-  font-size: 11px;
-  line-height: 1.4;
-  padding: 10px 16px;
-  background-color: #727272;
-  color: #ffffff;
-  text-shadow: 2px 2px 0 #2b2b2b;
+  font-family: var(--mc-font-heading);
+  font-size: 17px;
+  line-height: 1.2;
+  padding: 8px 16px;
+  background-color: #EFE4CA;
+  color: var(--c-ink-brown);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   user-select: none;
-  transition: transform 0.05s ease;
+  transition: transform 0.05s ease, filter 0.1s ease;
   position: relative;
   text-decoration: none;
+  font-weight: bold;
 
   /* 3D Outset Block Border */
-  border-top: 4px solid #adadad;
-  border-left: 4px solid #adadad;
-  border-right: 4px solid #373737;
-  border-bottom: 4px solid #373737;
-  box-shadow: 0 4px 0 #1a1a1a;
+  border-top: 3px solid #FFFFFF;
+  border-left: 3px solid #FFFFFF;
+  border-right: 3px solid var(--c-ink-brown);
+  border-bottom: 3px solid var(--c-ink-brown);
+  box-shadow: 3px 3px 0px rgba(45, 26, 17, 0.25);
 }
 
 .mc-btn:hover {
-  background-color: #838383;
-  filter: brightness(1.08);
+  background-color: #F8F0DC;
+  filter: brightness(1.03);
 }
 
 /* Press Sink-in Effect */
 .mc-btn:active, .mc-btn.pressed {
-  border-top: 4px solid #262626;
-  border-left: 4px solid #262626;
-  border-right: 4px solid #adadad;
-  border-bottom: 4px solid #adadad;
+  border-top: 3px solid var(--c-ink-brown);
+  border-left: 3px solid var(--c-ink-brown);
+  border-right: 3px solid #FFFFFF;
+  border-bottom: 3px solid #FFFFFF;
   box-shadow: 0 0 0 transparent;
-  transform: translateY(4px);
+  transform: translateY(3px);
 }
 
-/* Diamond Variant (Primary Call to Action) */
-.mc-btn-diamond {
-  background-color: #279ca3;
-  color: #ffffff;
-  text-shadow: 2px 2px 0 #0d4e53;
-  border-top: 4px solid var(--mc-diamond-light);
-  border-left: 4px solid var(--mc-diamond-light);
-  border-right: 4px solid var(--mc-diamond-shadow);
-  border-bottom: 4px solid var(--mc-diamond-shadow);
-  box-shadow: 0 4px 0 #082d31, 0 0 12px rgba(77, 237, 244, 0.4);
+/* 1835s Brand Gradient Button (Nút Chính: Đào Khối, Tạo Thế Giới, Chế Tác) */
+.mc-btn-1835, .mc-btn-diamond, .mc-btn-primary {
+  background: var(--c-1835-gradient);
+  color: #FFFFFF !important;
+  text-shadow: 1px 1px 0px rgba(45, 26, 17, 0.8);
+  border-top: 3px solid #FFBE94;
+  border-left: 3px solid #FFBE94;
+  border-right: 4px solid var(--c-ink-brown);
+  border-bottom: 4px solid var(--c-ink-brown);
+  box-shadow: 3px 3px 0px rgba(45, 26, 17, 0.35);
 }
 
-.mc-btn-diamond:hover {
-  background-color: #2fb4bd;
+.mc-btn-1835:hover, .mc-btn-diamond:hover, .mc-btn-primary:hover {
+  background: var(--c-1835-gradient-hover);
 }
 
-.mc-btn-diamond:active {
-  border-top: 4px solid #0d4e53;
-  border-left: 4px solid #0d4e53;
-  border-right: 4px solid var(--mc-diamond-light);
-  border-bottom: 4px solid var(--mc-diamond-light);
+.mc-btn-1835:active, .mc-btn-diamond:active, .mc-btn-primary:active {
+  border-top: 3px solid var(--c-ink-brown);
+  border-left: 3px solid var(--c-ink-brown);
+  border-right: 3px solid #FFBE94;
+  border-bottom: 3px solid #FFBE94;
+  transform: translateY(3px);
 }
 
-/* Emerald Variant (Success / Mining Complete) */
-.mc-btn-emerald {
-  background-color: #1aa64e;
-  color: #ffffff;
-  text-shadow: 2px 2px 0 #0b4e23;
-  border-top: 4px solid var(--mc-emerald-light);
-  border-left: 4px solid var(--mc-emerald-light);
-  border-right: 4px solid var(--mc-emerald-dark);
-  border-bottom: 4px solid var(--mc-emerald-dark);
-  box-shadow: 0 4px 0 #062b14;
-}
-
-.mc-btn-emerald:hover {
-  background-color: #22bf5b;
-}
-
-/* Redstone / Danger Variant */
-.mc-btn-redstone {
-  background-color: #b52210;
-  color: #ffffff;
-  text-shadow: 2px 2px 0 #4f0a00;
-  border-top: 4px solid var(--mc-redstone-light);
-  border-left: 4px solid var(--mc-redstone-light);
-  border-right: 4px solid var(--mc-redstone-dark);
-  border-bottom: 4px solid var(--mc-redstone-dark);
-  box-shadow: 0 4px 0 #310400;
-}
-
-.mc-btn-redstone:hover {
-  background-color: #cc2712;
-}
-
-/* Obsidian Variant (Dark Stealth) */
+/* Ink Brown Button (Obsidian replacement) */
 .mc-btn-obsidian {
-  background-color: #221b36;
-  color: #d1c8ea;
-  text-shadow: 2px 2px 0 #0b0713;
-  border-top: 4px solid #45376c;
-  border-left: 4px solid #45376c;
-  border-right: 4px solid #0c0816;
-  border-bottom: 4px solid #0c0816;
-  box-shadow: 0 4px 0 #050309;
+  background-color: var(--c-ink-brown);
+  color: #FDF7E7;
+  text-shadow: 1px 1px 0px #000;
+  border-top: 3px solid #52372A;
+  border-left: 3px solid #52372A;
+  border-right: 3px solid #110804;
+  border-bottom: 3px solid #110804;
+  box-shadow: 3px 3px 0px rgba(45, 26, 17, 0.3);
 }
 
 .mc-btn-obsidian:hover {
-  background-color: #2f254a;
+  background-color: #3D251A;
 }
 
-/* Gold Variant */
-.mc-btn-gold {
-  background-color: #cca31b;
-  color: #221b06;
-  text-shadow: 1px 1px 0 #fff7a1;
-  border-top: 4px solid var(--mc-gold-light);
-  border-left: 4px solid var(--mc-gold-light);
-  border-right: 4px solid var(--mc-gold-dark);
-  border-bottom: 4px solid var(--mc-gold-dark);
-  box-shadow: 0 4px 0 #574404;
+/* Emerald Success Button */
+.mc-btn-emerald {
+  background-color: #1aa64e;
+  color: #FFFFFF;
+  text-shadow: 1px 1px 0px #0b4e23;
+  border-top: 3px solid #7cf6a5;
+  border-left: 3px solid #7cf6a5;
+  border-right: 3px solid var(--c-ink-brown);
+  border-bottom: 3px solid var(--c-ink-brown);
+  box-shadow: 3px 3px 0px rgba(45, 26, 17, 0.3);
 }
 
-/* Minecraft Form Inputs */
+/* Redstone Danger Button */
+.mc-btn-redstone {
+  background-color: #ED1B24;
+  color: #FFFFFF;
+  text-shadow: 1px 1px 0px #610509;
+  border-top: 3px solid #ff7b82;
+  border-left: 3px solid #ff7b82;
+  border-right: 3px solid var(--c-ink-brown);
+  border-bottom: 3px solid var(--c-ink-brown);
+  box-shadow: 3px 3px 0px rgba(45, 26, 17, 0.3);
+}
+
+/* Minecraft & 1835s Form Inputs (Nền Ngà, Chữ Nâu Mực) */
 .mc-input, .mc-select, .mc-textarea {
-  font-family: var(--mc-font-pixel);
-  font-size: 11px;
-  background-color: #0d0a17;
-  color: #ffffff;
+  font-family: var(--mc-font-body);
+  font-size: 13px;
+  background-color: #FFFDF7;
+  color: var(--c-ink-brown);
   padding: 10px 12px;
-  border-top: 3px solid #050409;
-  border-left: 3px solid #050409;
-  border-right: 3px solid #332850;
-  border-bottom: 3px solid #332850;
+  border-top: 3px solid var(--c-ink-brown);
+  border-left: 3px solid var(--c-ink-brown);
+  border-right: 2px solid #E5D6B6;
+  border-bottom: 2px solid #E5D6B6;
   outline: none;
   width: 100%;
 }
 
 .mc-input:focus, .mc-select:focus, .mc-textarea:focus {
-  border-color: var(--mc-diamond-main);
-  box-shadow: 0 0 8px rgba(77, 237, 244, 0.4);
+  border-color: var(--c-1835-orange);
+  box-shadow: 0 0 0 2px var(--c-1835-red);
 }
 
-/* Authentic Minecraft XP Bar */
+/* Team XP Bar with 1835s Gradient */
 .mc-xp-container {
   position: relative;
   width: 100%;
@@ -271,48 +242,82 @@ body {
 
 .mc-xp-bar-bg {
   width: 100%;
-  height: 14px;
-  background-color: #0b1a0d;
-  border: 2px solid #040905;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.9);
+  height: 18px;
+  background-color: #E2D3B3;
+  border: 3px solid var(--c-ink-brown);
+  box-shadow: inset 0 2px 4px rgba(45, 26, 17, 0.4);
   position: relative;
   overflow: hidden;
 }
 
 .mc-xp-bar-fill {
   height: 100%;
+  background: var(--c-1835-gradient);
+  box-shadow: 0 0 8px rgba(243, 112, 34, 0.6);
+  transition: width 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  position: relative;
+}
+
+/* Segment tick lines overlay on XP Bar */
+.mc-xp-bar-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
   background: repeating-linear-gradient(
     90deg,
-    #55ff55 0px,
-    #55ff55 18px,
-    #2aaa2a 18px,
-    #2aaa2a 20px
+    transparent 0px,
+    transparent 22px,
+    rgba(45, 26, 17, 0.35) 22px,
+    rgba(45, 26, 17, 0.35) 24px
   );
-  box-shadow: 0 0 10px #55ff55;
-  transition: width 0.4s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .mc-xp-level-badge {
-  font-family: var(--mc-font-pixel);
-  font-size: 14px;
+  font-family: var(--mc-font-heading);
+  font-size: 19px;
   font-weight: 700;
-  color: #55ff55;
+  color: #FFFFFF;
   text-shadow: 
-    2px 2px 0 #000000,
-    -1px -1px 0 #000000,
-    1px -1px 0 #000000,
-    -1px 1px 0 #000000,
-    0 0 8px #55ff55;
+    2px 2px 0px var(--c-ink-brown),
+    -1px -1px 0px var(--c-ink-brown),
+    1px -1px 0px var(--c-ink-brown),
+    -1px 1px 0px var(--c-ink-brown);
   letter-spacing: 1px;
 }
 
-/* Minecraft Avatar Frame */
+/* Wooden Sign / Parchment Book Page (Bảng Gỗ / Trang Sách Tiến Độ) */
+.mc-wooden-sign {
+  background-color: #FAF2DC;
+  border: 3px solid var(--c-ink-brown);
+  box-shadow: inset 0 0 0 3px #E2C99D, 3px 3px 0px rgba(45, 26, 17, 0.2);
+  position: relative;
+  padding: 12px;
+}
+
+.mc-wooden-sign::before, .mc-wooden-sign::after {
+  content: '▪';
+  position: absolute;
+  top: 4px;
+  font-size: 10px;
+  color: var(--c-ink-brown);
+  line-height: 1;
+}
+
+.mc-wooden-sign::before {
+  left: 6px;
+}
+
+.mc-wooden-sign::after {
+  right: 6px;
+}
+
+/* Minecraft Avatar Frame (1835s Theme) */
 .mc-avatar-frame {
-  border-top: 3px solid #4a3e6b;
-  border-left: 3px solid #4a3e6b;
-  border-right: 3px solid #100b1a;
-  border-bottom: 3px solid #100b1a;
-  background: #191427;
+  border-top: 2px solid #FFFFFF;
+  border-left: 2px solid #FFFFFF;
+  border-right: 2px solid var(--c-ink-brown);
+  border-bottom: 2px solid var(--c-ink-brown);
+  background: #EFE4CA;
   padding: 2px;
 }
 
@@ -327,7 +332,7 @@ body {
 
 .mc-mining-active {
   animation: blockMiningWobble 0.15s infinite;
-  filter: brightness(1.2);
+  filter: brightness(1.1);
 }
 
 /* Block Broken Particles Explosion */
@@ -351,25 +356,31 @@ body {
   0%, 100% {
     opacity: 1;
     transform: scale(1);
-    text-shadow: 0 0 20px #fcdc3b, 4px 4px 0 #000;
+    text-shadow: 0 0 15px #F37022, 3px 3px 0 #2D1A11;
   }
   50% {
-    opacity: 0.85;
-    transform: scale(1.06);
-    text-shadow: 0 0 35px #4dedf4, 4px 4px 0 #000;
+    opacity: 0.9;
+    transform: scale(1.05);
+    text-shadow: 0 0 25px #ED1B24, 3px 3px 0 #2D1A11;
   }
 }
 
 .mc-level-up-banner {
-  font-family: var(--mc-font-pixel);
+  font-family: var(--mc-font-heading);
   animation: mcBlinkPulse 0.9s infinite ease-in-out;
 }
 
-/* 8-bit text stroke utility */
+/* Text stroke utilities */
 .mc-text-shadow {
-  text-shadow: 2px 2px 0 #000000;
+  text-shadow: 2px 2px 0px rgba(45, 26, 17, 0.2);
 }
 
-.mc-text-glow {
-  text-shadow: 0 0 8px currentColor, 2px 2px 0 #000000;
+.mc-text-ink {
+  color: var(--c-ink-brown);
+}
+
+.mc-gradient-text {
+  background: var(--c-1835-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }

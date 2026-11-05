@@ -50,55 +50,60 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-      <div className="mc-panel w-full max-w-xl p-6 text-white max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
+      <div className="mc-panel w-full max-w-xl p-6 bg-[#FDF7E7] text-[#2D1A11] max-h-[90vh] overflow-y-auto border-4 border-[#2D1A11]">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 mb-4 border-b-2 border-[#4a3e6b]">
+        <div className="flex items-center justify-between pb-3 mb-4 border-b-2 border-[#2D1A11]">
           <div className="flex items-center gap-2">
-            <span className="text-xl">⛏️</span>
-            <h2 className="text-xs md:text-sm font-bold text-[#4dedf4]">
-              CHẾ TÁC KHỐI TÀI NGUYÊN (NHIỆM VỤ) MỚI
-            </h2>
+            <span className="text-2xl">⛏️</span>
+            <div>
+              <h2 className="text-lg font-bold text-[#2D1A11]">
+                CHẾ TÁC KHỐI QUẶNG (GIAO TASK TÙY Ý)
+              </h2>
+              <p className="text-xs text-[#52372A]">
+                Boss hoặc Leader tự do nhập tên, mô tả công việc và chọn loại quặng ưu tiên
+              </p>
+            </div>
           </div>
-          <button onClick={onClose} className="mc-btn mc-btn-obsidian px-2.5 py-1 text-xs">
+          <button onClick={onClose} className="mc-btn mc-btn-obsidian px-2.5 py-1 text-sm">
             ✕
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Title */}
+          {/* 1. Tự do nhập Tên Khối Nhiệm Vụ */}
           <div>
-            <label className="block text-[10px] text-slate-300 font-bold mb-1">
-              TIÊU ĐỀ CÔNG VIỆC *
+            <label className="block text-xs font-bold text-[#2D1A11] mb-1">
+              TÊN CÔNG VIỆC / KHỐI NHIỆM VỤ * (TỰ DO NHẬP BẤT KỲ)
             </label>
             <input
               type="text"
               required
-              placeholder="Ví dụ: Triển khai Service Worker & lưu trữ offline"
+              placeholder="Nhập tên nhiệm vụ: ví dụ: Thiết kế banner 1835s, Viết tài liệu API..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="mc-input"
+              className="mc-input text-sm font-medium"
             />
           </div>
 
-          {/* Description */}
+          {/* 2. Tự do nhập Mô tả công việc */}
           <div>
-            <label className="block text-[10px] text-slate-300 font-bold mb-1">
+            <label className="block text-xs font-bold text-[#2D1A11] mb-1">
               MÔ TẢ CHI TIẾT & TIÊU CHÍ HOÀN THÀNH
             </label>
             <textarea
               rows={2}
-              placeholder="Chi tiết công việc cần khai thác và bàn giao..."
+              placeholder="Ghi rõ yêu cầu, các bước cần làm hoặc link tài liệu liên quan..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="mc-textarea"
+              className="mc-textarea text-xs"
             />
           </div>
 
-          {/* Assignee Selection (4 Hardcoded Profiles) */}
+          {/* 3. Phân công cho Thành viên */}
           <div>
-            <label className="block text-[10px] text-slate-300 font-bold mb-1.5">
-              PHÂN CÔNG CHO THỢ MỎ
+            <label className="block text-xs font-bold text-[#2D1A11] mb-1.5">
+              PHÂN CÔNG CHO THỢ MỎ (1 TRONG 4 THÀNH VIÊN)
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {users.map((u) => {
@@ -109,25 +114,27 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                     onClick={() => setAssigneeId(u.id)}
                     className={`p-2 cursor-pointer border-2 transition-all flex flex-col items-center text-center ${
                       isSelected
-                        ? 'border-[#4dedf4] bg-[#1a2d3c]'
-                        : 'border-[#352756] bg-[#140e21] hover:border-[#6c5598]'
+                        ? 'border-[#2D1A11] bg-[#FAF2DC] shadow-[2px_2px_0px_#2D1A11]'
+                        : 'border-[#E5D6B6] bg-[#FFFDF7] hover:border-[#2D1A11]'
                     }`}
                   >
                     <PixelAvatar userId={u.id} size={36} showBorder={false} />
-                    <span className="text-[9px] font-bold text-white mt-1.5 truncate w-full">
+                    <span className="text-xs font-bold text-[#2D1A11] mt-1.5 truncate w-full">
                       {u.name}
                     </span>
-                    <span className="text-[7px] text-[#55ff55]">Cấp {u.level}</span>
+                    <span className="text-[10px] text-[#52372A]">
+                      {u.isBoss ? '👑 Boss' : `Cấp ${u.level}`}
+                    </span>
                   </div>
                 );
               })}
             </div>
           </div>
 
-          {/* Block Type / Ore Rarity */}
+          {/* 4. Chọn loại Quặng để đánh giá mức độ ưu tiên & XP Bounty */}
           <div>
-            <label className="block text-[10px] text-slate-300 font-bold mb-1.5">
-              LOẠI KHỐI TÀI NGUYÊN & PHẦN THƯỞNG XP
+            <label className="block text-xs font-bold text-[#2D1A11] mb-1.5">
+              CHỌN LOẠI QUẶNG ĐÁNH GIÁ MỨC ĐỘ ƯU TIÊN & XP BOUNTY
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {(Object.keys(BLOCK_CONFIGS) as BlockRarity[]).map((rKey) => {
@@ -140,18 +147,18 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                     onClick={() => setBlockType(rKey)}
                     className={`p-2 cursor-pointer border-2 transition-all flex items-center gap-2 ${
                       isSelected
-                        ? 'border-[#4dedf4] bg-[#1a2d3c]'
-                        : 'border-[#352756] bg-[#140e21] hover:border-[#6c5598]'
+                        ? 'border-[#2D1A11] bg-[#FAF2DC] shadow-[2px_2px_0px_#2D1A11]'
+                        : 'border-[#E5D6B6] bg-[#FFFDF7] hover:border-[#2D1A11]'
                     }`}
                   >
-                    <div className="w-8 h-8 flex-shrink-0 bg-[#353535] border border-black/50 flex items-center justify-center">
+                    <div className="w-8 h-8 flex-shrink-0 bg-[#5E5E5E] border border-black/50 flex items-center justify-center">
                       <PixelOreTexture blockType={rKey} size={28} />
                     </div>
                     <div className="min-w-0">
-                      <div className="text-[8px] font-bold text-white truncate">
+                      <div className="text-xs font-bold text-[#2D1A11] truncate">
                         {bCfg.name}
                       </div>
-                      <div className="text-[8px] text-[#55ff55] font-bold">
+                      <div className="text-[11px] text-[#F37022] font-bold">
                         +{bCfg.xp} XP
                       </div>
                     </div>
@@ -161,37 +168,37 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             </div>
           </div>
 
-          {/* Priority */}
+          {/* 5. Mức độ ưu tiên */}
           <div>
-            <label className="block text-[10px] text-slate-300 font-bold mb-1">
-              MỨC ĐỘ ƯU TIÊN
+            <label className="block text-xs font-bold text-[#2D1A11] mb-1">
+              MỨC ĐỘ KHẨN CẤP
             </label>
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value as 'low' | 'normal' | 'high' | 'legendary')}
-              className="mc-select"
+              className="mc-select text-xs font-medium"
             >
-              <option value="low">Thấp (Làm lúc rảnh)</option>
-              <option value="normal">Bình thường (Tiêu chuẩn)</option>
-              <option value="high">Cao (Trọng tâm của Sprint)</option>
+              <option value="low">Thấp (Làm lúc rảnh rỗi)</option>
+              <option value="normal">Tiêu chuẩn (Sprint bình thường)</option>
+              <option value="high">Cao (Mục tiêu quan trọng)</option>
               <option value="legendary">Huyền thoại (Cốt lõi bản phát hành)</option>
             </select>
           </div>
 
           {/* Form Actions */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t-2 border-[#322550]">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t-2 border-[#2D1A11]/20">
             <button
               type="button"
               onClick={onClose}
-              className="mc-btn mc-btn-obsidian text-[10px] px-4 py-2"
+              className="mc-btn mc-btn-obsidian text-sm px-4 py-2"
             >
               HỦY BỎ
             </button>
             <button
               type="submit"
-              className="mc-btn mc-btn-diamond text-[10px] px-5 py-2"
+              className="mc-btn mc-btn-1835 text-sm px-5 py-2 font-bold tracking-wide"
             >
-              TẠO KHỐI NHIỆM VỤ
+              CHẾ TÁC KHỐI QUẶNG
             </button>
           </div>
         </form>
