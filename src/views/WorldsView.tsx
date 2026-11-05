@@ -57,14 +57,14 @@ export const WorldsView: React.FC<WorldsViewProps> = ({
             <p className="text-xs text-[#52372A] mt-1 max-w-xl leading-relaxed">
               Chào mừng trở lại, <strong className="text-[#2D1A11]">{currentUser.name}</strong>! 
               {currentUser.isBoss ? (
-                <span className="text-[#F37022] font-semibold"> Bạn đang giữ quyền Boss điều hành (Có thể tạo thế giới & giao task).</span>
+                <span className="text-[#F37022] font-semibold"> Bạn vừa là Boss điều hành dự án, vừa trực tiếp nhận và đào các khối nhiệm vụ cùng 3 đồng đội (Alex, Devon, Luna)!</span>
               ) : (
-                <span className="text-[#0072CE] font-semibold"> Hãy chọn Thế giới để đào quặng và cập nhật tiến độ lên bảng gỗ!</span>
+                <span className="text-[#0072CE] font-semibold"> Cả 4 thành viên (kể cả Boss Steve) đều cùng làm nhiệm vụ, đào quặng và cày XP!</span>
               )}
             </p>
           </div>
 
-          {/* Create New World Button (Boss only or prompt) */}
+          {/* Create New World Button (Boss only) */}
           <div className="flex-shrink-0">
             <button
               onClick={handleCreateWorldClick}
@@ -100,9 +100,9 @@ export const WorldsView: React.FC<WorldsViewProps> = ({
           </div>
 
           <div className="p-2.5 bg-[#FFFDF7] border-2 border-[#2D1A11]">
-            <span className="text-[#52372A] block text-[11px] font-bold">THÀNH VIÊN TRỰC CHIẾN</span>
+            <span className="text-[#52372A] block text-[11px] font-bold">THÀNH VIÊN CÙNG LÀM</span>
             <span className="text-base font-bold text-[#2D1A11] mt-0.5 block">
-              4 Thợ Mỏ
+              4 Người (Có Cả Boss)
             </span>
           </div>
         </div>

@@ -2,20 +2,20 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { UserProfile, UserId, World, Task, BlockRarity } from '../types';
 import { soundEngine } from '../utils/audio';
 
-// 4 Hardcoded Profiles với Logic Phân Quyền Boss / Thành Viên
+// 4 Hardcoded Profiles với Logic CẢ 4 NGƯỜI (KỂ CẢ BOSS) ĐỀU LÀM NHIỆM VỤ
 export const HARDCODED_USERS: UserProfile[] = [
   {
     id: 'steve',
     name: 'Steve (Boss)',
-    role: 'Boss / Trưởng Nhóm',
-    title: 'Kiến Trúc Sư Trưởng & Boss Điều Hành',
-    level: 5,
+    role: 'Boss kiêm Thợ Mỏ Trưởng',
+    title: 'Kiến Trúc Sư Trưởng & Trực Tiếp Thực Chiến',
+    level: 1,
     avatarKey: 'steve',
     favoriteBiome: 'Đồng Cỏ Overworld',
     tasksMined: 0,
     totalXp: 0,
     primaryColor: '#F37022',
-    isBoss: true, // Quyền Boss cao nhất
+    isBoss: true, // Quyền Boss quản trị nhưng vẫn trực tiếp nhận việc và đào quặng
   },
   {
     id: 'alex',
@@ -63,7 +63,7 @@ const INITIAL_WORLDS: World[] = [
   {
     id: 'world-genesis-1835',
     name: 'Vùng Đất Khởi Đầu (1835s Genesis)',
-    description: 'Thế giới mặc định đầu tiên của đội ngũ 1835s. Toàn bộ nhiệm vụ bắt đầu từ Level 0 (0% XP).',
+    description: 'Thế giới mặc định đầu tiên của đội ngũ 1835s. Cả 4 thành viên (kể cả Boss Steve) đều có nhiệm vụ riêng, bắt đầu từ Level 0 (0% XP).',
     biome: 'overworld',
     difficulty: 'Normal',
     createdAt: Date.now() - 3600000,
@@ -72,13 +72,26 @@ const INITIAL_WORLDS: World[] = [
   },
 ];
 
-// Các Khối Quặng Nhiệm Vụ Khởi Điểm (Tất cả trạng thái todo - Level 0 / 0% XP)
+// Khối Quặng Nhiệm Vụ Khởi Điểm: PHÂN ĐỀU CHO CẢ 4 THÀNH VIÊN (STEVE BOSS + ALEX + DEVON + LUNA)
 const INITIAL_TASKS: Task[] = [
+  {
+    id: 'task-gen-00',
+    worldId: 'world-genesis-1835',
+    title: 'Quy hoạch kiến trúc hệ thống & Giám sát tiến độ 1835s',
+    description: 'Boss Steve trực tiếp kiểm tra kiến trúc Voxel, đồng bộ quy trình làm việc và phê duyệt bản phát hành cùng cả team.',
+    blockType: 'netherite',
+    xpValue: 320,
+    assigneeId: 'steve', // Boss Steve cũng trực tiếp làm nhiệm vụ này!
+    status: 'todo',
+    createdAt: Date.now() - 3700000,
+    priority: 'legendary',
+    progressNote: '',
+  },
   {
     id: 'task-gen-01',
     worldId: 'world-genesis-1835',
     title: 'Thiết kế nhận diện thương hiệu 1835s (Nền ngà & Nâu mực)',
-    description: 'Áp dụng bảng màu nền ngà (#FDF7E7), chữ nâu mực (#2D1A11) và dải màu gradient 1835s cho giao diện.',
+    description: 'Alex áp dụng bảng màu nền ngà (#FDF7E7), chữ nâu mực (#2D1A11) và dải màu gradient 1835s cho toàn bộ giao diện.',
     blockType: 'gold',
     xpValue: 140,
     assigneeId: 'alex',
@@ -91,7 +104,7 @@ const INITIAL_TASKS: Task[] = [
     id: 'task-gen-02',
     worldId: 'world-genesis-1835',
     title: 'Cài đặt font VT323 tiêu đề & Montserrat cho nội dung',
-    description: 'Khắc phục triệt để lỗi phông tiếng Việt, đảm bảo hỗ trợ đầy đủ dấu và độ sắc nét trên mọi thiết bị.',
+    description: 'Devon cấu hình font chữ chuẩn retro, khắc phục triệt để lỗi phông tiếng Việt có dấu sắc nét trên mọi màn hình.',
     blockType: 'diamond',
     xpValue: 220,
     assigneeId: 'devon',
@@ -104,7 +117,7 @@ const INITIAL_TASKS: Task[] = [
     id: 'task-gen-03',
     worldId: 'world-genesis-1835',
     title: 'Tích hợp bảng gỗ ghi chú tiến độ & đường ống APK Android',
-    description: 'Cho phép thành viên cập nhật tiến độ trực tiếp lên bề mặt khối quặng và xuất file APK qua Capacitor.',
+    description: 'Luna kiểm thử tính năng ghi chú tiến độ bảng gỗ, xuất file cài đặt Android APK qua Capacitor và thử nghiệm PWA.',
     blockType: 'emerald',
     xpValue: 260,
     assigneeId: 'luna',
@@ -159,11 +172,11 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | undefined>(undefined);
 
-const STORAGE_KEY_USERS = 'minetask_1835_users_v2';
-const STORAGE_KEY_CURRENT_USER = 'minetask_1835_current_user_v2';
-const STORAGE_KEY_WORLDS = 'minetask_1835_worlds_v2';
-const STORAGE_KEY_TASKS = 'minetask_1835_tasks_v2';
-const STORAGE_KEY_SOUND = 'minetask_1835_sound_v2';
+const STORAGE_KEY_USERS = 'minetask_1835_users_v3';
+const STORAGE_KEY_CURRENT_USER = 'minetask_1835_current_user_v3';
+const STORAGE_KEY_WORLDS = 'minetask_1835_worlds_v3';
+const STORAGE_KEY_TASKS = 'minetask_1835_tasks_v3';
+const STORAGE_KEY_SOUND = 'minetask_1835_sound_v3';
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [users, setUsers] = useState<UserProfile[]>(() => {

@@ -31,7 +31,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                 CHỌN HỒ SƠ THỢ MỎ CỦA BẠN (1835s)
               </h2>
               <p className="text-xs text-[#52372A] mt-0.5">
-                4 Thành viên đội ngũ nội bộ • Phân quyền Boss & Thợ mỏ
+                Cả 4 thành viên (kể cả Boss Steve) đều trực tiếp nhận việc & đào quặng
               </p>
             </div>
           </div>
@@ -121,7 +121,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
         {/* Footer Note */}
         <div className="mt-6 p-3 bg-[#FAF2DC] border-2 border-[#2D1A11] flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-[#52372A]">
-          <span>💡 Steve có toàn quyền Boss (Tạo/Xóa Thế Giới, giao việc). Các thành viên đào quặng & ghi chú tiến độ.</span>
+          <span>💡 Cả 4 thành viên (kể cả Boss Steve) đều trực tiếp nhận việc, đào quặng, ghi chú tiến độ bảng gỗ và tích lũy XP cho toàn đội!</span>
           <button onClick={onClose} className="mc-btn mc-btn-obsidian text-xs px-3 py-1">
             TIẾP TỤC
           </button>

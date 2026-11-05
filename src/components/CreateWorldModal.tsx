@@ -15,7 +15,7 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
   onClose,
   onWorldCreated,
 }) => {
-  const { createWorld, createTask, currentUser, isBoss } = useApp();
+  const { createWorld, createTask, isBoss } = useApp();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -43,32 +43,46 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
       targetDeadline: targetDeadline || undefined,
     });
 
-    // Mọi Thế giới mới tạo khởi điểm ở Level 0 (0% XP) với các task todo chưa đào
+    // Mọi Thế giới mới tạo khởi điểm ở Level 0 (0% XP) với 4 task chưa đào chia đều cho cả 4 thành viên (kể cả Boss Steve)
     if (createStarterTasks) {
+      // 1. Task cho Boss Steve
       createTask({
         worldId: newWorld.id,
-        title: 'Khảo sát yêu cầu & Lập kế hoạch sprint',
-        description: 'Phân tích phạm vi dự án và giao việc cho 4 thợ mỏ.',
-        blockType: 'iron',
-        xpValue: 80,
-        assigneeId: currentUser.id,
-        priority: 'normal',
+        title: 'Quy hoạch kiến trúc & Phê duyệt giải pháp',
+        description: 'Boss Steve trực tiếp kiểm tra cấu trúc, thiết lập mục tiêu sprint và hỗ trợ các thợ mỏ.',
+        blockType: 'netherite',
+        xpValue: 320,
+        assigneeId: 'steve',
+        priority: 'legendary',
       });
 
+      // 2. Task cho Alex
       createTask({
         worldId: newWorld.id,
-        title: 'Xây dựng tính năng trọng tâm của thế giới',
-        description: 'Triển khai các khối kiến trúc và logic nghiệp vụ chính.',
+        title: 'Chế tác giao diện Voxel & Trải nghiệm người dùng',
+        description: 'Alex thiết kế bố cục các khối quặng, tối ưu font chữ tiếng Việt và màu sắc 1835s.',
         blockType: 'diamond',
         xpValue: 220,
-        assigneeId: currentUser.id === 'alex' ? 'steve' : 'alex',
+        assigneeId: 'alex',
         priority: 'high',
       });
 
+      // 3. Task cho Devon
       createTask({
         worldId: newWorld.id,
-        title: 'Kiểm thử chất lượng & Bàn giao sản phẩm',
-        description: 'Khai thác khối kiểm thử cuối cùng và xuất bản cập nhật.',
+        title: 'Xây dựng logic nghiệp vụ & Dữ liệu đồng bộ',
+        description: 'Devon hoàn thiện cơ chế lưu trữ cục bộ, tính toán tỷ lệ thanh XP và âm thanh 8-bit.',
+        blockType: 'redstone',
+        xpValue: 160,
+        assigneeId: 'devon',
+        priority: 'high',
+      });
+
+      // 4. Task cho Luna
+      createTask({
+        worldId: newWorld.id,
+        title: 'Kiểm thử toàn diện & Đóng gói bản phát hành',
+        description: 'Luna rà soát lỗi trên thiết bị di động, kiểm tra bảng gỗ tiến độ và xuất bản APK.',
         blockType: 'emerald',
         xpValue: 260,
         assigneeId: 'luna',
@@ -101,7 +115,7 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
                 </span>
               </h2>
               <p className="text-xs text-[#52372A]">
-                Thế giới mới tạo sẽ khởi điểm từ Level 0 (0% XP)
+                Thế giới mới tạo sẽ khởi điểm từ Level 0 (0% XP) cho cả 4 thành viên
               </p>
             </div>
           </div>
@@ -215,7 +229,7 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
               className="w-4 h-4 cursor-pointer accent-[#F37022]"
             />
             <label htmlFor="starter-tasks" className="text-xs text-[#2D1A11] font-medium cursor-pointer">
-              Tự động sinh sẵn 3 khối quặng khởi đầu ở trạng thái chưa đào (Khởi điểm Level 0)
+              Tự động sinh sẵn 4 khối quặng khởi đầu chia đều cho cả 4 thành viên (Steve, Alex, Devon, Luna)
             </label>
           </div>
 
