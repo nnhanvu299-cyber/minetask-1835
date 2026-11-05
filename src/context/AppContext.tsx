@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { UserProfile, UserId, World, Task, BlockRarity } from '../types';
+import { UserProfile, UserId, World, Task, BlockRarity, MiningLogEntry } from '../types';
 import { soundEngine } from '../utils/audio';
 
 // 4 Hardcoded Profiles với Logic CẢ 4 NGƯỜI (KỂ CẢ BOSS) ĐỀU LÀM NHIỆM VỤ
@@ -15,7 +15,7 @@ export const HARDCODED_USERS: UserProfile[] = [
     tasksMined: 0,
     totalXp: 0,
     primaryColor: '#F37022',
-    isBoss: true, // Quyền Boss quản trị nhưng vẫn trực tiếp nhận việc và đào quặng
+    isBoss: true,
   },
   {
     id: 'alex',
@@ -63,7 +63,7 @@ const INITIAL_WORLDS: World[] = [
   {
     id: 'world-genesis-1835',
     name: 'Vùng Đất Khởi Đầu (1835s Genesis)',
-    description: 'Thế giới mặc định đầu tiên của đội ngũ 1835s. Cả 4 thành viên (kể cả Boss Steve) đều có nhiệm vụ riêng, bắt đầu từ Level 0 (0% XP).',
+    description: 'Thế giới mặc định đầu tiên của đội ngũ 1835s. Mỗi nhiệm vụ cần đúng 3 lần cập nhật đào để đào xong, khởi điểm Level 0 (0% XP).',
     biome: 'overworld',
     difficulty: 'Normal',
     createdAt: Date.now() - 3600000,
@@ -72,7 +72,7 @@ const INITIAL_WORLDS: World[] = [
   },
 ];
 
-// Khối Quặng Nhiệm Vụ Khởi Điểm: PHÂN ĐỀU CHO CẢ 4 THÀNH VIÊN (STEVE BOSS + ALEX + DEVON + LUNA)
+// Khối Quặng Nhiệm Vụ Khởi Điểm: 4 thành viên (mỗi khối 0/3 lần đào)
 const INITIAL_TASKS: Task[] = [
   {
     id: 'task-gen-00',
@@ -81,10 +81,12 @@ const INITIAL_TASKS: Task[] = [
     description: 'Boss Steve trực tiếp kiểm tra kiến trúc Voxel, đồng bộ quy trình làm việc và phê duyệt bản phát hành cùng cả team.',
     blockType: 'netherite',
     xpValue: 320,
-    assigneeId: 'steve', // Boss Steve cũng trực tiếp làm nhiệm vụ này!
+    assigneeId: 'steve',
     status: 'todo',
     createdAt: Date.now() - 3700000,
     priority: 'legendary',
+    miningUpdatesCount: 0,
+    miningLogs: [],
     progressNote: '',
   },
   {
@@ -98,6 +100,8 @@ const INITIAL_TASKS: Task[] = [
     status: 'todo',
     createdAt: Date.now() - 3600000,
     priority: 'high',
+    miningUpdatesCount: 0,
+    miningLogs: [],
     progressNote: '',
   },
   {
@@ -111,6 +115,8 @@ const INITIAL_TASKS: Task[] = [
     status: 'todo',
     createdAt: Date.now() - 3500000,
     priority: 'high',
+    miningUpdatesCount: 0,
+    miningLogs: [],
     progressNote: '',
   },
   {
@@ -124,6 +130,8 @@ const INITIAL_TASKS: Task[] = [
     status: 'todo',
     createdAt: Date.now() - 3400000,
     priority: 'legendary',
+    miningUpdatesCount: 0,
+    miningLogs: [],
     progressNote: '',
   },
 ];
@@ -146,14 +154,12 @@ interface AppContextValue {
   createWorld: (data: Omit<World, 'id' | 'createdAt' | 'createdBy'>) => World;
   updateWorld: (id: string, updates: Partial<World>) => void;
   deleteWorld: (id: string) => void;
-  createTask: (data: Omit<Task, 'id' | 'createdAt' | 'status'>) => Task;
+  createTask: (data: Omit<Task, 'id' | 'createdAt' | 'status' | 'miningUpdatesCount' | 'miningLogs'>) => Task;
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
 
-  // Tiến độ & Đào khối
-  startMiningTask: (id: string, initialNote?: string) => void;
-  updateTaskProgressNote: (id: string, note: string) => void;
-  completeMiningTask: (id: string) => void;
+  // Cơ chế 3 lần đào: 1/3, 2/3, 3/3 (Đào xong)
+  submitMiningUpdate: (id: string, note: string) => void;
   undoTask: (id: string) => void;
   toggleSound: () => void;
   resetToDemoData: () => void;
@@ -172,11 +178,11 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | undefined>(undefined);
 
-const STORAGE_KEY_USERS = 'minetask_1835_users_v3';
-const STORAGE_KEY_CURRENT_USER = 'minetask_1835_current_user_v3';
-const STORAGE_KEY_WORLDS = 'minetask_1835_worlds_v3';
-const STORAGE_KEY_TASKS = 'minetask_1835_tasks_v3';
-const STORAGE_KEY_SOUND = 'minetask_1835_sound_v3';
+const STORAGE_KEY_USERS = 'minetask_1835_users_v4';
+const STORAGE_KEY_CURRENT_USER = 'minetask_1835_current_user_v4';
+const STORAGE_KEY_WORLDS = 'minetask_1835_worlds_v4';
+const STORAGE_KEY_TASKS = 'minetask_1835_tasks_v4';
+const STORAGE_KEY_SOUND = 'minetask_1835_sound_v4';
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [users, setUsers] = useState<UserProfile[]>(() => {
@@ -286,12 +292,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     soundEngine.playBreak();
   };
 
-  const createTask = (data: Omit<Task, 'id' | 'createdAt' | 'status'>): Task => {
+  const createTask = (data: Omit<Task, 'id' | 'createdAt' | 'status' | 'miningUpdatesCount' | 'miningLogs'>): Task => {
     const newTask: Task = {
       ...data,
       id: `task-${Date.now()}`,
       status: 'todo',
       createdAt: Date.now(),
+      miningUpdatesCount: 0,
+      miningLogs: [],
       progressNote: '',
     };
     setTasks((prev) => [...prev, newTask]);
@@ -308,94 +316,85 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     soundEngine.playHit();
   };
 
-  // 1. Chuyển sang trạng thái đang đào / đang nứt & mở bảng ghi chú tiến độ
-  const startMiningTask = (id: string, initialNote?: string) => {
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? {
-              ...t,
-              status: 'in_progress',
-              progressNote: initialNote !== undefined ? initialNote : t.progressNote,
-              progressUpdatedAt: Date.now(),
-              progressUpdatedBy: currentUser.id,
-            }
-          : t
-      )
-    );
-    soundEngine.playHit();
-  };
-
-  // 2. Cập nhật ghi chú tiến độ trang sách / bảng gỗ
-  const updateTaskProgressNote = (id: string, note: string) => {
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? {
-              ...t,
-              progressNote: note,
-              progressUpdatedAt: Date.now(),
-              progressUpdatedBy: currentUser.id,
-            }
-          : t
-      )
-    );
-    soundEngine.playClick();
-  };
-
-  // 3. Hoàn thành đào khối (chuyển sang 'done', cộng XP)
-  const completeMiningTask = (id: string) => {
+  // CƠ CHẾ 3 LẦN ĐÀO:
+  // Lần 1: 1/3 (In progress, nứt nhẹ)
+  // Lần 2: 2/3 (In progress, nứt mạnh)
+  // Lần 3: 3/3 (Hoàn tất, nổ vỡ khối, cộng XP Đội!)
+  const submitMiningUpdate = (id: string, note: string) => {
     const task = tasks.find((t) => t.id === id);
     if (!task || task.status === 'done') return;
 
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? {
-              ...t,
-              status: 'done',
-              completedAt: Date.now(),
-              completedBy: currentUser.id,
-            }
-          : t
-      )
-    );
+    const currentCount = task.miningUpdatesCount || 0;
+    const nextCount = Math.min(3, currentCount + 1);
 
-    // Cập nhật XP cho thành viên đào
-    setUsers((prev) =>
-      prev.map((u) => {
-        if (u.id === currentUser.id) {
-          const newXp = u.totalXp + task.xpValue;
-          const newLevel = Math.max(u.level, Math.floor(newXp / 250));
-          return {
-            ...u,
-            totalXp: newXp,
-            tasksMined: u.tasksMined + 1,
-            level: newLevel,
-          };
-        }
-        return u;
+    const logEntry: MiningLogEntry = {
+      updateNumber: nextCount,
+      note: note.trim() || `Cập nhật tiến độ đào lần ${nextCount}/3`,
+      timestamp: Date.now(),
+      authorId: currentUser.id,
+      authorName: currentUser.name,
+    };
+
+    const isFinished = nextCount === 3;
+
+    setTasks((prev) =>
+      prev.map((t) => {
+        if (t.id !== id) return t;
+        return {
+          ...t,
+          miningUpdatesCount: nextCount,
+          miningLogs: [...(t.miningLogs || []), logEntry],
+          progressNote: logEntry.note,
+          progressUpdatedAt: Date.now(),
+          progressUpdatedBy: currentUser.id,
+          status: isFinished ? 'done' : 'in_progress',
+          completedAt: isFinished ? Date.now() : undefined,
+          completedBy: isFinished ? currentUser.id : undefined,
+        };
       })
     );
 
-    setCurrentUser((prev) => ({
-      ...prev,
-      totalXp: prev.totalXp + task.xpValue,
-      tasksMined: prev.tasksMined + 1,
-      level: Math.max(prev.level, Math.floor((prev.totalXp + task.xpValue) / 250)),
-    }));
+    if (isFinished) {
+      // Hoàn tất lần 3: Nổ vỡ khối, cộng XP
+      setUsers((prev) =>
+        prev.map((u) => {
+          if (u.id === currentUser.id) {
+            const newXp = u.totalXp + task.xpValue;
+            const newLevel = Math.max(u.level, Math.floor(newXp / 250));
+            return {
+              ...u,
+              totalXp: newXp,
+              tasksMined: u.tasksMined + 1,
+              level: newLevel,
+            };
+          }
+          return u;
+        })
+      );
 
-    soundEngine.playBreak();
-    setTimeout(() => {
-      soundEngine.playXpOrb();
-    }, 250);
+      setCurrentUser((prev) => ({
+        ...prev,
+        totalXp: prev.totalXp + task.xpValue,
+        tasksMined: prev.tasksMined + 1,
+        level: Math.max(prev.level, Math.floor((prev.totalXp + task.xpValue) / 250)),
+      }));
+
+      soundEngine.playBreak();
+      setTimeout(() => {
+        soundEngine.playXpOrb();
+      }, 250);
+    } else {
+      // Lần 1 hoặc lần 2: Đập đá nứt
+      soundEngine.playHit();
+    }
   };
 
   const undoTask = (id: string) => {
     const task = tasks.find((t) => t.id === id);
-    if (!task || task.status !== 'done') return;
+    if (!task) return;
 
     const completedUserId = task.completedBy || currentUser.id;
+    const wasDone = task.status === 'done';
 
     setTasks((prev) =>
       prev.map((t) =>
@@ -403,6 +402,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           ? {
               ...t,
               status: 'todo',
+              miningUpdatesCount: 0,
+              miningLogs: [],
+              progressNote: '',
               completedAt: undefined,
               completedBy: undefined,
             }
@@ -410,26 +412,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       )
     );
 
-    setUsers((prev) =>
-      prev.map((u) => {
-        if (u.id === completedUserId) {
-          const newXp = Math.max(0, u.totalXp - task.xpValue);
-          return {
-            ...u,
-            totalXp: newXp,
-            tasksMined: Math.max(0, u.tasksMined - 1),
-          };
-        }
-        return u;
-      })
-    );
+    if (wasDone) {
+      setUsers((prev) =>
+        prev.map((u) => {
+          if (u.id === completedUserId) {
+            const newXp = Math.max(0, u.totalXp - task.xpValue);
+            return {
+              ...u,
+              totalXp: newXp,
+              tasksMined: Math.max(0, u.tasksMined - 1),
+            };
+          }
+          return u;
+        })
+      );
 
-    if (currentUser.id === completedUserId) {
-      setCurrentUser((prev) => ({
-        ...prev,
-        totalXp: Math.max(0, prev.totalXp - task.xpValue),
-        tasksMined: Math.max(0, prev.tasksMined - 1),
-      }));
+      if (currentUser.id === completedUserId) {
+        setCurrentUser((prev) => ({
+          ...prev,
+          totalXp: Math.max(0, prev.totalXp - task.xpValue),
+          tasksMined: Math.max(0, prev.tasksMined - 1),
+        }));
+      }
     }
 
     soundEngine.playHit();
@@ -455,7 +459,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       .reduce((sum, t) => sum + t.xpValue, 0);
 
     const percentage = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
-    // Cấp độ tính từ 0 khi mới tạo
     const level = Math.floor(earnedXp / 150);
     const isCleared = totalTasks > 0 && completedTasks === totalTasks;
 
@@ -489,9 +492,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         createTask,
         updateTask,
         deleteTask,
-        startMiningTask,
-        updateTaskProgressNote,
-        completeMiningTask,
+        submitMiningUpdate,
         undoTask,
         toggleSound,
         resetToDemoData,

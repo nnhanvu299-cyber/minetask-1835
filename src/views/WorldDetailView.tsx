@@ -5,7 +5,7 @@ import { XPBar } from '../components/XPBar';
 import { TaskBlock } from '../components/TaskBlock';
 import { BIOME_CONFIGS } from '../utils/pixelBlocks';
 import { PixelAvatar } from '../utils/pixelAvatars';
-import { ArrowLeft, Plus, Filter, Users, ShieldAlert, Sparkles, Crown } from 'lucide-react';
+import { ArrowLeft, Plus, Filter, Users, ShieldAlert, Sparkles } from 'lucide-react';
 
 interface WorldDetailViewProps {
   world: World;
@@ -20,7 +20,7 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
   onOpenCreateTask,
   onTriggerWinState,
 }) => {
-  const { tasks, users, getWorldProgress, isBoss } = useApp();
+  const { tasks, users, getWorldProgress } = useApp();
   const progress = getWorldProgress(world.id);
   const biomeCfg = BIOME_CONFIGS[world.biome] || BIOME_CONFIGS.diamond_cavern;
 
@@ -105,7 +105,7 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
             </div>
 
             <p className="text-xs text-white/90 mt-2 max-w-2xl leading-relaxed drop-shadow">
-              {world.description || biomeCfg.description}
+              {world.description || biomeCfg.description} • Mỗi khối quặng cần đủ 3 lần cập nhật đào để thu hoạch.
             </p>
           </div>
 
@@ -147,7 +147,7 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
               filterStatus === 'todo' ? 'mc-btn-1835' : 'mc-btn'
             }`}
           >
-            ⛏️ CHƯA ĐÀO ({worldTasks.filter((t) => t.status === 'todo').length})
+            ⛏️ CHƯA ĐÀO (0/3) ({worldTasks.filter((t) => t.status === 'todo').length})
           </button>
           <button
             onClick={() => setFilterStatus('in_progress')}
@@ -155,7 +155,7 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
               filterStatus === 'in_progress' ? 'mc-btn-1835' : 'mc-btn'
             }`}
           >
-            📜 ĐANG NỨT / LÀM ({worldTasks.filter((t) => t.status === 'in_progress').length})
+            📜 ĐANG ĐÀO (1-2/3) ({worldTasks.filter((t) => t.status === 'in_progress').length})
           </button>
           <button
             onClick={() => setFilterStatus('done')}
@@ -163,7 +163,7 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
               filterStatus === 'done' ? 'mc-btn-1835' : 'mc-btn'
             }`}
           >
-            ✓ ĐÃ ĐÀO ({worldTasks.filter((t) => t.status === 'done').length})
+            ✓ ĐÃ XONG (3/3) ({worldTasks.filter((t) => t.status === 'done').length})
           </button>
         </div>
 
@@ -201,7 +201,7 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
         </div>
       </div>
 
-      {/* 4. Task Blocks Grid / Hotbar with Wooden Sign Progress Notes */}
+      {/* 4. Task Blocks Grid / Hotbar with 3-Stage Mining Updates */}
       {filteredTasks.length === 0 ? (
         <div className="mc-panel p-8 text-center text-[#52372A] bg-[#FAF2DC] border-4 border-[#2D1A11]">
           <div className="text-4xl mb-2">⛏️</div>

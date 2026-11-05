@@ -30,6 +30,14 @@ export interface BlockConfig {
 
 export type TaskStatus = 'todo' | 'in_progress' | 'done';
 
+export interface MiningLogEntry {
+  updateNumber: number; // 1, 2, hoặc 3
+  note: string;
+  timestamp: number;
+  authorId: UserId;
+  authorName: string;
+}
+
 export interface Task {
   id: string;
   worldId: string;
@@ -43,7 +51,9 @@ export interface Task {
   completedAt?: number;
   completedBy?: UserId;
   priority: 'low' | 'normal' | 'high' | 'legendary';
-  // Ghi chú tiến độ mô phỏng trang sách / bảng gỗ
+  // Cơ chế 3 lần đào: 0/3 -> 1/3 -> 2/3 -> 3/3 (Đào xong)
+  miningUpdatesCount: number; // 0, 1, 2, 3
+  miningLogs: MiningLogEntry[];
   progressNote?: string;
   progressUpdatedAt?: number;
   progressUpdatedBy?: UserId;
