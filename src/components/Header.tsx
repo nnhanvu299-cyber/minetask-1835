@@ -1,7 +1,7 @@
 import React from 'react';
 import { useApp } from '../context/AppContext';
 import { PixelAvatar } from '../utils/pixelAvatars';
-import { Volume2, VolumeX, Smartphone, RefreshCw, UserCheck, Crown } from 'lucide-react';
+import { Volume2, VolumeX, Smartphone, UserCheck, Crown } from 'lucide-react';
 
 interface HeaderProps {
   onOpenLogin: () => void;
@@ -14,7 +14,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenApkModal,
   onOpenProfileModal,
 }) => {
-  const { currentUser, soundEnabled, toggleSound, resetToDemoData, setActiveWorldId } = useApp();
+  const { currentUser, soundEnabled, toggleSound, setActiveWorldId } = useApp();
 
   return (
     <header className="sticky top-0 z-40 bg-[#FDF7E7]/95 border-b-4 border-[#2D1A11] backdrop-blur-md px-3 md:px-6 py-2.5 shadow-sm">
@@ -67,19 +67,6 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="hidden sm:inline">XUẤT APK & PWA</span>
           </button>
 
-          {/* Reset Demo button */}
-          <button
-            onClick={() => {
-              if (window.confirm('Đặt lại tất cả các thế giới và nhiệm vụ về dữ liệu 1835s ban đầu (Level 0)?')) {
-                resetToDemoData();
-              }
-            }}
-            className="mc-btn px-2 py-1 text-xs text-[#52372A]"
-            title="Làm mới về Level 0"
-          >
-            <RefreshCw size={14} />
-            <span className="hidden lg:inline">RESET</span>
-          </button>
 
           {/* Active User Badge with Boss Indicator */}
           <div className="flex items-center gap-2 pl-2 border-l-2 border-[#2D1A11]">
