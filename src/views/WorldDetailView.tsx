@@ -201,7 +201,7 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
         </div>
       </div>
 
-      {/* 4. Task Blocks Grid / Hotbar with 3-Stage Mining Updates */}
+      {/* 4. Task Blocks Grid 2x2 (2 hàng x 2 cột cân đối) */}
       {filteredTasks.length === 0 ? (
         <div className="mc-panel p-8 text-center text-[#52372A] bg-[#FAF2DC] border-4 border-[#2D1A11]">
           <div className="text-4xl mb-2">⛏️</div>
@@ -216,7 +216,7 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {filteredTasks.map((task) => (
             <TaskBlock key={task.id} task={task} />
           ))}
