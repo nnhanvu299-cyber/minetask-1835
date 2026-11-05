@@ -1,10 +1,10 @@
 import React from 'react';
-import { World, Task } from '../types';
+import { World } from '../types';
 import { useApp } from '../context/AppContext';
 import { BIOME_CONFIGS } from '../utils/pixelBlocks';
 import { PixelAvatar } from '../utils/pixelAvatars';
 import { soundEngine } from '../utils/audio';
-import { Play, Trash2, Calendar, ShieldAlert } from 'lucide-react';
+import { Play, Trash2, ShieldAlert } from 'lucide-react';
 
 interface WorldCardProps {
   world: World;
@@ -12,7 +12,7 @@ interface WorldCardProps {
 }
 
 export const WorldCard: React.FC<WorldCardProps> = ({ world, onSelect }) => {
-  const { tasks, deleteWorld, users, getWorldProgress } = useApp();
+  const { tasks, deleteWorld, getWorldProgress } = useApp();
   const progress = getWorldProgress(world.id);
   const biomeCfg = BIOME_CONFIGS[world.biome] || BIOME_CONFIGS.diamond_cavern;
 
@@ -22,7 +22,7 @@ export const WorldCard: React.FC<WorldCardProps> = ({ world, onSelect }) => {
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm(`Delete World "${world.name}" and all its excavated blocks?`)) {
+    if (window.confirm(`Xác nhận xóa Thế giới "${world.name}" và tất cả khối tài nguyên bên trong?`)) {
       deleteWorld(world.id);
     }
   };
@@ -63,11 +63,11 @@ export const WorldCard: React.FC<WorldCardProps> = ({ world, onSelect }) => {
                 }`}
               >
                 <ShieldAlert size={10} className="inline mr-0.5 -mt-0.5" />
-                {world.difficulty}
+                {world.difficulty === 'Hardcore' ? 'Cực Khó' : world.difficulty === 'Normal' ? 'Tiêu Chuẩn' : 'Nhàn Nhã'}
               </span>
               {progress.isCleared && (
                 <span className="text-[8px] bg-[#1a6e2e] border border-[#55ff55] text-[#55ff55] px-1 py-0.2">
-                  CLEARED ⭐
+                  HOÀN THÀNH ⭐
                 </span>
               )}
             </div>
@@ -78,7 +78,7 @@ export const WorldCard: React.FC<WorldCardProps> = ({ world, onSelect }) => {
         <button
           onClick={handleDelete}
           className="mc-btn mc-btn-obsidian px-2 py-1 text-[9px] text-slate-400 hover:text-red-400 z-10"
-          title="Delete World"
+          title="Xóa Thế giới"
         >
           <Trash2 size={12} />
         </button>
@@ -102,7 +102,7 @@ export const WorldCard: React.FC<WorldCardProps> = ({ world, onSelect }) => {
         <div className="mt-4 pt-3 border-t-2 border-[#1c152d]">
           <div className="flex items-center justify-between text-[9px] mb-1.5">
             <span className="text-slate-300 font-bold">
-              ⛏️ MINED: {progress.completedTasks}/{progress.totalTasks}
+              ⛏️ ĐÃ ĐÀO: {progress.completedTasks}/{progress.totalTasks}
             </span>
             <span className="text-[#55ff55] font-bold">
               {progress.earnedXp}/{progress.totalXp} XP ({progress.percentage}%)
@@ -123,12 +123,12 @@ export const WorldCard: React.FC<WorldCardProps> = ({ world, onSelect }) => {
           <div className="flex items-center -space-x-1.5 overflow-hidden">
             {assignedUserIds.length > 0 ? (
               assignedUserIds.map((uid) => (
-                <div key={uid} title={`Assigned to ${uid}`}>
+                <div key={uid} title={`Phân công cho ${uid}`}>
                   <PixelAvatar userId={uid} size={24} showBorder={true} />
                 </div>
               ))
             ) : (
-              <span className="text-[8px] text-slate-500 italic">No miners assigned</span>
+              <span className="text-[8px] text-slate-500 italic">Chưa giao thợ mỏ</span>
             )}
           </div>
 
@@ -141,7 +141,7 @@ export const WorldCard: React.FC<WorldCardProps> = ({ world, onSelect }) => {
             className="mc-btn mc-btn-diamond text-[9px] px-3 py-1.5"
           >
             <Play size={11} className="inline fill-current" />
-            ENTER WORLD
+            VÀO THẾ GIỚI
           </button>
         </div>
       </div>

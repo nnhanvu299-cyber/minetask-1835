@@ -4,23 +4,29 @@ import { useApp } from '../context/AppContext';
 import { BLOCK_CONFIGS, PixelOreTexture, PixelCrackOverlay, PixelDropItem } from '../utils/pixelBlocks';
 import { PixelAvatar } from '../utils/pixelAvatars';
 import { soundEngine } from '../utils/audio';
-import { Pickaxe, RotateCcw, Trash2, Edit3, CheckCircle } from 'lucide-react';
+import { Pickaxe, RotateCcw, Trash2, CheckCircle } from 'lucide-react';
 
 interface TaskBlockProps {
   task: Task;
   onEdit?: (task: Task) => void;
 }
 
-export const TaskBlock: React.FC<TaskBlockProps> = ({ task, onEdit }) => {
-  const { users, currentUser, mineTask, undoTask, deleteTask } = useApp();
+export const TaskBlock: React.FC<TaskBlockProps> = ({ task }) => {
+  const { users, mineTask, undoTask, deleteTask } = useApp();
   const [crackStage, setCrackStage] = useState<number>(0);
   const [isMining, setIsMining] = useState<boolean>(false);
   const [isShattering, setIsShattering] = useState<boolean>(false);
 
   const cfg = BLOCK_CONFIGS[task.blockType] || BLOCK_CONFIGS.diamond;
   const assignee = users.find((u) => u.id === task.assigneeId);
-  const completedByUser = task.completedBy ? users.find((u) => u.id === task.completedBy) : null;
   const isDone = task.status === 'done';
+
+  const priorityLabels: Record<string, string> = {
+    legendary: 'Huyền Thoại',
+    high: 'Ưu Tiên Cao',
+    normal: 'Bình Thường',
+    low: 'Thấp',
+  };
 
   const handleStartMining = () => {
     if (isMining || isDone) return;
@@ -59,7 +65,7 @@ export const TaskBlock: React.FC<TaskBlockProps> = ({ task, onEdit }) => {
   };
 
   const handleDelete = () => {
-    if (window.confirm(`Delete Task "${task.title}"?`)) {
+    if (window.confirm(`Xác nhận xóa nhiệm vụ "${task.title}"?`)) {
       deleteTask(task.id);
     }
   };
@@ -99,7 +105,7 @@ export const TaskBlock: React.FC<TaskBlockProps> = ({ task, onEdit }) => {
                 : 'bg-[#182a3b] border-[#4dedf4] text-[#a8fcff]'
             }`}
           >
-            {task.priority}
+            {priorityLabels[task.priority] || task.priority}
           </span>
         </div>
 
@@ -173,12 +179,12 @@ export const TaskBlock: React.FC<TaskBlockProps> = ({ task, onEdit }) => {
             <>
               <span className="text-[8px] text-[#55ff55] flex items-center gap-1 bg-[#152e1b] px-1.5 py-0.5 border border-[#276e34]">
                 <CheckCircle size={10} />
-                MINED
+                ĐÃ ĐÀO
               </span>
               <button
                 onClick={handleUndo}
                 className="mc-btn mc-btn-obsidian px-2 py-1 text-[8px] text-slate-300"
-                title="Re-craft (Reset to Unmined)"
+                title="Tái chế tác (Đặt lại thành chưa đào)"
               >
                 <RotateCcw size={10} />
               </button>
@@ -190,7 +196,7 @@ export const TaskBlock: React.FC<TaskBlockProps> = ({ task, onEdit }) => {
               className="mc-btn mc-btn-diamond text-[9px] px-2.5 py-1 font-bold"
             >
               <Pickaxe size={11} className="inline mr-1" />
-              {isMining ? `CRACKING (${crackStage}/5)...` : 'MINE BLOCK'}
+              {isMining ? `ĐANG NỨT (${crackStage}/5)...` : 'ĐÀO KHỐI'}
             </button>
           )}
 
@@ -198,7 +204,7 @@ export const TaskBlock: React.FC<TaskBlockProps> = ({ task, onEdit }) => {
           <button
             onClick={handleDelete}
             className="mc-btn mc-btn-obsidian px-1.5 py-1 text-[8px] text-slate-400 hover:text-red-400"
-            title="Delete Block Task"
+            title="Xóa khối nhiệm vụ"
           >
             <Trash2 size={10} />
           </button>

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>MineTask: Gamified 8-Bit Workflow</title>
+    <title>MineTask: Quản Lý Công Việc 8-Bit Gamification Minecraft</title>
     
     <!-- PWA & Mobile Web Meta -->
     <meta name="theme-color" content="#2bb3bd" />
@@ -28,8 +28,8 @@
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
           navigator.serviceWorker.register('./sw.js').then(
-            (reg) => console.log('ServiceWorker registered with scope:', reg.scope),
-            (err) => console.warn('ServiceWorker registration failed:', err)
+            (reg) => console.log('ServiceWorker đã đăng ký thành công:', reg.scope),
+            (err) => console.warn('Đăng ký ServiceWorker thất bại:', err)
           );
         });
       }

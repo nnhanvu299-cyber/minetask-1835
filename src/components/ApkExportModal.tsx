@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Smartphone, Download, Layers, CheckCircle2, Copy, ExternalLink, QrCode } from 'lucide-react';
+import { Smartphone, Download, Layers, CheckCircle2, Copy, ExternalLink } from 'lucide-react';
 
 interface ApkExportModalProps {
   isOpen: boolean;
@@ -31,7 +31,7 @@ export const ApkExportModal: React.FC<ApkExportModalProps> = ({ isOpen, onClose 
         setInstallPrompt(null);
       }
     } else {
-      alert('To install on Desktop or Mobile:\n- Chrome / Edge: Click the install icon in the address bar.\n- Safari iOS: Tap "Share" -> "Add to Home Screen".');
+      alert('Cách cài đặt trên Máy tính & Điện thoại:\n- Chrome / Edge: Bấm biểu tượng Cài đặt ở cuối thanh địa chỉ URL.\n- Safari iOS: Bấm nút "Chia sẻ" (Share) -> Chọn "Thêm vào Màn hình chính" (Add to Home Screen).');
     }
   };
 
@@ -41,18 +41,15 @@ export const ApkExportModal: React.FC<ApkExportModalProps> = ({ isOpen, onClose 
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
-  const capacitorCommands = `# 1. Build optimized web production bundle
+  const capacitorCommands = `# 1. Đóng gói mã nguồn web tối ưu
 npm run build
 
-# 2. Add Android platform (Capacitor)
-npx cap add android
-
-# 3. Synchronize web assets to Android
+# 2. Đồng bộ sang thư mục native Android
 npx cap sync android
 
-# 4. Open in Android Studio & Generate APK
+# 3. Mở dự án trong Android Studio để xuất file APK
 npx cap open android
-# Inside Android Studio: Click Build -> Build Bundle(s) / APK(s) -> Build APK(s)`;
+# Trong Android Studio: Chọn Build -> Build Bundle(s) / APK(s) -> Build APK(s)`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-fadeIn">
@@ -63,10 +60,10 @@ npx cap open android
             <Smartphone size={20} className="text-[#4dedf4]" />
             <div>
               <h2 className="text-xs md:text-sm font-bold text-[#4dedf4]">
-                DEPLOY PWA & EXPORT ANDROID APK
+                TRIỂN KHAI PWA & XUẤT APK ANDROID
               </h2>
               <p className="text-[9px] text-slate-400 mt-0.5">
-                Cross-Platform Deployment Center for 4-Person Internal Team
+                Trung tâm xuất bản đa nền tảng cho nhóm nội bộ 4 người
               </p>
             </div>
           </div>
@@ -84,7 +81,7 @@ npx cap open android
             }`}
           >
             <Layers size={12} />
-            <span>PROGRESSIVE WEB APP (PWA)</span>
+            <span>ỨNG DỤNG WEB (PWA OFFLINE)</span>
           </button>
           <button
             onClick={() => setActiveTab('apk')}
@@ -93,7 +90,7 @@ npx cap open android
             }`}
           >
             <Smartphone size={12} />
-            <span>ANDROID APK BUILD (CAPACITOR)</span>
+            <span>XUẤT FILE ANDROID APK (CAPACITOR)</span>
           </button>
         </div>
 
@@ -103,28 +100,26 @@ npx cap open android
             <div className="p-3 bg-[#131b21] border-2 border-[#1a8794] flex items-start gap-3">
               <CheckCircle2 size={18} className="text-[#55ff55] flex-shrink-0 mt-0.5" />
               <div className="text-[10px] text-slate-300 space-y-1">
-                <span className="font-bold text-white block">PWA Service Worker & Manifest: Active</span>
+                <span className="font-bold text-white block">Service Worker & Web Manifest: Đã kích hoạt</span>
                 <p>
-                  The app is fully offline-capable with local storage caching, 8-bit audio synth,
-                  and responsive voxel layouts.
+                  Ứng dụng có thể chạy hoàn toàn offline không cần mạng internet với bộ nhớ đệm cục bộ,
+                  âm thanh tổng hợp 8-bit và giao diện responsive cho điện thoại.
                 </p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[9px]">
               <div className="p-3 bg-[#171224] border border-[#342752]">
-                <div className="font-bold text-[#4dedf4] mb-1">📱 Mobile Android / iOS</div>
+                <div className="font-bold text-[#4dedf4] mb-1">📱 Điện Thoại Android / iOS</div>
                 <p className="text-slate-400 leading-relaxed">
-                  Open the app URL in Chrome, Brave, or Safari. Tap browser menu (⋮ or Share) and
-                  select <strong className="text-white">"Add to Home Screen"</strong>. It installs
-                  as an authentic standalone app!
+                  Mở địa chỉ mạng trên Chrome, Brave hoặc Safari. Nhấn vào menu trình duyệt (dấu 3 chấm hoặc nút Chia sẻ) và
+                  chọn <strong className="text-white">"Thêm vào Màn hình chính"</strong> để cài ứng dụng toàn màn hình.
                 </p>
               </div>
               <div className="p-3 bg-[#171224] border border-[#342752]">
-                <div className="font-bold text-[#55ff55] mb-1">💻 Desktop Windows / Mac</div>
+                <div className="font-bold text-[#55ff55] mb-1">💻 Máy Tính Windows / Mac</div>
                 <p className="text-slate-400 leading-relaxed">
-                  Click the install icon in the URL bar (Chrome/Edge) or click the button below to
-                  run as a borderless windowed 8-bit desktop app.
+                  Bấm biểu tượng cài đặt trên thanh địa chỉ URL hoặc bấm nút bên dưới để mở ứng dụng trong cửa sổ riêng biệt không viền.
                 </p>
               </div>
             </div>
@@ -135,7 +130,7 @@ npx cap open android
                 className="mc-btn mc-btn-emerald text-[10px] w-full sm:w-auto px-5 py-2.5 flex items-center justify-center gap-2"
               >
                 <Download size={14} />
-                <span>INSTALL PWA TO DEVICE</span>
+                <span>CÀI ĐẶT PWA LÊN THIẾT BỊ NÀY</span>
               </button>
             </div>
           </div>
@@ -146,11 +141,10 @@ npx cap open android
           <div className="space-y-4">
             <div className="p-3 bg-[#1c142e] border-2 border-[#433369]">
               <div className="text-[10px] font-bold text-[#4dedf4] mb-1">
-                CAPACITOR PIPELINE: COMPILE TO NATIVE ANDROID APK
+                ĐƯỜNG ỐNG CAPACITOR: ĐÓNG GÓI RA FILE ANDROID APK NATIVE
               </div>
               <p className="text-[9px] text-slate-400 leading-relaxed">
-                The repository is already configured with <code className="text-[#a8fcff]">capacitor.config.ts</code> and
-                Android dependencies. Run the following command sequence in the project terminal:
+                Dự án đã được cấu hình sẵn thư mục <code className="text-[#a8fcff]">android/</code> và file <code className="text-[#a8fcff]">capacitor.config.ts</code>. Chạy chuỗi lệnh sau trong terminal:
               </p>
             </div>
 
@@ -164,7 +158,7 @@ npx cap open android
                 className="absolute top-2 right-2 mc-btn mc-btn-obsidian text-[8px] px-2 py-1"
               >
                 <Copy size={10} className="inline mr-1" />
-                {copiedCode === 'cap' ? 'COPIED!' : 'COPY'}
+                {copiedCode === 'cap' ? 'ĐÃ SAO CHÉP!' : 'SAO CHÉP'}
               </button>
             </div>
 
@@ -172,10 +166,10 @@ npx cap open android
             <div className="p-3 bg-[#121c17] border border-[#2b6033] text-[9px] text-slate-300">
               <div className="font-bold text-[#55ff55] flex items-center gap-1.5 mb-1">
                 <ExternalLink size={12} />
-                <span>Alternative: Zero-Setup Cloud APK via PWABuilder</span>
+                <span>Tùy chọn: Tải APK trực tuyến không cần cài Android Studio qua PWABuilder</span>
               </div>
               <p className="text-slate-400">
-                Deploy the static site (Vercel, Netlify, or GitHub Pages) and paste the URL into{' '}
+                Deploy website lên Vercel, Netlify hoặc GitHub Pages và dán link vào{' '}
                 <a
                   href="https://www.pwabuilder.com"
                   target="_blank"
@@ -184,7 +178,7 @@ npx cap open android
                 >
                   PWABuilder.com
                 </a>{' '}
-                to download a signed Android APK package directly in seconds!
+                để tải về file APK đã được ký số tự động chỉ trong vài chục giây!
               </p>
             </div>
           </div>
@@ -193,7 +187,7 @@ npx cap open android
         {/* Footer */}
         <div className="mt-6 pt-3 border-t-2 border-[#332650] flex justify-end">
           <button onClick={onClose} className="mc-btn mc-btn-diamond text-[9px] px-4 py-2">
-            GOT IT, CLOSE
+            ĐÃ HIỂU, ĐÓNG
           </button>
         </div>
       </div>

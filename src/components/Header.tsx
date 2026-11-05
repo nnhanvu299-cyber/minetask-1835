@@ -38,7 +38,7 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
             </div>
             <p className="text-[8px] text-slate-400 hidden sm:block">
-              Gamified 4-Miner Workflow Management
+              Quản lý công việc 4 thợ mỏ phong cách Minecraft
             </p>
           </div>
         </div>
@@ -51,34 +51,34 @@ export const Header: React.FC<HeaderProps> = ({
             className={`mc-btn px-2 py-1.5 text-[9px] ${
               soundEnabled ? 'mc-btn-obsidian text-[#55ff55]' : 'mc-btn-obsidian text-slate-500'
             }`}
-            title={soundEnabled ? 'Sound FX On (Click to Mute)' : 'Sound FX Off (Click to Enable)'}
+            title={soundEnabled ? 'Âm thanh bật (Bấm để tắt)' : 'Âm thanh tắt (Bấm để bật)'}
           >
             {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
-            <span className="hidden md:inline">{soundEnabled ? 'SFX ON' : 'MUTED'}</span>
+            <span className="hidden md:inline">{soundEnabled ? 'BẬT ÂM' : 'TẮT ÂM'}</span>
           </button>
 
           {/* Export APK / PWA modal trigger */}
           <button
             onClick={onOpenApkModal}
             className="mc-btn mc-btn-diamond px-2.5 py-1.5 text-[9px]"
-            title="Download APK / Install PWA"
+            title="Tải APK Android & Cài đặt PWA"
           >
             <Smartphone size={14} />
-            <span className="hidden sm:inline">APK & PWA</span>
+            <span className="hidden sm:inline">XUẤT APK & PWA</span>
           </button>
 
           {/* Reset Demo button */}
           <button
             onClick={() => {
-              if (window.confirm('Reset all worlds and tasks to fresh demo data?')) {
+              if (window.confirm('Đặt lại tất cả các thế giới và nhiệm vụ về dữ liệu mẫu ban đầu?')) {
                 resetToDemoData();
               }
             }}
             className="mc-btn mc-btn-obsidian px-2 py-1.5 text-[9px] text-slate-300"
-            title="Reset to Demo State"
+            title="Làm mới về dữ liệu mẫu"
           >
             <RefreshCw size={13} />
-            <span className="hidden lg:inline">RESET</span>
+            <span className="hidden lg:inline">LÀM MỚI</span>
           </button>
 
           {/* Active User Badge */}
@@ -86,7 +86,7 @@ export const Header: React.FC<HeaderProps> = ({
             <div
               onClick={onOpenProfileModal}
               className="flex items-center gap-2 cursor-pointer hover:opacity-90 bg-[#120e1d] p-1 border-2 border-[#2b2245]"
-              title="View Miner Profile Stats"
+              title="Xem thông tin & thống kê thợ mỏ"
             >
               <PixelAvatar userId={currentUser.id} size={28} showBorder={false} />
               <div className="hidden sm:block text-left">
@@ -94,7 +94,7 @@ export const Header: React.FC<HeaderProps> = ({
                   {currentUser.name}
                 </div>
                 <div className="text-[8px] text-[#55ff55]">
-                  Lv. {currentUser.level}
+                  Cấp {currentUser.level}
                 </div>
               </div>
             </div>
@@ -103,10 +103,10 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onOpenLogin}
               className="mc-btn mc-btn-obsidian text-[8px] px-2 py-1.5 text-[#4dedf4]"
-              title="Switch between the 4 Team Member Profiles"
+              title="Chuyển đổi giữa 4 hồ sơ thành viên"
             >
               <UserCheck size={12} className="inline mr-1" />
-              <span className="hidden md:inline">SWITCH</span>
+              <span className="hidden md:inline">ĐỔI NGƯỜI</span>
             </button>
           </div>
         </div>

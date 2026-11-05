@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { World, Task, UserId, BlockRarity } from '../types';
+import { World } from '../types';
 import { useApp } from '../context/AppContext';
 import { XPBar } from '../components/XPBar';
 import { TaskBlock } from '../components/TaskBlock';
 import { BIOME_CONFIGS } from '../utils/pixelBlocks';
 import { PixelAvatar } from '../utils/pixelAvatars';
-import { ArrowLeft, Plus, Filter, Users, ShieldAlert, Sparkles, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Plus, Filter, Users, ShieldAlert, Sparkles } from 'lucide-react';
 
 interface WorldDetailViewProps {
   world: World;
@@ -20,7 +20,7 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
   onOpenCreateTask,
   onTriggerWinState,
 }) => {
-  const { tasks, users, currentUser, getWorldProgress } = useApp();
+  const { tasks, users, getWorldProgress } = useApp();
   const progress = getWorldProgress(world.id);
   const biomeCfg = BIOME_CONFIGS[world.biome] || BIOME_CONFIGS.diamond_cavern;
 
@@ -55,7 +55,7 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
           totalXp={progress.totalXp}
           percentage={progress.percentage}
           level={Math.floor(progress.earnedXp / 100)}
-          label={`"${world.name.toUpperCase()}" TEAM XP PROGRESS`}
+          label={`TIẾN ĐỘ XP ĐỘI: "${world.name.toUpperCase()}"`}
           showDetails={true}
         />
       </div>
@@ -72,7 +72,7 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
               className="mc-btn mc-btn-obsidian text-[9px] px-2.5 py-1 mb-2.5 inline-flex items-center gap-1.5"
             >
               <ArrowLeft size={12} />
-              <span>← BACK TO ALL WORLDS</span>
+              <span>← QUAY LẠI TẤT CẢ THẾ GIỚI</span>
             </button>
 
             {/* Title & Badges */}
@@ -85,11 +85,13 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
                 className={`text-[8px] px-2 py-0.5 border font-bold uppercase ${
                   world.difficulty === 'Hardcore'
                     ? 'bg-[#4d1010] border-[#ff4d4d] text-[#ff7373]'
-                    : 'bg-[#473910] border-[#fcdc3b] text-[#fcdc3b]'
+                    : world.difficulty === 'Normal'
+                    ? 'bg-[#473910] border-[#fcdc3b] text-[#fcdc3b]'
+                    : 'bg-[#103a1d] border-[#55ff55] text-[#7cf6a5]'
                 }`}
               >
                 <ShieldAlert size={10} className="inline mr-1" />
-                {world.difficulty}
+                {world.difficulty === 'Hardcore' ? 'Cực Khó' : world.difficulty === 'Normal' ? 'Tiêu Chuẩn' : 'Nhàn Nhã'}
               </span>
               {progress.isCleared && (
                 <button
@@ -97,7 +99,7 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
                   className="mc-btn mc-btn-emerald text-[8px] px-2 py-0.5 animate-pulse"
                 >
                   <Sparkles size={11} className="inline mr-1" />
-                  WORLD CLEARED! (REPLAY CELEBRATION)
+                  HOÀN THÀNH 100%! (XEM LẠI LỄ ĂN MỪNG)
                 </button>
               )}
             </div>
@@ -114,7 +116,7 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
               className="mc-btn mc-btn-diamond text-[10px] md:text-xs px-5 py-3 w-full md:w-auto font-bold tracking-wider"
             >
               <Plus size={16} className="inline mr-1 stroke-[3]" />
-              CRAFT RESOURCE BLOCK
+              CHẾ TÁC KHỐI NHIỆM VỤ
             </button>
           </div>
         </div>
@@ -129,7 +131,7 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
         <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
           <span className="text-slate-400 font-bold mr-1 flex items-center gap-1">
             <Filter size={12} />
-            STATUS:
+            TRẠNG THÁI:
           </span>
           <button
             onClick={() => setFilterStatus('all')}
@@ -137,7 +139,7 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
               filterStatus === 'all' ? 'mc-btn-diamond' : 'mc-btn-obsidian'
             }`}
           >
-            ALL ({worldTasks.length})
+            TẤT CẢ ({worldTasks.length})
           </button>
           <button
             onClick={() => setFilterStatus('todo')}
@@ -145,7 +147,7 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
               filterStatus === 'todo' ? 'mc-btn-diamond' : 'mc-btn-obsidian'
             }`}
           >
-            ⛏️ UNMINED ({worldTasks.filter((t) => t.status === 'todo').length})
+            ⛏️ CHƯA ĐÀO ({worldTasks.filter((t) => t.status === 'todo').length})
           </button>
           <button
             onClick={() => setFilterStatus('done')}
@@ -153,7 +155,7 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
               filterStatus === 'done' ? 'mc-btn-diamond' : 'mc-btn-obsidian'
             }`}
           >
-            ✓ MINED ({worldTasks.filter((t) => t.status === 'done').length})
+            ✓ ĐÃ ĐÀO ({worldTasks.filter((t) => t.status === 'done').length})
           </button>
         </div>
 
@@ -161,7 +163,7 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
         <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
           <span className="text-slate-400 font-bold mr-1 flex items-center gap-1">
             <Users size={12} />
-            MINER:
+            THỢ MỎ:
           </span>
           <button
             onClick={() => setFilterAssignee('all')}
@@ -169,7 +171,7 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
               filterAssignee === 'all' ? 'mc-btn-diamond' : 'mc-btn-obsidian'
             }`}
           >
-            ALL
+            TẤT CẢ
           </button>
           {users.map((u) => {
             const count = worldTasks.filter((t) => t.assigneeId === u.id).length;
@@ -195,14 +197,14 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
       {filteredTasks.length === 0 ? (
         <div className="mc-panel p-8 text-center text-slate-400">
           <div className="text-3xl mb-2">⛏️</div>
-          <h3 className="text-xs font-bold text-white mb-1">NO RESOURCE BLOCKS IN THIS VEIN</h3>
+          <h3 className="text-xs font-bold text-white mb-1">KHÔNG CÓ KHỐI TÀI NGUYÊN NÀO TRONG MẠCH NÀY</h3>
           <p className="text-[10px] mb-4">
             {worldTasks.length === 0
-              ? 'This World has no tasks yet. Craft your first block to start mining XP!'
-              : 'No tasks match the active filters.'}
+              ? 'Thế giới này chưa có nhiệm vụ nào. Hãy chế tác khối đầu tiên để bắt đầu khai thác XP!'
+              : 'Không có nhiệm vụ nào phù hợp với bộ lọc hiện tại.'}
           </p>
           <button onClick={onOpenCreateTask} className="mc-btn mc-btn-diamond text-[10px] px-4 py-2">
-            + CRAFT RESOURCE BLOCK
+            + CHẾ TÁC KHỐI NHIỆM VỤ
           </button>
         </div>
       ) : (

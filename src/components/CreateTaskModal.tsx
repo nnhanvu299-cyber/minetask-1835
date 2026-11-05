@@ -57,7 +57,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
           <div className="flex items-center gap-2">
             <span className="text-xl">⛏️</span>
             <h2 className="text-xs md:text-sm font-bold text-[#4dedf4]">
-              CRAFT NEW RESOURCE BLOCK (TASK)
+              CHẾ TÁC KHỐI TÀI NGUYÊN (NHIỆM VỤ) MỚI
             </h2>
           </div>
           <button onClick={onClose} className="mc-btn mc-btn-obsidian px-2.5 py-1 text-xs">
@@ -69,12 +69,12 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
           {/* Title */}
           <div>
             <label className="block text-[10px] text-slate-300 font-bold mb-1">
-              TASK TITLE *
+              TIÊU ĐỀ CÔNG VIỆC *
             </label>
             <input
               type="text"
               required
-              placeholder="e.g. Implement PWA manifest & caching"
+              placeholder="Ví dụ: Triển khai Service Worker & lưu trữ offline"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="mc-input"
@@ -84,11 +84,11 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
           {/* Description */}
           <div>
             <label className="block text-[10px] text-slate-300 font-bold mb-1">
-              SPECIFICATION & ACCEPTANCE CRITERIA
+              MÔ TẢ CHI TIẾT & TIÊU CHÍ HOÀN THÀNH
             </label>
             <textarea
               rows={2}
-              placeholder="Detail what needs to be excavated/delivered..."
+              placeholder="Chi tiết công việc cần khai thác và bàn giao..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="mc-textarea"
@@ -98,7 +98,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
           {/* Assignee Selection (4 Hardcoded Profiles) */}
           <div>
             <label className="block text-[10px] text-slate-300 font-bold mb-1.5">
-              ASSIGN TO TEAM MINER
+              PHÂN CÔNG CHO THỢ MỎ
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {users.map((u) => {
@@ -117,7 +117,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                     <span className="text-[9px] font-bold text-white mt-1.5 truncate w-full">
                       {u.name}
                     </span>
-                    <span className="text-[7px] text-[#55ff55]">Lv. {u.level}</span>
+                    <span className="text-[7px] text-[#55ff55]">Cấp {u.level}</span>
                   </div>
                 );
               })}
@@ -127,7 +127,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
           {/* Block Type / Ore Rarity */}
           <div>
             <label className="block text-[10px] text-slate-300 font-bold mb-1.5">
-              RESOURCE BLOCK TYPE & XP BOUNTY
+              LOẠI KHỐI TÀI NGUYÊN & PHẦN THƯỞNG XP
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {(Object.keys(BLOCK_CONFIGS) as BlockRarity[]).map((rKey) => {
@@ -164,17 +164,17 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
           {/* Priority */}
           <div>
             <label className="block text-[10px] text-slate-300 font-bold mb-1">
-              PRIORITY LEVEL
+              MỨC ĐỘ ƯU TIÊN
             </label>
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value as 'low' | 'normal' | 'high' | 'legendary')}
               className="mc-select"
             >
-              <option value="low">Low (Casual)</option>
-              <option value="normal">Normal (Standard)</option>
-              <option value="high">High (Sprint Target)</option>
-              <option value="legendary">Legendary (Blocker / Release Epic)</option>
+              <option value="low">Thấp (Làm lúc rảnh)</option>
+              <option value="normal">Bình thường (Tiêu chuẩn)</option>
+              <option value="high">Cao (Trọng tâm của Sprint)</option>
+              <option value="legendary">Huyền thoại (Cốt lõi bản phát hành)</option>
             </select>
           </div>
 
@@ -185,13 +185,13 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               onClick={onClose}
               className="mc-btn mc-btn-obsidian text-[10px] px-4 py-2"
             >
-              CANCEL
+              HỦY BỎ
             </button>
             <button
               type="submit"
               className="mc-btn mc-btn-diamond text-[10px] px-5 py-2"
             >
-              FORGE TASK BLOCK
+              TẠO KHỐI NHIỆM VỤ
             </button>
           </div>
         </form>

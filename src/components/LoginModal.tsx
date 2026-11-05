@@ -27,17 +27,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
             <span className="text-xl">⛏️</span>
             <div>
               <h2 className="text-sm md:text-base font-bold text-[#4dedf4] tracking-wider">
-                CHOOSE YOUR MINER PROFILE
+                CHỌN HỒ SƠ THỢ MỎ CỦA BẠN
               </h2>
               <p className="text-[10px] text-slate-400 mt-1">
-                4 Team Members • Mock Authentication Matrix
+                4 Thành viên đội ngũ nội bộ • Đăng nhập nhanh
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
             className="mc-btn mc-btn-obsidian px-2.5 py-1 text-xs"
-            title="Close"
+            title="Đóng"
           >
             ✕
           </button>
@@ -70,7 +70,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                       </h3>
                       {isSelected && (
                         <span className="text-[9px] bg-[#1a8794] text-[#a8fcff] px-2 py-0.5 border border-[#4dedf4]">
-                          ACTIVE
+                          ĐANG CHỌN
                         </span>
                       )}
                     </div>
@@ -83,10 +83,10 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                     {/* Stats Pill */}
                     <div className="flex items-center gap-2 mt-3 text-[9px] text-slate-300">
                       <span className="bg-[#120e1d] px-2 py-1 border border-[#2e2447] text-[#55ff55]">
-                        Lv. {user.level}
+                        Cấp {user.level}
                       </span>
                       <span className="bg-[#120e1d] px-2 py-1 border border-[#2e2447] text-[#fcdc3b]">
-                        ⛏️ {user.tasksMined} Mined
+                        ⛏️ {user.tasksMined} Đã đào
                       </span>
                       <span className="bg-[#120e1d] px-2 py-1 border border-[#2e2447] text-[#4dedf4]">
                         {user.totalXp} XP
@@ -94,7 +94,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                     </div>
 
                     <div className="mt-2 text-[8px] text-slate-400 truncate">
-                      Biome: <span className="text-slate-200">{user.favoriteBiome}</span>
+                      Vùng đất: <span className="text-slate-200">{user.favoriteBiome}</span>
                     </div>
                   </div>
                 </div>
@@ -105,7 +105,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                       isSelected ? 'mc-btn-diamond' : 'mc-btn-obsidian'
                     }`}
                   >
-                    {isSelected ? '✓ CURRENT IDENTITY' : 'LOG IN AS ' + user.name.toUpperCase()}
+                    {isSelected ? '✓ DANH TÍNH HIỆN TẠI' : 'CHUYỂN SANG ' + user.name.toUpperCase()}
                   </button>
                 </div>
               </div>
@@ -115,9 +115,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
         {/* Footer Note */}
         <div className="mt-6 p-3 bg-[#120e1d] border-2 border-[#261c3b] flex items-center justify-between text-[9px] text-slate-400">
-          <span>💡 Switch identities at any time to mine tasks as different teammates.</span>
+          <span>💡 Bạn có thể đổi danh tính thợ mỏ bất cứ lúc nào để đào khối thay đồng đội.</span>
           <button onClick={onClose} className="mc-btn mc-btn-primary text-[9px] px-3 py-1">
-            CONTINUE
+            TIẾP TỤC
           </button>
         </div>
       </div>

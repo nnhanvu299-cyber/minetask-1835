@@ -4,66 +4,66 @@ import { BlockConfig, BlockRarity, BiomeType } from '../types';
 export const BLOCK_CONFIGS: Record<BlockRarity, BlockConfig> = {
   coal: {
     type: 'coal',
-    name: 'Coal Ore',
+    name: 'Quặng Than',
     xp: 40,
     primaryColor: '#2b2b2b',
     secondaryColor: '#454545',
     accentColor: '#141414',
-    label: 'Quick Task',
+    label: 'Việc Nhanh',
   },
   iron: {
     type: 'iron',
-    name: 'Iron Ore',
+    name: 'Quặng Sắt',
     xp: 80,
     primaryColor: '#c8a48b',
     secondaryColor: '#d6c0b3',
     accentColor: '#8a6851',
-    label: 'Standard Task',
+    label: 'Việc Tiêu Chuẩn',
   },
   gold: {
     type: 'gold',
-    name: 'Gold Ore',
+    name: 'Quặng Vàng',
     xp: 140,
     primaryColor: '#fcdc3b',
     secondaryColor: '#fff182',
     accentColor: '#b59218',
-    label: 'Important Task',
+    label: 'Việc Quan Trọng',
   },
   redstone: {
     type: 'redstone',
-    name: 'Redstone Ore',
+    name: 'Quặng Redstone',
     xp: 160,
     primaryColor: '#ff2200',
     secondaryColor: '#ff7373',
     accentColor: '#990000',
-    label: 'Logic / Backend',
+    label: 'Backend & Logic',
   },
   diamond: {
     type: 'diamond',
-    name: 'Diamond Ore',
+    name: 'Quặng Kim Cương',
     xp: 220,
     primaryColor: '#4dedf4',
     secondaryColor: '#a8fcff',
     accentColor: '#1f9ea6',
-    label: 'High Priority',
+    label: 'Ưu Tiên Cao',
   },
   emerald: {
     type: 'emerald',
-    name: 'Emerald Ore',
+    name: 'Quặng Lục Bảo',
     xp: 260,
     primaryColor: '#17dd62',
     secondaryColor: '#7cf6a5',
     accentColor: '#0a7d34',
-    label: 'Epic Milestone',
+    label: 'Cột Mốc Cốt Lõi',
   },
   netherite: {
     type: 'netherite',
-    name: 'Netherite Block',
+    name: 'Khối Netherite',
     xp: 320,
     primaryColor: '#493f44',
     secondaryColor: '#6e5e65',
     accentColor: '#2a2226',
-    label: 'Legendary Goal',
+    label: 'Mục Tiêu Huyền Thoại',
   },
 };
 
@@ -159,7 +159,7 @@ export const PixelCrackOverlay: React.FC<{ stage: number; size?: number }> = ({ 
       className="absolute inset-0 pointer-events-none"
       style={{ shapeRendering: 'crispEdges' }}
     >
-      {/* Stage 1: Fine initial fissures */}
+      {/* Stage 1 */}
       {stage >= 1 && (
         <path
           d="M7 4h2v2H7z M8 6h1v3H8z M6 8h2v1H6z"
@@ -167,7 +167,7 @@ export const PixelCrackOverlay: React.FC<{ stage: number; size?: number }> = ({ 
           opacity={0.85}
         />
       )}
-      {/* Stage 2: Spreading cracks */}
+      {/* Stage 2 */}
       {stage >= 2 && (
         <path
           d="M4 3h2v2H4z M9 9h3v1H9z M5 9h2v3H5z M10 4h2v2h-2z"
@@ -175,7 +175,7 @@ export const PixelCrackOverlay: React.FC<{ stage: number; size?: number }> = ({ 
           opacity={0.9}
         />
       )}
-      {/* Stage 3: Deep cracks branching out */}
+      {/* Stage 3 */}
       {stage >= 3 && (
         <path
           d="M2 6h3v1H2z M11 11h3v2h-3z M3 12h3v1H3z M12 3h2v3h-2z"
@@ -183,7 +183,7 @@ export const PixelCrackOverlay: React.FC<{ stage: number; size?: number }> = ({ 
           opacity={0.95}
         />
       )}
-      {/* Stage 4: Severe shatter */}
+      {/* Stage 4 */}
       {stage >= 4 && (
         <path
           d="M0 7h4v2H0z M7 1h3v3H7z M12 7h4v3h-4z M7 12h4v3H7z"
@@ -191,7 +191,7 @@ export const PixelCrackOverlay: React.FC<{ stage: number; size?: number }> = ({ 
           opacity={0.95}
         />
       )}
-      {/* Stage 5: Imminent collapse */}
+      {/* Stage 5 */}
       {stage >= 5 && (
         <path
           d="M1 1h4v3H1z M11 1h4v3h-4z M1 11h4v4H1z M11 11h4v4h-4z M6 6h4v4H6z"
@@ -255,7 +255,7 @@ export const PixelDropItem: React.FC<{ blockType: BlockRarity; size?: number }> 
   );
 };
 
-// Biome Visual Themes for World Cards
+// Biome Visual Themes for World Cards (Vietnamese)
 export const BIOME_CONFIGS: Record<
   BiomeType,
   {
@@ -268,40 +268,40 @@ export const BIOME_CONFIGS: Record<
   }
 > = {
   overworld: {
-    name: 'Overworld Grassland',
-    description: 'Vibrant plains, lush oaks, and clear blue skies.',
+    name: 'Đồng Cỏ Overworld',
+    description: 'Thảo nguyên xanh ngát, rừng sồi bạt ngàn và bầu trời trong lành.',
     gradient: 'from-emerald-950 via-teal-900 to-slate-900',
     accentColor: '#50c878',
     badgeBg: '#1b4d2e',
     iconSvg: '🌱',
   },
   diamond_cavern: {
-    name: 'Diamond Deepslate Cavern',
-    description: 'Ancient deep caves filled with sparkling diamond veins.',
+    name: 'Hang Sâu Kim Cương',
+    description: 'Hang đá sâu cổ đại lấp lánh những mạch quặng kim cương quý giá.',
     gradient: 'from-cyan-950 via-sky-950 to-slate-900',
     accentColor: '#4dedf4',
     badgeBg: '#123e4d',
     iconSvg: '💎',
   },
   nether: {
-    name: 'Nether Fortress',
-    description: 'High stakes molten core, lava falls, and crimson fortresses.',
+    name: 'Pháo Đài Nether',
+    description: 'Lõi nham thạch rực lửa, nguy hiểm rình rập và thành trì đỏ thẫm.',
     gradient: 'from-red-950 via-rose-950 to-slate-900',
     accentColor: '#ff4d4d',
     badgeBg: '#4d1414',
     iconSvg: '🔥',
   },
   the_end: {
-    name: 'The End Dimension',
-    description: 'Void floating islands, end stone towers, and dragon lore.',
+    name: 'Không Gian The End',
+    description: 'Quần đảo lơ lửng giữa hư vô, tháp đá End Stone và truyền thuyết rồng.',
     gradient: 'from-purple-950 via-violet-950 to-slate-900',
     accentColor: '#c084fc',
     badgeBg: '#39124d',
     iconSvg: '🔮',
   },
   lush_caves: {
-    name: 'Lush Moss Caves',
-    description: 'Glowing spore blossoms, azalea leaves, and clay pools.',
+    name: 'Hang Động Rêu Xanh',
+    description: 'Hoa bào tử rực rỡ, tán lá đỗ quyên và những hồ nước trong veo.',
     gradient: 'from-lime-950 via-emerald-950 to-slate-900',
     accentColor: '#a3e635',
     badgeBg: '#2f4211',

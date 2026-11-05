@@ -37,12 +37,12 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
       targetDeadline: targetDeadline || undefined,
     });
 
-    // Optionally generate 3 starter tasks
+    // Tùy chọn tự tạo 3 khối quặng khởi đầu
     if (createStarterTasks) {
       createTask({
         worldId: newWorld.id,
-        title: 'Gather Initial Resources & Scope',
-        description: 'Define architecture boundary and assign role priorities.',
+        title: 'Khảo Sát Phạm Vi & Thu Thập Tài Nguyên',
+        description: 'Xác định kiến trúc hệ thống và phân chia vai trò cho 4 thợ mỏ.',
         blockType: 'iron',
         xpValue: 80,
         assigneeId: currentUser.id,
@@ -51,8 +51,8 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
 
       createTask({
         worldId: newWorld.id,
-        title: 'Forge Core Feature Blocks',
-        description: 'Excavate core logic and craft responsive UI views.',
+        title: 'Rèn Luyện & Đào Khối Tính Năng Chính',
+        description: 'Xây dựng logic nghiệp vụ và chế tác các giao diện voxel 8-bit.',
         blockType: 'diamond',
         xpValue: 220,
         assigneeId: currentUser.id === 'alex' ? 'steve' : 'alex',
@@ -61,8 +61,8 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
 
       createTask({
         worldId: newWorld.id,
-        title: 'Release & Final QA Expedition',
-        description: 'Verify 100% completion, deploy PWA build, and package APK.',
+        title: 'Kiểm Thử Toàn Diện & Phát Hành Bản APK',
+        description: 'Xác nhận tiến độ đạt 100%, triển khai bản PWA và xuất gói APK.',
         blockType: 'emerald',
         xpValue: 260,
         assigneeId: 'luna',
@@ -88,7 +88,7 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
           <div className="flex items-center gap-2">
             <span className="text-xl">🌍</span>
             <h2 className="text-sm md:text-base font-bold text-[#4dedf4]">
-              CREATE NEW WORLD (PROJECT)
+              TẠO THẾ GIỚI MỚI (DỰ ÁN)
             </h2>
           </div>
           <button onClick={onClose} className="mc-btn mc-btn-obsidian px-2.5 py-1 text-xs">
@@ -100,12 +100,12 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
           {/* World Name */}
           <div>
             <label className="block text-[10px] text-slate-300 font-bold mb-1">
-              WORLD NAME *
+              TÊN THẾ GIỚI (DỰ ÁN) *
             </label>
             <input
               type="text"
               required
-              placeholder="e.g. Mobile App v2.0 Release"
+              placeholder="Ví dụ: Ứng dụng Di động v2.0 Release"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="mc-input"
@@ -115,11 +115,11 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
           {/* Description */}
           <div>
             <label className="block text-[10px] text-slate-300 font-bold mb-1">
-              WORLD MISSION & OBJECTIVE
+              MỤC TIÊU & NHIỆM VỤ CỦA THẾ GIỚI
             </label>
             <textarea
               rows={2}
-              placeholder="Describe the sprint or project scope..."
+              placeholder="Mô tả mục tiêu của sprint hoặc dự án..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="mc-textarea"
@@ -129,7 +129,7 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
           {/* Biome Selection */}
           <div>
             <label className="block text-[10px] text-slate-300 font-bold mb-1.5">
-              SELECT BIOME THEME
+              CHỌN VÙNG ĐẤT (BIOME THEME)
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {(Object.keys(BIOME_CONFIGS) as BiomeType[]).map((bKey) => {
@@ -165,22 +165,22 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-[10px] text-slate-300 font-bold mb-1">
-                PROJECT DIFFICULTY
+                ĐỘ KHÓ DỰ ÁN
               </label>
               <select
                 value={difficulty}
                 onChange={(e) => setDifficulty(e.target.value as 'Peaceful' | 'Normal' | 'Hardcore')}
                 className="mc-select"
               >
-                <option value="Peaceful">Peaceful (Relaxed Pace)</option>
-                <option value="Normal">Normal (Standard Sprint)</option>
-                <option value="Hardcore">Hardcore (Strict Deadline)</option>
+                <option value="Peaceful">Nhàn Nhã (Tiến độ thoải mái)</option>
+                <option value="Normal">Tiêu Chuẩn (Sprint bình thường)</option>
+                <option value="Hardcore">Cực Khó (Thời hạn nghiêm ngặt)</option>
               </select>
             </div>
 
             <div>
               <label className="block text-[10px] text-slate-300 font-bold mb-1">
-                TARGET DEADLINE
+                HẠN CHÓT DỰ KIẾN
               </label>
               <input
                 type="date"
@@ -201,7 +201,7 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
               className="w-4 h-4 cursor-pointer accent-[#279ca3]"
             />
             <label htmlFor="starter-tasks" className="text-[9px] text-slate-300 cursor-pointer">
-              Auto-generate 3 starter resource blocks (Iron, Diamond, Emerald)
+              Tự động sinh sẵn 3 khối quặng khởi đầu (Sắt, Kim Cương, Ngọc Lục Bảo)
             </label>
           </div>
 
@@ -212,13 +212,13 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
               onClick={onClose}
               className="mc-btn mc-btn-obsidian text-[10px] px-4 py-2"
             >
-              CANCEL
+              HỦY BỎ
             </button>
             <button
               type="submit"
               className="mc-btn mc-btn-diamond text-[10px] px-5 py-2"
             >
-              CREATE NEW WORLD
+              TẠO THẾ GIỚI
             </button>
           </div>
         </form>

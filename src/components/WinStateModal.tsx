@@ -18,7 +18,7 @@ export const WinStateModal: React.FC<WinStateModalProps> = ({
   onClose,
   onBackToWorlds,
 }) => {
-  const { getWorldProgress, users } = useApp();
+  const { getWorldProgress } = useApp();
   const progress = getWorldProgress(world.id);
 
   useEffect(() => {
@@ -73,14 +73,14 @@ export const WinStateModal: React.FC<WinStateModalProps> = ({
         {/* Flashing 8-bit Banner */}
         <div className="my-2">
           <div className="mc-level-up-banner text-lg md:text-2xl font-bold tracking-widest text-[#fcdc3b]">
-            ★ LEVEL UP! ★
+            ★ LÊN CẤP! ★
           </div>
           <div className="text-sm md:text-lg font-bold text-[#55ff55] tracking-wider mt-1 mc-text-glow">
-            WORLD CLEARED!
+            THẾ GIỚI HOÀN THÀNH!
           </div>
         </div>
 
-        {/* Trophy / Crown Graphic */}
+        {/* Trophy Graphic */}
         <div className="my-5 flex justify-center">
           <div className="w-20 h-20 bg-[#16291a] border-4 border-[#55ff55] flex items-center justify-center shadow-[0_0_20px_#55ff55]">
             <Trophy size={42} className="text-[#fcdc3b] animate-bounce" />
@@ -94,18 +94,18 @@ export const WinStateModal: React.FC<WinStateModalProps> = ({
             <span>{world.name}</span>
           </div>
           <p className="text-[10px] text-slate-300 mt-1">
-            All resource blocks successfully excavated! The world has reached 100% completion.
+            Toàn bộ khối tài nguyên đã được khai thác thành công! Thế giới này đạt tỷ lệ hoàn thành 100%.
           </p>
 
           <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-[#261a3d] text-center text-[9px]">
             <div className="bg-[#172419] p-2 border border-[#2b6033]">
-              <span className="text-slate-400 block text-[8px]">TOTAL HARVESTED</span>
+              <span className="text-slate-400 block text-[8px]">TỔNG KHỐI THU HOẠCH</span>
               <span className="text-sm font-bold text-[#55ff55]">
-                {progress.completedTasks} / {progress.totalTasks} BLOCKS
+                {progress.completedTasks} / {progress.totalTasks} KHỐI
               </span>
             </div>
             <div className="bg-[#172419] p-2 border border-[#2b6033]">
-              <span className="text-slate-400 block text-[8px]">TOTAL TEAM XP</span>
+              <span className="text-slate-400 block text-[8px]">TỔNG XP ĐỘI THU ĐƯỢC</span>
               <span className="text-sm font-bold text-[#4dedf4]">
                 +{progress.earnedXp} XP (100%)
               </span>
@@ -120,14 +120,14 @@ export const WinStateModal: React.FC<WinStateModalProps> = ({
             className="mc-btn mc-btn-obsidian text-[10px] w-full sm:w-auto px-4 py-2"
           >
             <ArrowLeft size={13} className="inline mr-1" />
-            RETURN TO WORLDS
+            VỀ DANH SÁCH THẾ GIỚI
           </button>
           <button
             onClick={onClose}
             className="mc-btn mc-btn-emerald text-[10px] w-full sm:w-auto px-5 py-2"
           >
             <CheckCircle2 size={13} className="inline mr-1" />
-            CONTINUE EXPLORING
+            TIẾP TỤC KHÁM PHÁ
           </button>
         </div>
       </div>

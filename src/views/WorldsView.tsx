@@ -3,7 +3,7 @@ import { useApp } from '../context/AppContext';
 import { WorldCard } from '../components/WorldCard';
 import { BiomeType } from '../types';
 import { BIOME_CONFIGS } from '../utils/pixelBlocks';
-import { Plus, Globe, Filter, Sparkles, Layers } from 'lucide-react';
+import { Plus, Globe } from 'lucide-react';
 
 interface WorldsViewProps {
   onOpenCreateWorld: () => void;
@@ -14,7 +14,7 @@ export const WorldsView: React.FC<WorldsViewProps> = ({
   onOpenCreateWorld,
   onSelectWorld,
 }) => {
-  const { worlds, tasks, users, currentUser } = useApp();
+  const { worlds, tasks, currentUser } = useApp();
   const [selectedBiome, setSelectedBiome] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
@@ -43,12 +43,12 @@ export const WorldsView: React.FC<WorldsViewProps> = ({
             <div className="flex items-center gap-2">
               <span className="text-xl">⚔️</span>
               <h1 className="text-sm md:text-lg font-bold text-[#4dedf4] mc-text-shadow tracking-wider">
-                MINECRAFT TEAM WORKSPACE
+                KHÔNG GIAN LÀM VIỆC ĐỘI NGŨ MINECRAFT
               </h1>
             </div>
             <p className="text-[10px] text-slate-300 mt-1 max-w-xl leading-relaxed">
-              Welcome back, Miner <strong className="text-white">{currentUser.name}</strong>! Select an
-              active World (Project) to excavate tasks or generate a new dimension for the team.
+              Chào mừng trở lại, Thợ mỏ <strong className="text-white">{currentUser.name}</strong>! Hãy chọn một
+              Thế giới (Dự án) đang hoạt động để khai thác nhiệm vụ hoặc kiến tạo một thế giới mới cho cả đội.
             </p>
           </div>
 
@@ -59,7 +59,7 @@ export const WorldsView: React.FC<WorldsViewProps> = ({
               className="mc-btn mc-btn-diamond text-[10px] md:text-xs px-5 py-3 w-full md:w-auto font-bold tracking-wider"
             >
               <Plus size={16} className="inline mr-1 stroke-[3]" />
-              CREATE NEW WORLD
+              TẠO THẾ GIỚI MỚI
             </button>
           </div>
         </div>
@@ -67,30 +67,30 @@ export const WorldsView: React.FC<WorldsViewProps> = ({
         {/* Global XP Quick Meter */}
         <div className="mt-5 pt-4 border-t-2 border-[#2b2144] grid grid-cols-2 sm:grid-cols-4 gap-3 text-[9px]">
           <div className="p-2.5 bg-[#120e1d] border border-[#2e2348]">
-            <span className="text-slate-400 block text-[8px]">ACTIVE WORLDS</span>
+            <span className="text-slate-400 block text-[8px]">THẾ GIỚI HOẠT ĐỘNG</span>
             <span className="text-xs md:text-sm font-bold text-white mt-0.5 block">
-              {worlds.length} Realities
+              {worlds.length} Dự Án
             </span>
           </div>
 
           <div className="p-2.5 bg-[#120e1d] border border-[#2e2348]">
-            <span className="text-slate-400 block text-[8px]">TOTAL RESOURCES MINED</span>
+            <span className="text-slate-400 block text-[8px]">TỔNG TÀI NGUYÊN ĐÃ ĐÀO</span>
             <span className="text-xs md:text-sm font-bold text-[#55ff55] mt-0.5 block">
               {completedTasks} / {totalTasks} ({overallPercentage}%)
             </span>
           </div>
 
           <div className="p-2.5 bg-[#120e1d] border border-[#2e2348]">
-            <span className="text-slate-400 block text-[8px]">ACCUMULATED TEAM XP</span>
+            <span className="text-slate-400 block text-[8px]">TÍCH LŨY KINH NGHIỆM ĐỘI</span>
             <span className="text-xs md:text-sm font-bold text-[#4dedf4] mt-0.5 block">
               {earnedXp} / {totalXp} XP
             </span>
           </div>
 
           <div className="p-2.5 bg-[#120e1d] border border-[#2e2348]">
-            <span className="text-slate-400 block text-[8px]">TEAM MINERS</span>
+            <span className="text-slate-400 block text-[8px]">THỢ MỎ TRỰC CHIẾN</span>
             <span className="text-xs md:text-sm font-bold text-[#fcdc3b] mt-0.5 block">
-              4 Active Profiles
+              4 Hồ Sơ Cố Định
             </span>
           </div>
         </div>
@@ -102,7 +102,7 @@ export const WorldsView: React.FC<WorldsViewProps> = ({
         <div className="flex-1 max-w-md">
           <input
             type="text"
-            placeholder="Search Worlds by name..."
+            placeholder="Tìm kiếm Thế giới theo tên..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="mc-input text-[10px]"
@@ -117,7 +117,7 @@ export const WorldsView: React.FC<WorldsViewProps> = ({
               selectedBiome === 'all' ? 'mc-btn-diamond' : 'mc-btn-obsidian'
             }`}
           >
-            ALL BIOMES ({worlds.length})
+            TẤT CẢ VÙNG ĐẤT ({worlds.length})
           </button>
           {(Object.keys(BIOME_CONFIGS) as BiomeType[]).map((bKey) => {
             const count = worlds.filter((w) => w.biome === bKey).length;
@@ -142,10 +142,10 @@ export const WorldsView: React.FC<WorldsViewProps> = ({
       {filteredWorlds.length === 0 ? (
         <div className="mc-panel p-8 text-center text-slate-400">
           <Globe size={36} className="mx-auto text-slate-500 mb-2" />
-          <h3 className="text-xs font-bold text-white mb-1">NO WORLDS FOUND</h3>
-          <p className="text-[10px] mb-4">No projects match the selected biome or search query.</p>
+          <h3 className="text-xs font-bold text-white mb-1">KHÔNG TÌM THẤY THẾ GIỚI PHÙ HỢP</h3>
+          <p className="text-[10px] mb-4">Không có dự án nào khớp với vùng đất hoặc từ khóa tìm kiếm của bạn.</p>
           <button onClick={onOpenCreateWorld} className="mc-btn mc-btn-diamond text-[10px] px-4 py-2">
-            + CREATE NEW WORLD
+            + TẠO THẾ GIỚI MỚI
           </button>
         </div>
       ) : (

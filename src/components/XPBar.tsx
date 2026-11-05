@@ -15,7 +15,7 @@ export const XPBar: React.FC<XPBarProps> = ({
   totalXp,
   percentage,
   level,
-  label = 'TEAM XP',
+  label = 'KINH NGHIỆM ĐỘI (TEAM XP)',
   showDetails = true,
   className = '',
 }) => {

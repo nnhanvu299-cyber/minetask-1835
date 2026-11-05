@@ -2,16 +2,16 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { UserProfile, UserId, World, Task, BlockRarity } from '../types';
 import { soundEngine } from '../utils/audio';
 
-// 4 Hardcoded Profiles
+// 4 Hardcoded Profiles (Tiếng Việt)
 export const HARDCODED_USERS: UserProfile[] = [
   {
     id: 'steve',
     name: 'Steve',
-    role: 'Lead Miner & Overseer',
-    title: 'The Architect',
+    role: 'Trưởng Đội Khai Thác & Giám Sát',
+    title: 'Kiến Trúc Sư Trưởng',
     level: 34,
     avatarKey: 'steve',
-    favoriteBiome: 'Diamond Deepslate Cavern',
+    favoriteBiome: 'Hang Sâu Kim Cương',
     tasksMined: 42,
     totalXp: 8650,
     primaryColor: '#4dedf4',
@@ -19,11 +19,11 @@ export const HARDCODED_USERS: UserProfile[] = [
   {
     id: 'alex',
     name: 'Alex',
-    role: 'Frontend Alchemist & UI',
-    title: 'Voxel Crafter',
+    role: 'Nhà Giả Kim Giao Diện & Thiết Kế UI',
+    title: 'Thợ Thủ Công Voxel',
     level: 31,
     avatarKey: 'alex',
-    favoriteBiome: 'Lush Moss Caves',
+    favoriteBiome: 'Hang Động Rêu Xanh',
     tasksMined: 38,
     totalXp: 7420,
     primaryColor: '#17dd62',
@@ -31,11 +31,11 @@ export const HARDCODED_USERS: UserProfile[] = [
   {
     id: 'devon',
     name: 'Devon (Creeper Dev)',
-    role: 'Backend Wizard & Logic',
-    title: 'Redstone Sorcerer',
+    role: 'Phù Thủy Backend & Kỹ Sư Redstone',
+    title: 'Pháp Sư Logic',
     level: 33,
     avatarKey: 'devon',
-    favoriteBiome: 'The End Dimension',
+    favoriteBiome: 'Không Gian The End',
     tasksMined: 40,
     totalXp: 8100,
     primaryColor: '#ff2200',
@@ -43,23 +43,23 @@ export const HARDCODED_USERS: UserProfile[] = [
   {
     id: 'luna',
     name: 'Luna (Nether Knight)',
-    role: 'QA Slayer & Release Master',
-    title: 'Night Watch',
+    role: 'Thợ Săn Bug & Bậc Thầy Kiểm Thử',
+    title: 'Hiệp Sĩ Gác Đêm',
     level: 30,
     avatarKey: 'luna',
-    favoriteBiome: 'Nether Fortress',
+    favoriteBiome: 'Pháo Đài Nether',
     tasksMined: 35,
     totalXp: 6980,
     primaryColor: '#c084fc',
   },
 ];
 
-// Initial Seed Worlds & Tasks
+// Initial Seed Worlds & Tasks (Tiếng Việt)
 const INITIAL_WORLDS: World[] = [
   {
     id: 'world-diamond-core',
-    name: 'Diamond Core: v2.0 Release',
-    description: 'Final sprint for core engine overhaul, 8-bit styling, and PWA packaging.',
+    name: 'Lõi Kim Cương: Bản Phát Hành v2.0',
+    description: 'Sprint nước rút đại tu động cơ cốt lõi, chuẩn hóa giao diện Voxel 8-bit và đóng gói PWA.',
     biome: 'diamond_cavern',
     difficulty: 'Hardcore',
     createdAt: Date.now() - 86400000 * 3,
@@ -67,8 +67,8 @@ const INITIAL_WORLDS: World[] = [
   },
   {
     id: 'world-pwa-forge',
-    name: 'PWA & Android APK Forge',
-    description: 'Configure Capacitor build pipeline, service workers, and mobile voxel responsive views.',
+    name: 'Lò Rèn PWA & Ứng Dụng Android APK',
+    description: 'Thiết lập đường ống Capacitor build APK, bộ đệm Service Worker offline và kiểm thử cảm ứng điện thoại.',
     biome: 'overworld',
     difficulty: 'Normal',
     createdAt: Date.now() - 86400000 * 2,
@@ -76,8 +76,8 @@ const INITIAL_WORLDS: World[] = [
   },
   {
     id: 'world-nether-infra',
-    name: 'Nether Fortress: Cloud Infrastructure',
-    description: 'High-throughput Redstone pipelines, automated database backups, and health checks.',
+    name: 'Pháo Đài Nether: Hạ Tầng Tự Động Hóa',
+    description: 'Xây dựng đường dây Redstone băng thông cao, cơ chế sao lưu tự động và kiểm tra sức khỏe hệ thống.',
     biome: 'nether',
     difficulty: 'Hardcore',
     createdAt: Date.now() - 86400000 * 5,
@@ -86,12 +86,12 @@ const INITIAL_WORLDS: World[] = [
 ];
 
 const INITIAL_TASKS: Task[] = [
-  // World 1: Diamond Core
+  // World 1: Lõi Kim Cương
   {
     id: 'task-101',
     worldId: 'world-diamond-core',
-    title: 'Design Voxel Inset/Outset 3D Buttons',
-    description: 'Ensure 100% square borders, tactile click states, and pixel font integration.',
+    title: 'Thiết Kế Nút Bấm Voxel 3D Inset/Outset',
+    description: 'Đảm bảo viền vuông 100%, hiệu ứng lún khối khi nhấn và tích hợp font chữ pixel Press Start 2P.',
     blockType: 'diamond',
     xpValue: 220,
     assigneeId: 'alex',
@@ -104,8 +104,8 @@ const INITIAL_TASKS: Task[] = [
   {
     id: 'task-102',
     worldId: 'world-diamond-core',
-    title: 'Synthesize 8-Bit Web Audio Engine',
-    description: 'Generate pickaxe hit crunch, XP orb pitch-up chime, and level up fanfare without external MP3s.',
+    title: 'Tổng Hợp Động Cơ Âm Thanh 8-Bit Web Audio',
+    description: 'Tạo tiếng cuốc đập đá, tiếng ngọc XP thanh thoát và nhạc khải hoàn chiến thắng không cần file MP3.',
     blockType: 'redstone',
     xpValue: 160,
     assigneeId: 'devon',
@@ -118,8 +118,8 @@ const INITIAL_TASKS: Task[] = [
   {
     id: 'task-103',
     worldId: 'world-diamond-core',
-    title: 'Implement Block Cracking & Particle Shatter',
-    description: 'Trigger 5-stage fissure overlay and voxel fragment explosion upon mining check-off.',
+    title: 'Hiệu Ứng Nứt Khối 5 Giai Đoạn & Nổ Hạt Voxel',
+    description: 'Kích hoạt lớp phủ vết rạn đá 5 giai đoạn và nổ tung mảnh vỡ khi thành viên bấm hoàn thành đào.',
     blockType: 'emerald',
     xpValue: 260,
     assigneeId: 'steve',
@@ -130,8 +130,8 @@ const INITIAL_TASKS: Task[] = [
   {
     id: 'task-104',
     worldId: 'world-diamond-core',
-    title: '100% Win State: Pixel Fireworks & Fanfare',
-    description: 'Blur background, launch pixel confetti fireworks, and flash WORLD CLEARED banner when Team XP hits 100%.',
+    title: 'Màn Hình Chiến Thắng 100%: Pháo Hoa & Lên Cấp',
+    description: 'Làm mờ nền, bắn pháo hoa pixel confetti và hiển thị dòng chữ nhấp nháy WORLD CLEARED khi XP chạm 100%.',
     blockType: 'netherite',
     xpValue: 320,
     assigneeId: 'luna',
@@ -140,12 +140,12 @@ const INITIAL_TASKS: Task[] = [
     priority: 'legendary',
   },
 
-  // World 2: PWA Forge
+  // World 2: Lò Rèn PWA & APK
   {
     id: 'task-201',
     worldId: 'world-pwa-forge',
-    title: 'Setup Service Worker & Manifest Specs',
-    description: 'Enable offline caching, homescreen install prompt, and dark obsidian theme color.',
+    title: 'Cấu Hình Service Worker & Manifest Chuẩn PWA',
+    description: 'Hỗ trợ bộ nhớ đệm offline, hộp thoại cài đặt ra màn hình chính và màu chủ đề Obsidian.',
     blockType: 'gold',
     xpValue: 140,
     assigneeId: 'devon',
@@ -158,8 +158,8 @@ const INITIAL_TASKS: Task[] = [
   {
     id: 'task-202',
     worldId: 'world-pwa-forge',
-    title: 'Capacitor Android Studio Bridge',
-    description: 'Verify capacitor.config.ts, Gradle sync scripts, and APK export instructions.',
+    title: 'Kết Nối Cầu Nối Capacitor Android Studio',
+    description: 'Kiểm tra file capacitor.config.ts, kịch bản đồng bộ Gradle và tài liệu xuất file APK.',
     blockType: 'diamond',
     xpValue: 220,
     assigneeId: 'steve',
@@ -170,8 +170,8 @@ const INITIAL_TASKS: Task[] = [
   {
     id: 'task-203',
     worldId: 'world-pwa-forge',
-    title: 'Touch Response & Haptic Feedback Tuning',
-    description: 'Verify responsive block mining interactions across Android and mobile browsers.',
+    title: 'Tối Ưu Cảm Ứng & Phản Hồi Điện Thoại',
+    description: 'Kiểm tra độ nhạy khi bấm đào quặng trên màn hình cảm ứng Android và trình duyệt di động.',
     blockType: 'iron',
     xpValue: 80,
     assigneeId: 'alex',
@@ -180,12 +180,12 @@ const INITIAL_TASKS: Task[] = [
     priority: 'normal',
   },
 
-  // World 3: Nether Infra
+  // World 3: Pháo Đài Nether
   {
     id: 'task-301',
     worldId: 'world-nether-infra',
-    title: 'Automated LocalStorage Persistence Sync',
-    description: 'Keep state seamless across screen switches, user shifts, and browser reloads.',
+    title: 'Tự Động Đồng Bộ Dữ Liệu LocalStorage',
+    description: 'Duy trì trạng thái liền mạch khi chuyển đổi giữa các màn hình, đổi người dùng và tải lại trang.',
     blockType: 'redstone',
     xpValue: 160,
     assigneeId: 'devon',
@@ -198,8 +198,8 @@ const INITIAL_TASKS: Task[] = [
   {
     id: 'task-302',
     worldId: 'world-nether-infra',
-    title: 'Continuous Integration Test Harness',
-    description: 'Stress test multi-user assignments, XP calculations, and edge cases.',
+    title: 'Hệ Thống Kiểm Thử Tích Hợp Đa Người Dùng',
+    description: 'Kiểm tra phân công nhiệm vụ 4 thành viên, tính toán tỷ lệ thanh XP và các tình huống biên.',
     blockType: 'iron',
     xpValue: 80,
     assigneeId: 'luna',
@@ -210,8 +210,8 @@ const INITIAL_TASKS: Task[] = [
   {
     id: 'task-303',
     worldId: 'world-nether-infra',
-    title: 'Security Hardening & Token Cryptography',
-    description: 'Ensure safe local state isolation and clean data model relationships.',
+    title: 'Bảo Vệ Tính Toàn Vẹn Của Mô Hình Dữ Liệu',
+    description: 'Đảm bảo cấu trúc Users -> Worlds -> Tasks luôn đồng bộ và an toàn.',
     blockType: 'diamond',
     xpValue: 220,
     assigneeId: 'steve',
@@ -257,11 +257,11 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | undefined>(undefined);
 
-const STORAGE_KEY_USERS = 'minetask_users_v1';
-const STORAGE_KEY_CURRENT_USER = 'minetask_current_user_v1';
-const STORAGE_KEY_WORLDS = 'minetask_worlds_v1';
-const STORAGE_KEY_TASKS = 'minetask_tasks_v1';
-const STORAGE_KEY_SOUND = 'minetask_sound_v1';
+const STORAGE_KEY_USERS = 'minetask_users_vn_v1';
+const STORAGE_KEY_CURRENT_USER = 'minetask_current_user_vn_v1';
+const STORAGE_KEY_WORLDS = 'minetask_worlds_vn_v1';
+const STORAGE_KEY_TASKS = 'minetask_tasks_vn_v1';
+const STORAGE_KEY_SOUND = 'minetask_sound_vn_v1';
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [users, setUsers] = useState<UserProfile[]>(() => {

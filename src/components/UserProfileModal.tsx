@@ -36,7 +36,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           <div className="flex items-center gap-2">
             <span className="text-lg">📜</span>
             <h2 className="text-xs md:text-sm font-bold text-[#4dedf4]">
-              MINER STATS & ACHIEVEMENTS
+              THỐNG KÊ & DANH HIỆU THỢ MỎ
             </h2>
           </div>
           <button onClick={onClose} className="mc-btn mc-btn-obsidian px-2.5 py-1 text-xs">
@@ -62,7 +62,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 totalXp={levelXpSpan}
                 percentage={levelPercentage}
                 level={currentUser.level}
-                label={`LEVEL ${currentUser.level} PROGRESS`}
+                label={`TIẾN ĐỘ LÊN CẤP ${currentUser.level + 1}`}
                 showDetails={true}
               />
             </div>
@@ -72,19 +72,19 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         {/* Statistics Grid */}
         <div className="grid grid-cols-3 gap-3 my-4">
           <div className="p-3 bg-[#171226] border-2 border-[#332650] text-center">
-            <div className="text-[8px] text-slate-400">TOTAL XP</div>
+            <div className="text-[8px] text-slate-400">TỔNG XP</div>
             <div className="text-xs font-bold text-[#4dedf4] mt-1 mc-text-shadow">
               {currentUser.totalXp}
             </div>
           </div>
           <div className="p-3 bg-[#171226] border-2 border-[#332650] text-center">
-            <div className="text-[8px] text-slate-400">BLOCKS MINED</div>
+            <div className="text-[8px] text-slate-400">KHỐI ĐÃ ĐÀO</div>
             <div className="text-xs font-bold text-[#55ff55] mt-1 mc-text-shadow">
               {currentUser.tasksMined}
             </div>
           </div>
           <div className="p-3 bg-[#171226] border-2 border-[#332650] text-center">
-            <div className="text-[8px] text-slate-400">ACTIVE ASSIGNED</div>
+            <div className="text-[8px] text-slate-400">VIỆC CHƯA XONG</div>
             <div className="text-xs font-bold text-[#fcdc3b] mt-1 mc-text-shadow">
               {pendingTasks.length}
             </div>
@@ -93,23 +93,23 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
         {/* Miner Badges / Inventory */}
         <div className="mb-4">
-          <div className="text-[10px] font-bold text-slate-300 mb-2">⛏️ MINER INVENTORY BADGES</div>
+          <div className="text-[10px] font-bold text-slate-300 mb-2">⛏️ VŨ KHÍ & DANH HIỆU THỢ MỎ</div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[9px]">
             <div className="p-2 bg-[#1b152d] border border-[#3e305e] flex items-center gap-2">
               <span>💎</span>
-              <span className="text-[#a8fcff]">Diamond Pickaxe</span>
+              <span className="text-[#a8fcff]">Cuốc Kim Cương</span>
             </div>
             <div className="p-2 bg-[#1b152d] border border-[#3e305e] flex items-center gap-2">
               <span>⚡</span>
-              <span className="text-[#ff7373]">Redstone Torch</span>
+              <span className="text-[#ff7373]">Đuốc Redstone</span>
             </div>
             <div className="p-2 bg-[#1b152d] border border-[#3e305e] flex items-center gap-2">
               <span>🛡️</span>
-              <span className="text-[#fcdc3b]">Nether Armor</span>
+              <span className="text-[#fcdc3b]">Giáp Netherite</span>
             </div>
             <div className="p-2 bg-[#1b152d] border border-[#3e305e] flex items-center gap-2">
               <span>🍎</span>
-              <span className="text-[#7cf6a5]">Golden Apple</span>
+              <span className="text-[#7cf6a5]">Táo Vàng Phép</span>
             </div>
           </div>
         </div>
@@ -117,14 +117,14 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         {/* User's Task Breakdown */}
         <div className="mb-4">
           <div className="flex items-center justify-between text-[10px] font-bold text-slate-300 mb-2">
-            <span>ASSIGNED TASKS ({userTasks.length})</span>
-            <span className="text-[#55ff55]">{minedTasks.length} / {userTasks.length} Mined</span>
+            <span>NHIỆM VỤ ĐƯỢC GIAO ({userTasks.length})</span>
+            <span className="text-[#55ff55]">{minedTasks.length} / {userTasks.length} Đã đào</span>
           </div>
 
           <div className="max-h-40 overflow-y-auto space-y-1.5 p-2 bg-[#120e1d] border-2 border-[#2b2044]">
             {userTasks.length === 0 ? (
               <div className="text-center py-4 text-[9px] text-slate-500">
-                No tasks assigned to this miner yet.
+                Chưa có nhiệm vụ nào được phân công cho thợ mỏ này.
               </div>
             ) : (
               userTasks.map((t) => {
@@ -145,7 +145,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                         {t.title}
                       </div>
                       <div className="text-[8px] text-slate-400 truncate">
-                        {world ? world.name : 'Unknown World'}
+                        {world ? world.name : 'Thế giới'}
                       </div>
                     </div>
                     <span
@@ -155,7 +155,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                           : 'bg-[#3b2b11] border-[#fcdc3b] text-[#fcdc3b]'
                       }`}
                     >
-                      {isDone ? 'MINED' : `${t.xpValue} XP`}
+                      {isDone ? 'ĐÃ ĐÀO' : `+${t.xpValue} XP`}
                     </span>
                   </div>
                 );
@@ -173,10 +173,10 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             }}
             className="mc-btn mc-btn-diamond text-[9px] px-3 py-1.5"
           >
-            SWITCH TO ANOTHER MINER
+            ĐỔI SANG THỢ MỎ KHÁC
           </button>
           <button onClick={onClose} className="mc-btn mc-btn-obsidian text-[9px] px-4 py-1.5">
-            DONE
+            XONG
           </button>
         </div>
       </div>

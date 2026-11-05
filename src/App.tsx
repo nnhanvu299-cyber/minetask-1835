@@ -11,7 +11,7 @@ import { WinStateModal } from './components/WinStateModal';
 import { ApkExportModal } from './components/ApkExportModal';
 
 const MainContent: React.FC = () => {
-  const { activeWorld, activeWorldId, setActiveWorldId } = useApp();
+  const { activeWorld, setActiveWorldId } = useApp();
 
   // Modals state
   const [isLoginOpen, setIsLoginOpen] = useState(false);
@@ -50,17 +50,17 @@ const MainContent: React.FC = () => {
       {/* Minecraft Footer */}
       <footer className="mt-auto py-4 px-4 bg-[#0a0712] border-t-2 border-[#221836] text-center text-[9px] text-slate-500">
         <div className="flex flex-wrap items-center justify-center gap-4 max-w-4xl mx-auto">
-          <span>⛏️ MineTask Voxel Engine v1.0</span>
+          <span>⛏️ Động cơ Voxel MineTask v1.0</span>
           <span>•</span>
-          <span>4-Miner Internal Matrix</span>
+          <span>Ma Trận 4 Thợ Mỏ Nội Bộ</span>
           <span>•</span>
-          <span>PWA Ready & Capacitor Android Build Support</span>
+          <span>Hỗ Trợ Triển Khai PWA & Đóng Gói APK Android</span>
           <span>•</span>
           <button
             onClick={() => setIsApkModalOpen(true)}
             className="text-[#4dedf4] hover:underline"
           >
-            Export APK & Install PWA
+            Xuất APK & Cài Đặt PWA
           </button>
         </div>
       </footer>
