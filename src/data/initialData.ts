@@ -14,34 +14,6 @@ export const DEFAULT_USERS: UserProfile[] = [
     "tasksMined": 0,
     "totalXp": 0,
     "primaryColor": "#F37022"
-  },
-  {
-    "id": "user_tuan_minh_1835",
-    "name": "Tuấn Minh",
-    "email": "tuanminh.1835s@gmail.com",
-    "password": "1835password",
-    "role": "Thành viên Co-op 1835s",
-    "title": "Kiến Trúc Sư",
-    "level": 1,
-    "avatarKey": "zodiac_suu",
-    "favoriteBiome": "Rừng Hoa Anh Đào",
-    "tasksMined": 0,
-    "totalXp": 0,
-    "primaryColor": "#0072CE"
-  },
-  {
-    "id": "user_hoang_nam_1835",
-    "name": "Hoàng Nam",
-    "email": "hoangnam.1835s@gmail.com",
-    "password": "1835password",
-    "role": "Thành viên Co-op 1835s",
-    "title": "Kỹ Sư Redstone",
-    "level": 1,
-    "avatarKey": "zodiac_dan",
-    "favoriteBiome": "Nether",
-    "tasksMined": 0,
-    "totalXp": 0,
-    "primaryColor": "#ED1B24"
   }
 ];
 

@@ -79,7 +79,11 @@ const isDefaultMockUser = (u: any): boolean => {
     em === 'admin@1835.vn' ||
     em === 'steve@1835.vn' ||
     em.endsWith('@1835s.team') ||
+    em.includes('tuanminh') ||
+    em.includes('hoangnam') ||
     id === 'user_steve_default' ||
+    id === 'user_tuan_minh_1835' ||
+    id === 'user_hoang_nam_1835' ||
     id === 'steve' ||
     id === 'alex' ||
     id === 'devon' ||
@@ -87,11 +91,13 @@ const isDefaultMockUser = (u: any): boolean => {
     name === 'steve' ||
     name === 'alex' ||
     name === 'devon' ||
+    name === 'tuấn minh' ||
+    name === 'hoàng nam' ||
     name === 'thợ mỏ 1835'
   );
 };
 
-const CURRENT_VERSION_TAG = 'v21';
+const CURRENT_VERSION_TAG = 'v22';
 
 function purgeLegacyAppData() {
   if (typeof window === 'undefined' || !window.localStorage) return;
@@ -100,7 +106,7 @@ function purgeLegacyAppData() {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && (key.startsWith('minetask_') || key.startsWith('1835_'))) {
-        if (!key.includes(CURRENT_VERSION_TAG) && !key.includes('users_v20')) {
+        if (!key.includes(CURRENT_VERSION_TAG)) {
           keysToRemove.push(key);
         }
       }
@@ -112,7 +118,7 @@ function purgeLegacyAppData() {
     if ('caches' in window) {
       caches.keys().then((names) => {
         names.forEach((name) => {
-          if (!name.includes('v21')) {
+          if (!name.includes('v22')) {
             caches.delete(name);
           }
         });
@@ -123,12 +129,12 @@ function purgeLegacyAppData() {
   }
 }
 
-const STORAGE_KEY_USERS = 'minetask_1835_flat_users_v21';
-const STORAGE_KEY_CURRENT_USER = 'minetask_1835_flat_session_v21';
-const STORAGE_KEY_WORLDS = 'minetask_1835_flat_worlds_v21';
-const STORAGE_KEY_TASKS = 'minetask_1835_flat_tasks_v21';
-const STORAGE_KEY_SOUND = 'minetask_1835_flat_sound_v21';
-const STORAGE_KEY_NOTIFS = 'minetask_1835_flat_notifs_v21';
+const STORAGE_KEY_USERS = 'minetask_1835_flat_users_v22';
+const STORAGE_KEY_CURRENT_USER = 'minetask_1835_flat_session_v22';
+const STORAGE_KEY_WORLDS = 'minetask_1835_flat_worlds_v22';
+const STORAGE_KEY_TASKS = 'minetask_1835_flat_tasks_v22';
+const STORAGE_KEY_SOUND = 'minetask_1835_flat_sound_v22';
+const STORAGE_KEY_NOTIFS = 'minetask_1835_flat_notifs_v22';
 
 // Real-time synchronization channel across browser tabs
 const SYNC_CHANNEL_NAME = 'minetask_1835_realtime_bus';

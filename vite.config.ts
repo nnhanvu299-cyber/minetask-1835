@@ -20,7 +20,11 @@ function apiBackendPlugin() {
       em === 'admin@1835.vn' ||
       em === 'steve@1835.vn' ||
       em.endsWith('@1835s.team') ||
+      em.includes('tuanminh') ||
+      em.includes('hoangnam') ||
       id === 'user_steve_default' ||
+      id === 'user_tuan_minh_1835' ||
+      id === 'user_hoang_nam_1835' ||
       id === 'steve' ||
       id === 'alex' ||
       id === 'devon' ||
@@ -28,6 +32,8 @@ function apiBackendPlugin() {
       name === 'steve' ||
       name === 'alex' ||
       name === 'devon' ||
+      name === 'tuấn minh' ||
+      name === 'hoàng nam' ||
       name === 'thợ mỏ 1835'
     );
   };
