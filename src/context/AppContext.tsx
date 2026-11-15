@@ -91,7 +91,7 @@ const isDefaultMockUser = (u: any): boolean => {
   );
 };
 
-const CURRENT_VERSION_TAG = 'v20';
+const CURRENT_VERSION_TAG = 'v21';
 
 function purgeLegacyAppData() {
   if (typeof window === 'undefined' || !window.localStorage) return;
@@ -100,7 +100,7 @@ function purgeLegacyAppData() {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && (key.startsWith('minetask_') || key.startsWith('1835_'))) {
-        if (!key.includes(CURRENT_VERSION_TAG)) {
+        if (!key.includes(CURRENT_VERSION_TAG) && !key.includes('users_v20')) {
           keysToRemove.push(key);
         }
       }
@@ -112,7 +112,7 @@ function purgeLegacyAppData() {
     if ('caches' in window) {
       caches.keys().then((names) => {
         names.forEach((name) => {
-          if (!name.includes('v18-live')) {
+          if (!name.includes('v21')) {
             caches.delete(name);
           }
         });
@@ -123,12 +123,12 @@ function purgeLegacyAppData() {
   }
 }
 
-const STORAGE_KEY_USERS = 'minetask_1835_flat_users_v20';
-const STORAGE_KEY_CURRENT_USER = 'minetask_1835_flat_session_v20';
-const STORAGE_KEY_WORLDS = 'minetask_1835_flat_worlds_v20';
-const STORAGE_KEY_TASKS = 'minetask_1835_flat_tasks_v20';
-const STORAGE_KEY_SOUND = 'minetask_1835_flat_sound_v20';
-const STORAGE_KEY_NOTIFS = 'minetask_1835_flat_notifs_v20';
+const STORAGE_KEY_USERS = 'minetask_1835_flat_users_v21';
+const STORAGE_KEY_CURRENT_USER = 'minetask_1835_flat_session_v21';
+const STORAGE_KEY_WORLDS = 'minetask_1835_flat_worlds_v21';
+const STORAGE_KEY_TASKS = 'minetask_1835_flat_tasks_v21';
+const STORAGE_KEY_SOUND = 'minetask_1835_flat_sound_v21';
+const STORAGE_KEY_NOTIFS = 'minetask_1835_flat_notifs_v21';
 
 // Real-time synchronization channel across browser tabs
 const SYNC_CHANNEL_NAME = 'minetask_1835_realtime_bus';
@@ -140,7 +140,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const [users, setUsers] = useState<UserProfile[]>(() => {
     purgeLegacyAppData();
-    const saved = localStorage.getItem(STORAGE_KEY_USERS);
+    const saved = localStorage.getItem(STORAGE_KEY_USERS) || localStorage.getItem('minetask_1835_flat_users_v20');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);

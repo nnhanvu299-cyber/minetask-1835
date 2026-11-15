@@ -1,4 +1,4 @@
-const CACHE_NAME = 'minetask-1835s-v16-live';
+const CACHE_NAME = 'minetask-1835s-v21-live';
 
 const PRECACHE_ASSETS = [
   './',

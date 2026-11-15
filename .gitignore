@@ -30,3 +30,7 @@ android/.gradle
 
 # Scratch
 scratch/
+
+.vercel
+
+.github/
