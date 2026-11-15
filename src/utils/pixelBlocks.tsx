@@ -2,68 +2,77 @@ import React from 'react';
 import { BlockConfig, BlockRarity, BiomeType } from '../types';
 
 export const BLOCK_CONFIGS: Record<BlockRarity, BlockConfig> = {
-  coal: {
-    type: 'coal',
-    name: 'Quặng Than',
-    xp: 40,
-    primaryColor: '#2b2b2b',
-    secondaryColor: '#454545',
-    accentColor: '#141414',
-    label: 'Việc Nhanh',
-  },
-  iron: {
-    type: 'iron',
-    name: 'Quặng Sắt',
-    xp: 80,
-    primaryColor: '#c8a48b',
-    secondaryColor: '#d6c0b3',
-    accentColor: '#8a6851',
-    label: 'Việc Tiêu Chuẩn',
-  },
   gold: {
     type: 'gold',
-    name: 'Quặng Vàng',
+    name: 'Đào Vàng',
     xp: 140,
     primaryColor: '#fcdc3b',
-    secondaryColor: '#fff182',
-    accentColor: '#b59218',
-    label: 'Việc Quan Trọng',
-  },
-  redstone: {
-    type: 'redstone',
-    name: 'Quặng Redstone',
-    xp: 160,
-    primaryColor: '#ff2200',
-    secondaryColor: '#ff7373',
-    accentColor: '#990000',
-    label: 'Backend & Logic',
+    secondaryColor: '#fff799',
+    accentColor: '#b58c0c',
+    label: 'Kho Báu Vàng',
   },
   diamond: {
     type: 'diamond',
-    name: 'Quặng Kim Cương',
+    name: 'Đào Kim Cương',
     xp: 220,
     primaryColor: '#4dedf4',
-    secondaryColor: '#a8fcff',
-    accentColor: '#1f9ea6',
-    label: 'Ưu Tiên Cao',
+    secondaryColor: '#ffffff',
+    accentColor: '#0e7490',
+    label: 'Kho Báu Kim Cương',
   },
   emerald: {
     type: 'emerald',
-    name: 'Quặng Lục Bảo',
+    name: 'Đào Lục Bảo',
     xp: 260,
-    primaryColor: '#17dd62',
-    secondaryColor: '#7cf6a5',
-    accentColor: '#0a7d34',
-    label: 'Cột Mốc Cốt Lõi',
+    primaryColor: '#10b981',
+    secondaryColor: '#a7f3d0',
+    accentColor: '#047857',
+    label: 'Ngọc Lục Bảo Quý',
   },
   netherite: {
     type: 'netherite',
-    name: 'Khối Netherite',
+    name: 'Đào Netherite',
     xp: 320,
     primaryColor: '#493f44',
-    secondaryColor: '#6e5e65',
-    accentColor: '#2a2226',
-    label: 'Mục Tiêu Huyền Thoại',
+    secondaryColor: '#8f7e88',
+    accentColor: '#241e22',
+    label: 'Netherite Cực Phẩm',
+  },
+  iron: {
+    type: 'iron',
+    name: 'Đào Sắt',
+    xp: 80,
+    primaryColor: '#d4d4d8',
+    secondaryColor: '#ffffff',
+    accentColor: '#71717a',
+    label: 'Sắt Thỏi',
+  },
+  redstone: {
+    type: 'redstone',
+    name: 'Đào Đá Đỏ',
+    xp: 160,
+    primaryColor: '#ef4444',
+    secondaryColor: '#fca5a5',
+    accentColor: '#991b1b',
+    label: 'Đá Đỏ (Redstone)',
+  },
+  coal: {
+    type: 'coal',
+    name: 'Đào Than Đá',
+    xp: 40,
+    primaryColor: '#27272a',
+    secondaryColor: '#52525b',
+    accentColor: '#09090b',
+    label: 'Than Nhanh',
+  },
+  lapis: {
+    type: 'lapis',
+    name: 'Đào Ngọc Lam',
+    xp: 180,
+    primaryColor: '#2563eb',
+    secondaryColor: '#93c5fd',
+    accentColor: '#1e3a8a',
+    label: 'Ngọc Lam (Lapis)',
   },
 };
 
@@ -203,54 +212,106 @@ export const PixelCrackOverlay: React.FC<{ stage: number; size?: number }> = ({ 
   );
 };
 
-// Drop Item Graphic (Rendered when Mined)
-export const PixelDropItem: React.FC<{ blockType: BlockRarity; size?: number }> = ({
+// Drop Item Graphic (Rendered when Mined or Selected)
+export const PixelDropItem: React.FC<{ blockType: BlockRarity; size?: number; className?: string }> = ({
   blockType,
   size = 36,
+  className = '',
 }) => {
-  const cfg = BLOCK_CONFIGS[blockType] || BLOCK_CONFIGS.diamond;
+  if (blockType === 'gold') {
+    return (
+      <svg viewBox="0 0 16 12" width={size} height={size * 0.75} className={`select-none ${className}`} style={{ shapeRendering: 'crispEdges' }}>
+        <rect x="1" y="2" width="14" height="9" fill="#8c6d05" />
+        <rect x="2" y="1" width="12" height="1" fill="#bfa010" />
+        <rect x="2" y="3" width="12" height="6" fill="#fcdc3b" />
+        <rect x="3" y="2" width="10" height="2" fill="#fff799" />
+        <rect x="4" y="2" width="4" height="1" fill="#ffffff" />
+        <rect x="2" y="8" width="12" height="2" fill="#b58c0c" />
+        <rect x="2" y="10" width="12" height="1" fill="#6d5402" />
+      </svg>
+    );
+  }
 
   if (blockType === 'diamond') {
     return (
-      <svg viewBox="0 0 12 12" width={size} height={size} style={{ shapeRendering: 'crispEdges' }}>
-        <path d="M4 1h4v2H4z M2 3h8v2H2z M1 5h10v2H1z M2 7h8v2H2z M4 9h4v1H4z M5 10h2v1H5z" fill="#4dedf4" />
-        <path d="M4 2h2v1H4z M3 4h2v1H3z M2 6h2v1H2z" fill="#ffffff" />
-        <path d="M7 6h3v1H7z M6 8h2v1H6z" fill="#1a8794" />
+      <svg viewBox="0 0 14 14" width={size} height={size} className={`select-none ${className}`} style={{ shapeRendering: 'crispEdges' }}>
+        <path d="M4 1h6v2H4z M2 3h10v3H2z M1 6h12v2H1z M2 8h10v2H2z M4 10h6v2H4z M5 12h4v1H5z" fill="#0891b2" />
+        <path d="M5 2h4v1H5z M3 3h8v2H3z M2 5h10v2H2z M3 7h8v2H3z M5 9h4v2H5z M6 11h2v1H6z" fill="#22d3ee" />
+        <path d="M5 2h2v1H5z M3 3h3v2H3z M2 5h3v2H2z" fill="#ffffff" />
+        <path d="M8 5h4v2H8z M7 7h4v2H7z M6 9h3v1H6z" fill="#0e7490" />
       </svg>
     );
   }
 
   if (blockType === 'emerald') {
     return (
-      <svg viewBox="0 0 12 12" width={size} height={size} style={{ shapeRendering: 'crispEdges' }}>
-        <path d="M4 1h4v2H4z M2 3h8v6H2z M4 9h4v2H4z" fill="#17dd62" />
-        <path d="M4 2h2v2H4z M3 4h2v3H3z" fill="#a4f8be" />
-        <path d="M7 5h2v4H7z M5 9h2v1H5z" fill="#0c6b2e" />
+      <svg viewBox="0 0 14 14" width={size} height={size} className={`select-none ${className}`} style={{ shapeRendering: 'crispEdges' }}>
+        <path d="M4 1h6v2H4z M2 3h10v8H2z M4 11h6v2H4z" fill="#065f46" />
+        <path d="M4 2h6v2H4z M3 4h8v6H3z M4 10h6v2H4z" fill="#10b981" />
+        <path d="M4 2h3v2H4z M3 4h3v3H3z" fill="#a7f3d0" />
+        <path d="M8 6h3v4H8z M6 10h3v1H6z" fill="#047857" />
       </svg>
     );
   }
 
-  if (blockType === 'gold' || blockType === 'iron' || blockType === 'netherite') {
-    const isGold = blockType === 'gold';
-    const isIron = blockType === 'iron';
-    const main = isGold ? '#fcdc3b' : isIron ? '#d8d8d8' : '#493f44';
-    const light = isGold ? '#fff494' : isIron ? '#ffffff' : '#73646c';
-    const dark = isGold ? '#a6820d' : isIron ? '#8a8a8a' : '#231c20';
-
+  if (blockType === 'netherite') {
     return (
-      <svg viewBox="0 0 14 10" width={size} height={size * 0.72} style={{ shapeRendering: 'crispEdges' }}>
-        <rect x="2" y="1" width="10" height="2" fill={light} />
-        <rect x="1" y="3" width="12" height="4" fill={main} />
-        <rect x="2" y="7" width="10" height="2" fill={dark} />
+      <svg viewBox="0 0 16 12" width={size} height={size * 0.75} className={`select-none ${className}`} style={{ shapeRendering: 'crispEdges' }}>
+        <rect x="1" y="2" width="14" height="9" fill="#181417" />
+        <rect x="2" y="1" width="12" height="1" fill="#493f44" />
+        <rect x="2" y="3" width="12" height="6" fill="#3a3237" />
+        <rect x="3" y="2" width="10" height="2" fill="#5c5057" />
+        <rect x="4" y="2" width="4" height="1" fill="#8f7e88" />
+        <rect x="2" y="8" width="12" height="2" fill="#272124" />
+        <rect x="2" y="10" width="12" height="1" fill="#141012" />
       </svg>
     );
   }
 
-  // Redstone Dust / Coal lump
+  if (blockType === 'iron') {
+    return (
+      <svg viewBox="0 0 16 12" width={size} height={size * 0.75} className={`select-none ${className}`} style={{ shapeRendering: 'crispEdges' }}>
+        <rect x="1" y="2" width="14" height="9" fill="#52525b" />
+        <rect x="2" y="1" width="12" height="1" fill="#a1a1aa" />
+        <rect x="2" y="3" width="12" height="6" fill="#d4d4d8" />
+        <rect x="3" y="2" width="10" height="2" fill="#f4f4f5" />
+        <rect x="4" y="2" width="4" height="1" fill="#ffffff" />
+        <rect x="2" y="8" width="12" height="2" fill="#a1a1aa" />
+        <rect x="2" y="10" width="12" height="1" fill="#3f3f46" />
+      </svg>
+    );
+  }
+
+  if (blockType === 'redstone') {
+    return (
+      <svg viewBox="0 0 14 14" width={size} height={size} className={`select-none ${className}`} style={{ shapeRendering: 'crispEdges' }}>
+        <path d="M5 1h4v2H5z M3 3h8v2H3z M2 5h10v4H2z M3 9h8v2H3z M5 11h4v2H5z" fill="#7f1d1d" />
+        <path d="M5 2h4v1H5z M3 4h8v2H3z M3 6h8v2H3z M4 8h6v2H4z M5 10h4v1H5z" fill="#ef4444" />
+        <path d="M5 3h2v1H5z M4 4h2v2H4z" fill="#fca5a5" />
+        <path d="M7 6h3v3H7z" fill="#991b1b" />
+      </svg>
+    );
+  }
+
+  if (blockType === 'lapis') {
+    return (
+      <svg viewBox="0 0 14 14" width={size} height={size} className={`select-none ${className}`} style={{ shapeRendering: 'crispEdges' }}>
+        <path d="M3 2h8v2H3z M2 4h10v6H2z M3 10h8v2H3z" fill="#1e3a8a" />
+        <path d="M4 3h6v2H4z M3 5h8v4H3z M4 9h6v2H4z" fill="#2563eb" />
+        <path d="M4 3h2v2H4z M3 5h2v2H3z" fill="#93c5fd" />
+        <path d="M7 6h3v3H7z" fill="#1d4ed8" />
+        <rect x="8" y="4" width="2" height="2" fill="#facc15" />
+      </svg>
+    );
+  }
+
+  // Coal
   return (
-    <svg viewBox="0 0 12 12" width={size} height={size} style={{ shapeRendering: 'crispEdges' }}>
-      <circle cx="6" cy="6" r="5" fill={cfg.primaryColor} />
-      <circle cx="4" cy="4" r="2" fill={cfg.secondaryColor} />
+    <svg viewBox="0 0 14 14" width={size} height={size} className={`select-none ${className}`} style={{ shapeRendering: 'crispEdges' }}>
+      <path d="M3 2h8v2H3z M2 4h10v6H2z M4 10h6v2H4z" fill="#09090b" />
+      <path d="M4 3h6v2H4z M3 5h8v4H3z M4 9h5v1H4z" fill="#27272a" />
+      <path d="M4 4h3v2H4z" fill="#52525b" />
+      <path d="M7 7h3v2H7z" fill="#18181b" />
     </svg>
   );
 };

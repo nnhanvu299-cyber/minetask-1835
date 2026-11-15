@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Smartphone, Download, Layers, CheckCircle2, Copy, ExternalLink } from 'lucide-react';
+import { Download, Laptop, CheckCircle2, Smartphone, Apple, Copy, ExternalLink } from 'lucide-react';
 
 interface ApkExportModalProps {
   isOpen: boolean;
@@ -7,9 +7,14 @@ interface ApkExportModalProps {
 }
 
 export const ApkExportModal: React.FC<ApkExportModalProps> = ({ isOpen, onClose }) => {
-  const [activeTab, setActiveTab] = useState<'pwa' | 'apk'>('pwa');
+  const [activeTab, setActiveTab] = useState<'desktop' | 'mobile'>('desktop');
   const [installPrompt, setInstallPrompt] = useState<any>(null);
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [copiedIp, setCopiedIp] = useState(false);
+
+  // Current LAN IP for phone connection
+  const lanUrl = typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+    ? `${window.location.protocol}//${window.location.host}`
+    : 'http://192.168.1.73:3000';
 
   useEffect(() => {
     const handleBeforeInstall = (e: Event) => {
@@ -29,165 +34,212 @@ export const ApkExportModal: React.FC<ApkExportModalProps> = ({ isOpen, onClose 
       const choice = await installPrompt.userChoice;
       if (choice.outcome === 'accepted') {
         setInstallPrompt(null);
+        onClose();
       }
-    } else {
-      alert('Cách cài đặt trên Máy tính & Điện thoại:\n- Chrome / Edge: Bấm biểu tượng Cài đặt ở cuối thanh địa chỉ URL.\n- Safari iOS: Bấm nút "Chia sẻ" (Share) -> Chọn "Thêm vào Màn hình chính" (Add to Home Screen).');
     }
   };
 
-  const copyToClipboard = (text: string, id: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedCode(id);
-    setTimeout(() => setCopiedCode(null), 2000);
+  const copyLanUrl = () => {
+    navigator.clipboard.writeText(lanUrl);
+    setCopiedIp(true);
+    setTimeout(() => setCopiedIp(false), 2000);
   };
 
-  const capacitorCommands = `# 1. Đóng gói mã nguồn web tối ưu
-npm run build
-
-# 2. Đồng bộ sang thư mục native Android
-npx cap sync android
-
-# 3. Mở dự án trong Android Studio để xuất file APK
-npx cap open android
-# Trong Android Studio: Chọn Build -> Build Bundle(s) / APK(s) -> Build APK(s)`;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-      <div className="mc-panel w-full max-w-2xl p-6 bg-[#FDF7E7] text-[#2D1A11] max-h-[90vh] overflow-y-auto border-4 border-[#2D1A11]">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/65 backdrop-blur-sm animate-fadeIn"
+      onClick={onClose}
+    >
+      <div
+        className="mc-panel w-full max-w-lg p-5 bg-[#FDF7E7] text-[#2D1A11] max-h-[92vh] overflow-y-auto border-3 border-[#2D1A11] shadow-[8px_8px_0px_#2D1A11]"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 mb-4 border-b-2 border-[#2D1A11]">
+        <div className="flex items-center justify-between pb-3 mb-3 border-b-2 border-[#2D1A11]">
           <div className="flex items-center gap-2">
-            <Smartphone size={22} className="text-[#F37022]" />
-            <div>
-              <h2 className="text-base font-bold text-[#2D1A11]">
-                TRIỂN KHAI PWA & XUẤT APK ANDROID (1835s)
-              </h2>
-              <p className="text-xs text-[#52372A]">
-                Trung tâm xuất bản đa nền tảng cho đội ngũ nội bộ 4 người
-              </p>
-            </div>
+            <Download size={20} className="text-[#1aa64e]" />
+            <h2 className="text-sm sm:text-base font-bold text-[#2D1A11] tracking-wide">
+              CÀI ĐẶT ỨNG DỤNG 1835
+            </h2>
           </div>
-          <button onClick={onClose} className="mc-btn mc-btn-obsidian px-2.5 py-1 text-sm">
+          <button
+            onClick={onClose}
+            className="mc-btn mc-btn-obsidian px-2 py-0.5 text-xs text-white"
+            title="Đóng"
+          >
             ✕
           </button>
         </div>
 
-        {/* Tab Buttons */}
-        <div className="flex items-center gap-2 mb-4 border-b-2 border-[#2D1A11]/20 pb-2">
+        {/* Tab selection */}
+        <div className="flex gap-2 mb-3.5">
           <button
-            onClick={() => setActiveTab('pwa')}
-            className={`mc-btn text-xs px-3 py-1.5 flex items-center gap-1.5 ${
-              activeTab === 'pwa' ? 'mc-btn-1835' : 'mc-btn'
+            type="button"
+            onClick={() => setActiveTab('desktop')}
+            className={`flex-1 py-1.5 px-2 text-xs font-bold flex items-center justify-center gap-1.5 border-2 transition-all cursor-pointer ${
+              activeTab === 'desktop'
+                ? 'mc-btn-1835 shadow-xs'
+                : 'bg-[#FFFDF7] border-[#2D1A11] text-[#52372A] hover:bg-[#FAF2DC]'
             }`}
           >
-            <Layers size={13} />
-            <span>ỨNG DỤNG WEB (PWA OFFLINE)</span>
+            <Laptop size={14} />
+            <span>MÁY TÍNH (WINDOWS)</span>
           </button>
           <button
-            onClick={() => setActiveTab('apk')}
-            className={`mc-btn text-xs px-3 py-1.5 flex items-center gap-1.5 ${
-              activeTab === 'apk' ? 'mc-btn-1835' : 'mc-btn'
+            type="button"
+            onClick={() => setActiveTab('mobile')}
+            className={`flex-1 py-1.5 px-2 text-xs font-bold flex items-center justify-center gap-1.5 border-2 transition-all cursor-pointer ${
+              activeTab === 'mobile'
+                ? 'mc-btn-1835 shadow-xs'
+                : 'bg-[#FFFDF7] border-[#2D1A11] text-[#52372A] hover:bg-[#FAF2DC]'
             }`}
           >
-            <Smartphone size={13} />
-            <span>XUẤT FILE ANDROID APK (CAPACITOR)</span>
+            <Smartphone size={14} />
+            <span>ĐIỆN THOẠI (ANDROID / IOS)</span>
           </button>
         </div>
 
-        {/* Tab 1: PWA Deployment */}
-        {activeTab === 'pwa' && (
-          <div className="space-y-4">
-            <div className="p-3 bg-[#FAF2DC] border-2 border-[#2D1A11] flex items-start gap-3">
-              <CheckCircle2 size={20} className="text-[#1aa64e] flex-shrink-0 mt-0.5" />
-              <div className="text-xs text-[#52372A] space-y-1">
-                <span className="font-bold text-[#2D1A11] block">Service Worker & Web Manifest: Đã sẵn sàng</span>
-                <p>
-                  Ứng dụng hỗ trợ hoạt động offline không cần mạng internet với bộ nhớ đệm cục bộ,
-                  âm thanh tổng hợp 8-bit và giao diện responsive cho điện thoại di động.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div className="p-3 bg-[#FAF2DC] border border-[#2D1A11]">
-                <div className="font-bold text-[#F37022] mb-1">📱 Điện Thoại Android / iOS</div>
-                <p className="text-[#52372A] leading-relaxed">
-                  Mở địa chỉ mạng trên Chrome, Brave hoặc Safari. Nhấn vào menu trình duyệt (dấu 3 chấm hoặc nút Chia sẻ) và
-                  chọn <strong className="text-[#2D1A11]">"Thêm vào Màn hình chính"</strong> để cài app độc lập không viền.
-                </p>
-              </div>
-              <div className="p-3 bg-[#FAF2DC] border border-[#2D1A11]">
-                <div className="font-bold text-[#0072CE] mb-1">💻 Máy Tính Windows / Mac</div>
-                <p className="text-[#52372A] leading-relaxed">
-                  Bấm biểu tượng cài đặt trên thanh địa chỉ URL hoặc bấm nút bên dưới để mở ứng dụng trong cửa sổ riêng biệt.
-                </p>
-              </div>
-            </div>
-
-            <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+        {/* TAB 1: DESKTOP GUIDE */}
+        {activeTab === 'desktop' && (
+          <div className="space-y-3 text-xs">
+            {installPrompt && (
               <button
                 onClick={handleInstallPwa}
-                className="mc-btn mc-btn-1835 text-xs w-full sm:w-auto px-5 py-2.5 flex items-center justify-center gap-2 font-bold"
+                className="w-full mc-btn mc-btn-emerald py-2.5 text-xs font-bold flex items-center justify-center gap-2 shadow-xs mb-2"
               >
                 <Download size={15} />
-                <span>CÀI ĐẶT PWA LÊN THIẾT BỊ NÀY</span>
+                <span>BẤM VÀO ĐÂY ĐỂ CÀI ĐẶT NGAY (1 CLICK)</span>
               </button>
+            )}
+
+            <div className="p-3 bg-[#FAF2DC] border-2 border-[#2D1A11] space-y-2">
+              <div className="flex items-center gap-1.5 font-bold text-[#1aa64e]">
+                <CheckCircle2 size={16} />
+                <span>Cách cài trên Chrome &amp; Edge (Windows):</span>
+              </div>
+
+              <div className="space-y-2 text-[#52372A] leading-relaxed">
+                <div className="flex items-start gap-2">
+                  <span className="font-bold text-[#F37022] bg-[#FDF7E7] border border-[#2D1A11] w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0 mt-0.5">
+                    1
+                  </span>
+                  <p>
+                    Nhìn sang góc bên phải của <strong>thanh địa chỉ URL</strong> (cạnh dấu ngôi sao). Bạn sẽ thấy biểu tượng <strong>Cài đặt ⤓</strong> (máy tính nhỏ có mũi tên hoặc dấu cộng <code>+</code>).
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-2">
+                  <span className="font-bold text-[#F37022] bg-[#FDF7E7] border border-[#2D1A11] w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0 mt-0.5">
+                    2
+                  </span>
+                  <p>
+                    Bấm vào icon đó rồi chọn <strong>"Cài đặt" (Install)</strong>.
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-2">
+                  <span className="font-bold text-[#1aa64e] bg-[#FDF7E7] border border-[#2D1A11] w-4 h-4 rounded-full flex items-center justify-center text-[10px] shrink-0 mt-0.5">
+                    ✓
+                  </span>
+                  <p className="font-semibold text-[#2D1A11]">
+                    Icon <strong>1835</strong> sẽ xuất hiện trên <strong>Desktop</strong> &amp; <strong>Taskbar</strong>, mở chạy toàn màn hình như game độc lập!
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-2.5 bg-[#FFFDF7] border border-[#2D1A11] text-[11px] text-[#52372A]">
+              <strong>Cách 2 (qua Menu 3 chấm): </strong>
+              Bấm dấu <strong>3 chấm ⋮</strong> ở góc phải trình duyệt ➔ Chọn <strong>"Lưu và chia sẻ"</strong> ➔ Chọn <strong>"Cài đặt 1835..."</strong>.
             </div>
           </div>
         )}
 
-        {/* Tab 2: Android APK Export */}
-        {activeTab === 'apk' && (
-          <div className="space-y-4">
-            <div className="p-3 bg-[#FAF2DC] border-2 border-[#2D1A11]">
-              <div className="text-xs font-bold text-[#2D1A11] mb-1">
-                ĐƯỜNG ỐNG CAPACITOR: ĐÓNG GÓI RA FILE ANDROID APK NATIVE
+        {/* TAB 2: MOBILE (ANDROID & IOS) GUIDE */}
+        {activeTab === 'mobile' && (
+          <div className="space-y-3 text-xs">
+            {/* Step 0: Connect Wifi */}
+            <div className="p-3 bg-[#e8f4fc] border-2 border-[#0072CE] text-[#0072CE] space-y-1.5">
+              <div className="font-bold text-xs flex items-center justify-between">
+                <span>Bước 0: Kết nối điện thoại và máy tính chung 1 Wi-Fi</span>
               </div>
-              <p className="text-xs text-[#52372A] leading-relaxed">
-                Dự án đã được cấu hình sẵn thư mục <code className="bg-[#FFFDF7] px-1 py-0.5 border border-[#2D1A11]">android/</code> và file <code className="bg-[#FFFDF7] px-1 py-0.5 border border-[#2D1A11]">capacitor.config.ts</code>. Chạy chuỗi lệnh sau trong terminal:
+              <p className="text-[11px] text-[#2D1A11] leading-relaxed">
+                Mở trình duyệt trên điện thoại và truy cập địa chỉ IP này:
               </p>
-            </div>
-
-            {/* Code Block with Copy Button */}
-            <div className="relative bg-[#2D1A11] p-3 border-2 border-[#2D1A11] text-[#FDF7E7]">
-              <pre className="text-xs font-mono text-[#FFBE94] overflow-x-auto leading-relaxed select-all">
-                {capacitorCommands}
-              </pre>
-              <button
-                onClick={() => copyToClipboard(capacitorCommands, 'cap')}
-                className="absolute top-2 right-2 mc-btn text-xs px-2 py-1 bg-[#FAF2DC] text-[#2D1A11]"
-              >
-                <Copy size={11} className="inline mr-1" />
-                {copiedCode === 'cap' ? 'ĐÃ CHÉP!' : 'SAO CHÉP'}
-              </button>
-            </div>
-
-            {/* Alternative Cloud APK Builder */}
-            <div className="p-3 bg-[#FAF2DC] border border-[#2D1A11] text-xs text-[#52372A]">
-              <div className="font-bold text-[#2D1A11] flex items-center gap-1.5 mb-1">
-                <ExternalLink size={14} className="text-[#F37022]" />
-                <span>Tùy chọn: Tải APK trực tuyến không cần Android Studio qua PWABuilder</span>
-              </div>
-              <p className="text-[#52372A]">
-                Deploy website lên Vercel, Netlify hoặc GitHub Pages và dán link vào{' '}
-                <a
-                  href="https://www.pwabuilder.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-[#0072CE] underline font-bold"
+              <div className="flex items-center gap-2">
+                <code className="bg-white px-2 py-1 font-mono font-bold text-xs border border-[#0072CE] text-[#0072CE] select-all flex-1">
+                  {lanUrl}
+                </code>
+                <button
+                  type="button"
+                  onClick={copyLanUrl}
+                  className="mc-btn mc-btn-obsidian px-2.5 py-1 text-[11px] text-white shrink-0"
                 >
-                  PWABuilder.com
-                </a>{' '}
-                để tải về file APK đã được ký số tự động chỉ trong vài giây!
+                  <Copy size={11} className="inline mr-1" />
+                  {copiedIp ? 'ĐÃ CHÉP!' : 'CHÉP LINK'}
+                </button>
+              </div>
+            </div>
+
+            {/* Direct APK File Download */}
+            <div className="p-3 bg-[#eef8ed] border-2 border-[#1aa64e] space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="font-bold text-xs text-[#1aa64e] flex items-center gap-1.5">
+                  <Smartphone size={15} />
+                  <span>XUẤT FILE CÀI ĐẶT ANDROID APK:</span>
+                </div>
+                <span className="text-[10px] bg-[#1aa64e] text-white px-1.5 py-0.5 rounded font-bold">BẢN CHUẨN</span>
+              </div>
+              <p className="text-[11px] text-[#2D1A11] leading-relaxed">
+                Bạn có thể bấm nút bên dưới để tải trực tiếp file cài đặt APK về điện thoại Android hoặc máy tính:
               </p>
+              <a
+                href="/1835.apk"
+                download="1835.apk"
+                className="w-full mc-btn mc-btn-emerald py-2 text-xs font-bold flex items-center justify-center gap-2 shadow-xs text-white no-underline text-center cursor-pointer"
+              >
+                <Download size={14} />
+                <span>⬇ BẤM VÀO ĐÂY ĐỂ TẢI FILE 1835.APK</span>
+              </a>
+            </div>
+
+            {/* Android instructions */}
+            <div className="p-3 bg-[#FAF2DC] border-2 border-[#2D1A11] space-y-1.5">
+              <div className="font-bold text-[#1aa64e] flex items-center gap-1.5">
+                <Smartphone size={15} />
+                <span>Dành cho điện thoại Android (Chrome / Brave):</span>
+              </div>
+              <ol className="list-decimal list-inside space-y-1 text-[#52372A] leading-relaxed pl-1 text-[11px]">
+                <li>Mở Chrome trên điện thoại, truy cập link: <strong>{lanUrl}</strong></li>
+                <li>Bấm vào biểu tượng <strong>3 dấu chấm ⋮</strong> ở góc trên bên phải Chrome.</li>
+                <li>Chọn <strong>"Cài đặt ứng dụng"</strong> (hoặc <strong>"Thêm vào Màn hình chính"</strong>).</li>
+                <li>Bấm <strong>"Cài đặt"</strong> ➔ App <strong>1835</strong> sẽ xuất hiện ngay trên màn hình điện thoại!</li>
+              </ol>
+            </div>
+
+            {/* iOS instructions */}
+            <div className="p-3 bg-[#FAF2DC] border-2 border-[#2D1A11] space-y-1.5">
+              <div className="font-bold text-[#D10074] flex items-center gap-1.5">
+                <Apple size={15} />
+                <span>Dành cho iPhone / iPad (Safari):</span>
+              </div>
+              <ol className="list-decimal list-inside space-y-1 text-[#52372A] leading-relaxed pl-1 text-[11px]">
+                <li>Mở trình duyệt <strong>Safari</strong> trên iPhone, gõ: <strong>{lanUrl}</strong></li>
+                <li>Nhìn xuống thanh công cụ dưới cùng Safari, bấm nút <strong>Chia sẻ ⎋</strong> (hình vuông có mũi tên chỉ lên).</li>
+                <li>Vuốt nhẹ xuống và chọn <strong>"Thêm vào Màn hình chính" (Add to Home Screen)</strong>.</li>
+                <li>Bấm <strong>"Thêm" (Add)</strong> ở góc trên bên phải ➔ Icon <strong>1835</strong> sẽ xuất hiện ngoài màn hình chính của iPhone!</li>
+              </ol>
             </div>
           </div>
         )}
 
         {/* Footer */}
-        <div className="mt-6 pt-3 border-t-2 border-[#2D1A11]/20 flex justify-end">
-          <button onClick={onClose} className="mc-btn mc-btn-1835 text-xs px-4 py-2 font-bold">
-            ĐÃ HIỂU, ĐÓNG
+        <div className="mt-4 pt-2.5 border-t border-[#2D1A11]/20 flex justify-end">
+          <button
+            onClick={onClose}
+            className="mc-btn mc-btn-obsidian text-xs px-4 py-1.5 font-bold text-white cursor-pointer"
+          >
+            ĐÓNG
           </button>
         </div>
       </div>

@@ -4,29 +4,26 @@ import { useApp } from '../context/AppContext';
 import { BIOME_CONFIGS } from '../utils/pixelBlocks';
 import { PixelAvatar } from '../utils/pixelAvatars';
 import { soundEngine } from '../utils/audio';
-import { Play, Trash2, ShieldAlert } from 'lucide-react';
+import { Play, Trash2, ShieldAlert, Calendar } from 'lucide-react';
 
 interface WorldCardProps {
   world: World;
   onSelect: () => void;
+  onOpenTimeline?: (worldId: string) => void;
 }
 
-export const WorldCard: React.FC<WorldCardProps> = ({ world, onSelect }) => {
-  const { tasks, deleteWorld, getWorldProgress, isBoss } = useApp();
+export const WorldCard: React.FC<WorldCardProps> = ({ world, onSelect, onOpenTimeline }) => {
+  const { tasks, deleteWorld, getWorldProgress } = useApp();
   const progress = getWorldProgress(world.id);
   const biomeCfg = BIOME_CONFIGS[world.biome] || BIOME_CONFIGS.diamond_cavern;
 
   // Find unique assigned users in this world
   const worldTasks = tasks.filter((t) => t.worldId === world.id);
-  const assignedUserIds = Array.from(new Set(worldTasks.map((t) => t.assigneeId)));
+  const assignedUserIds = Array.from(new Set(worldTasks.flatMap((t) => (Array.isArray(t.assigneeIds) && t.assigneeIds.length > 0 ? t.assigneeIds : [t.assigneeId]))));
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!isBoss) {
-      alert('Chỉ Boss (Steve) mới có quyền xóa Thế giới này!');
-      return;
-    }
-    if (window.confirm(`Xác nhận xóa Thế giới "${world.name}" và tất cả khối tài nguyên bên trong?`)) {
+    if (window.confirm(`Xác nhận xóa Thế giới "${world.name}" và tất cả trạm nhiệm vụ bên trong?`)) {
       deleteWorld(world.id);
     }
   };
@@ -78,16 +75,14 @@ export const WorldCard: React.FC<WorldCardProps> = ({ world, onSelect }) => {
           </div>
         </div>
 
-        {/* Delete Quick Trigger (Boss only) */}
-        {isBoss && (
-          <button
-            onClick={handleDelete}
-            className="mc-btn mc-btn-obsidian px-2 py-1 text-xs text-[#E5D6B6] hover:text-[#ED1B24] z-10"
-            title="Xóa Thế giới (Quyền Boss)"
-          >
-            <Trash2 size={12} />
-          </button>
-        )}
+        {/* Delete Quick Trigger */}
+        <button
+          onClick={handleDelete}
+          className="mc-btn mc-btn-obsidian px-2 py-1 text-xs text-[#E5D6B6] hover:text-[#ED1B24] z-10"
+          title="Xóa Thế giới này"
+        >
+          <Trash2 size={12} />
+        </button>
 
         {/* Subtle Pixel Grid overlay */}
         <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:12px_12px] opacity-15 pointer-events-none" />
@@ -123,7 +118,7 @@ export const WorldCard: React.FC<WorldCardProps> = ({ world, onSelect }) => {
           </div>
         </div>
 
-        {/* Footer: Assignees & Enter World Button */}
+        {/* Footer: Assignees & Action Buttons */}
         <div className="mt-4 pt-3 border-t-2 border-[#2D1A11]/20 flex items-center justify-between gap-2">
           {/* Assigned Minions */}
           <div className="flex items-center -space-x-1.5 overflow-hidden">
@@ -138,17 +133,36 @@ export const WorldCard: React.FC<WorldCardProps> = ({ world, onSelect }) => {
             )}
           </div>
 
-          {/* Enter World Action with 1835s Gradient */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleEnterWorld();
-            }}
-            className="mc-btn mc-btn-1835 text-xs px-3.5 py-1.5 font-bold"
-          >
-            <Play size={12} className="inline fill-current mr-1" />
-            VÀO THẾ GIỚI
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Timeline button for this specific world */}
+            {onOpenTimeline && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  soundEngine.playClick();
+                  onOpenTimeline(world.id);
+                }}
+                className="mc-btn bg-[#2D1A11] hover:bg-[#3D251A] text-[#FAF2DC] text-xs px-2.5 py-1.5 font-bold flex items-center gap-1 cursor-pointer border border-white/40 shadow-xs"
+                title={`Xem Timeline theo thế giới ${world.name}`}
+              >
+                <Calendar size={12} className="text-[#F37022] shrink-0" />
+                <span>Timeline</span>
+              </button>
+            )}
+
+            {/* Enter World Action with 1835s Gradient */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEnterWorld();
+              }}
+              className="mc-btn mc-btn-1835 text-xs px-3.5 py-1.5 font-bold"
+            >
+              <Play size={12} className="inline fill-current mr-1" />
+              VÀO THẾ GIỚI
+            </button>
+          </div>
         </div>
       </div>
     </div>

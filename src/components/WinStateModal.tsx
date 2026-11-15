@@ -75,10 +75,10 @@ export const WinStateModal: React.FC<WinStateModalProps> = ({
         {/* Flashing 8-bit Banner with 1835s Gradient */}
         <div className="my-2">
           <div className="mc-level-up-banner text-2xl md:text-3xl font-bold tracking-widest text-[#F37022]">
-            ★ LÊN CẤP! ★
+            ★ LÊN CẤP! THẾ GIỚI HOÀN THÀNH ★
           </div>
-          <div className="text-xl md:text-2xl font-bold text-[#2D1A11] tracking-wider mt-1">
-            THẾ GIỚI HOÀN THÀNH 100%!
+          <div className="text-sm md:text-base font-bold text-[#2D1A11] tracking-wider mt-1">
+            ĐỘI 1835s ĐÃ CHINH PHỤC TOÀN BỘ CÁC TRẠM ZICZAC!
           </div>
         </div>
 

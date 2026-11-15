@@ -199,6 +199,126 @@ class RetroSoundEngine {
       // Audio fallback
     }
   }
+
+  public playLevelUp() {
+    this.playVictoryFanfare();
+  }
+
+  // 8-bit Unlock chime when station unlocks
+  public playUnlock() {
+    if (!this.enabled) return;
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+
+      const notes = [440, 554.37, 659.25, 880];
+      notes.forEach((freq, idx) => {
+        if (!this.ctx) return;
+        const start = this.ctx.currentTime + idx * 0.08;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, start);
+
+        gain.gain.setValueAtTime(0.3, start);
+        gain.gain.exponentialRampToValueAtTime(0.01, start + 0.12);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(start);
+        osc.stop(start + 0.13);
+      });
+    } catch {
+      // Audio fallback
+    }
+  }
+
+  // Cross-assignment turn notification chime ("Đã đến lượt bạn!")
+  public playTurnNotification() {
+    if (!this.enabled) return;
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+
+      const notes = [523.25, 659.25, 783.99, 1046.5];
+      notes.forEach((freq, idx) => {
+        if (!this.ctx) return;
+        const start = this.ctx.currentTime + idx * 0.09;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, start);
+
+        gain.gain.setValueAtTime(0.4, start);
+        gain.gain.exponentialRampToValueAtTime(0.01, start + 0.18);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(start);
+        osc.stop(start + 0.2);
+      });
+    } catch {
+      // Audio fallback
+    }
+  }
+
+  // Arcade mini-game jump
+  public playJump() {
+    if (!this.enabled) return;
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.12);
+
+      gain.gain.setValueAtTime(0.25, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.13);
+    } catch {
+      // Audio fallback
+    }
+  }
+
+  // Arcade mini-game game over / collision
+  public playGameOver() {
+    if (!this.enabled) return;
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(80, this.ctx.currentTime + 0.35);
+
+      gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.35);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start();
+      osc.stop(this.ctx.currentTime + 0.36);
+    } catch {
+      // Audio fallback
+    }
+  }
 }
 
 export const soundEngine = new RetroSoundEngine();

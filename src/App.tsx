@@ -1,83 +1,322 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Header } from './components/Header';
 import { WorldsView } from './views/WorldsView';
 import { WorldDetailView } from './views/WorldDetailView';
-import { LoginModal } from './components/LoginModal';
+import { AuthModal } from './components/AuthModal';
 import { UserProfileModal } from './components/UserProfileModal';
 import { CreateWorldModal } from './components/CreateWorldModal';
 import { CreateTaskModal } from './components/CreateTaskModal';
 import { WinStateModal } from './components/WinStateModal';
 import { ApkExportModal } from './components/ApkExportModal';
+import { ArcadeModal } from './components/ArcadeModal';
+import { TimelineModal } from './components/TimelineModal';
+import { NotificationToast } from './components/NotificationToast';
+import { NotificationDrawer } from './components/NotificationDrawer';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { Gamepad2, Download, Globe, Calendar, Bell, User, RefreshCw } from 'lucide-react';
+import { soundEngine } from './utils/audio';
 
 const MainContent: React.FC = () => {
-  const { activeWorld, setActiveWorldId } = useApp();
+  const { currentUser, users, activeWorld, setActiveWorldId, unreadNotificationCount } = useApp();
+
+  // Instant Auto-Update Detection
+  const [hasNewUpdate, setHasNewUpdate] = useState(false);
+  const currentAppVersion = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const checkVersion = async () => {
+      try {
+        const res = await fetch(`./version.json?t=${Date.now()}`, { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.version) {
+            if (currentAppVersion.current === null) {
+              currentAppVersion.current = data.version;
+            } else if (data.version > currentAppVersion.current) {
+              setHasNewUpdate(true);
+            }
+          }
+        }
+      } catch {}
+    };
+
+    checkVersion();
+    const interval = setInterval(checkVersion, 30000);
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkVersion();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, []);
+
+  const handleApplyUpdate = () => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        for (const reg of regs) {
+          reg.unregister();
+        }
+      });
+      if ('caches' in window) {
+        caches.keys().then((names) => {
+          names.forEach((name) => caches.delete(name));
+        });
+      }
+    }
+    window.location.reload();
+  };
 
   // Modals state
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isCreateWorldOpen, setIsCreateWorldOpen] = useState(false);
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [isApkModalOpen, setIsApkModalOpen] = useState(false);
   const [isWinStateOpen, setIsWinStateOpen] = useState(false);
+  const [isArcadeOpen, setIsArcadeOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isTimelineOpen, setIsTimelineOpen] = useState(false);
+  const [timelineWorldId, setTimelineWorldId] = useState<string | null>(null);
+
+  const handleOpenTimeline = (worldId?: string | null) => {
+    setTimelineWorldId(worldId || null);
+    setIsTimelineOpen(true);
+  };
+
+  // If not logged in, ALWAYS display login screen directly!
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen min-h-[100dvh] flex items-center justify-center p-3 sm:p-4 login-cherry-bg relative overflow-hidden">
+        {/* Floating Instant Update Notification Banner */}
+        {hasNewUpdate && (
+          <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[99999] w-[92%] max-w-md animate-bounce">
+            <div className="mc-panel p-3 bg-gradient-to-r from-[#F37022] to-[#ED1B24] text-white border-4 border-[#2D1A11] shadow-[0_4px_20px_rgba(0,0,0,0.6),4px_4px_0px_#2D1A11] flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl animate-pulse">🚀</span>
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-wider text-white">CÓ BẢN CẬP NHẬT MỚI!</div>
+                  <div className="text-[10px] text-white/90">Chạm để tải lại tính năng mới ngay</div>
+                </div>
+              </div>
+              <button
+                onClick={handleApplyUpdate}
+                className="mc-btn bg-[#2D1A11] hover:bg-[#3D251A] text-[#FAF2DC] text-xs font-bold px-3 py-1.5 border-2 border-white cursor-pointer shrink-0 shadow-sm active:scale-95"
+              >
+                CẬP NHẬT 🔄
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Gentle falling cherry petals in background */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+          {[...Array(12)].map((_, i) => (
+            <div
+              key={i}
+              className="sakura-leaf"
+              style={{
+                left: `${(i * 8.5 + 4) % 96}%`,
+                width: `${10 + (i % 4) * 3}px`,
+                height: `${14 + (i % 4) * 3}px`,
+                animationDuration: `${5.5 + (i % 5) * 1.8}s`,
+                animationDelay: `${(i * 0.7) % 6}s`,
+                opacity: 0.75,
+              }}
+            />
+          ))}
+        </div>
+
+        <div className="relative z-10 w-full flex items-center justify-center">
+          <AuthModal
+            isOpen={true}
+            isMandatory={true}
+            onClose={() => {}}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#FDF7E7] text-[#2D1A11]">
-      {/* Top Header */}
-      <Header
-        onOpenLogin={() => setIsLoginOpen(true)}
-        onOpenApkModal={() => setIsApkModalOpen(true)}
-        onOpenProfileModal={() => setIsProfileOpen(true)}
-      />
+    <div className="min-h-screen flex flex-col text-[#2D1A11] relative overflow-x-hidden mc-minecraft-landscape">
+      {/* Floating Instant Update Notification Banner */}
+      {hasNewUpdate && (
+        <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[99999] w-[92%] max-w-md animate-bounce">
+          <div className="mc-panel p-3 bg-gradient-to-r from-[#F37022] to-[#ED1B24] text-white border-4 border-[#2D1A11] shadow-[0_4px_20px_rgba(0,0,0,0.6),4px_4px_0px_#2D1A11] flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl animate-pulse">🚀</span>
+              <div>
+                <div className="text-xs font-bold uppercase tracking-wider text-white">CÓ BẢN CẬP NHẬT MỚI!</div>
+                <div className="text-[10px] text-white/90">Chạm để tải lại tính năng mới ngay</div>
+              </div>
+            </div>
+            <button
+              onClick={handleApplyUpdate}
+              className="mc-btn bg-[#2D1A11] hover:bg-[#3D251A] text-[#FAF2DC] text-xs font-bold px-3 py-1.5 border-2 border-white cursor-pointer shrink-0 shadow-sm active:scale-95"
+            >
+              CẬP NHẬT 🔄
+            </button>
+          </div>
+        </div>
+      )}
 
-      {/* Main App Body */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 md:p-6">
-        {activeWorld ? (
-          <WorldDetailView
-            world={activeWorld}
-            onBackToWorlds={() => setActiveWorldId(null)}
-            onOpenCreateTask={() => setIsCreateTaskOpen(true)}
-            onTriggerWinState={() => setIsWinStateOpen(true)}
-          />
-        ) : (
-          <WorldsView
-            onOpenCreateWorld={() => setIsCreateWorldOpen(true)}
-            onSelectWorld={(worldId) => setActiveWorldId(worldId)}
-          />
-        )}
-      </main>
+      <div className="relative z-10 flex flex-col min-h-screen">
+        {/* Top Header */}
+        <Header
+          onOpenApkModal={() => setIsApkModalOpen(true)}
+          onOpenProfileModal={() => setIsProfileOpen(true)}
+          onOpenArcade={() => setIsArcadeOpen(true)}
+          onOpenNotifications={() => setIsNotificationsOpen(true)}
+          onOpenTimeline={() => handleOpenTimeline(null)}
+        />
 
-      {/* Minecraft & 1835s Brand Footer */}
-      <footer className="mt-auto py-4 px-4 bg-[#FAF2DC] border-t-4 border-[#2D1A11] text-center text-xs text-[#52372A]">
-        <div className="flex flex-wrap items-center justify-center gap-4 max-w-4xl mx-auto font-medium">
-          <span className="font-bold text-[#2D1A11]">⛏️ Động cơ Voxel MineTask 1835s</span>
-          <span>•</span>
-          <span>Màu Nền Ngà (#FDF7E7) & Chữ Nâu Mực (#2D1A11)</span>
-          <span>•</span>
-          <span className="text-[#F37022] font-semibold">Dải Màu Gradient 1835s</span>
-          <span>•</span>
+        {/* Real-time 8-bit Notification Toast */}
+        <NotificationToast />
+
+        {/* Main App Body */}
+        <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 md:p-6 pb-24 md:pb-6">
+          {activeWorld ? (
+            <WorldDetailView
+              world={activeWorld}
+              onBackToWorlds={() => setActiveWorldId(null)}
+              onOpenCreateTask={() => setIsCreateTaskOpen(true)}
+              onTriggerWinState={() => setIsWinStateOpen(true)}
+              onOpenTimeline={() => handleOpenTimeline(activeWorld.id)}
+            />
+          ) : (
+            <WorldsView
+              onOpenCreateWorld={() => setIsCreateWorldOpen(true)}
+              onSelectWorld={(worldId) => setActiveWorldId(worldId)}
+              onOpenTimeline={(worldId) => handleOpenTimeline(worldId || null)}
+            />
+          )}
+        </main>
+
+        {/* Floating Arcade Button in bottom corner (Desktop Only) */}
+        <div className="hidden md:block fixed bottom-5 right-5 z-40">
           <button
-            onClick={() => setIsApkModalOpen(true)}
-            className="text-[#0072CE] font-bold hover:underline"
+            onClick={() => setIsArcadeOpen(true)}
+            className="mc-btn mc-btn-1835 !w-12 !h-12 !p-0 flex items-center justify-center shadow-[4px_4px_0px_#2D1A11] group animate-bounce cursor-pointer text-white"
+            title="Mở Trạm Giải Trí Arcade Pixel"
           >
-            Xuất File APK Android & Cài Đặt PWA
+            <Gamepad2 size={24} className="group-hover:rotate-12 transition-transform text-white drop-shadow shrink-0" />
           </button>
         </div>
-      </footer>
+
+        {/* Footer */}
+        <footer className="mt-auto py-2.5 px-4 pb-20 md:pb-2.5 bg-[#FAF2DC]/95 border-t-3 border-[#2D1A11] text-center text-xs text-[#52372A]">
+          <div className="flex flex-wrap items-center justify-center gap-3 max-w-4xl mx-auto font-medium">
+            <span className="font-bold text-[#2D1A11]">MineTask 1835s</span>
+            <span>•</span>
+            <button
+              onClick={() => setIsApkModalOpen(true)}
+              className="mc-btn mc-btn-emerald text-[11px] px-2.5 py-1 text-white flex items-center gap-1 font-bold shadow-xs cursor-pointer"
+            >
+              <Download size={12} />
+              <span>Cài App Máy Tính / Điện Thoại</span>
+            </button>
+          </div>
+        </footer>
+
+        {/* Mobile Bottom Navigation Bar (Thumb-Friendly on Android & iOS) */}
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#FAF2DC]/98 border-t-3 border-[#2D1A11] pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] pt-1.5 px-2 shadow-[0_-4px_12px_rgba(45,26,17,0.15)] backdrop-blur-md">
+          <div className="flex items-center justify-around max-w-lg mx-auto">
+            {/* Tab 1: Thế Giới (Worlds) */}
+            <button
+              onClick={() => {
+                soundEngine.playClick();
+                setActiveWorldId(null);
+              }}
+              className={`flex-1 flex flex-col items-center py-1 px-1 transition-transform active:scale-95 ${
+                !activeWorld ? 'text-[#F37022] font-bold' : 'text-[#836251]'
+              }`}
+            >
+              <Globe size={18} className={!activeWorld ? 'stroke-[2.5]' : ''} />
+              <span className="text-[10px] mt-0.5 font-bold tracking-tight">Thế giới</span>
+            </button>
+
+            {/* Tab 2: Timeline */}
+            <button
+              onClick={() => {
+                soundEngine.playClick();
+                handleOpenTimeline(activeWorld ? activeWorld.id : null);
+              }}
+              className="flex-1 flex flex-col items-center py-1 px-1 text-[#52372A] transition-transform active:scale-95"
+            >
+              <Calendar size={18} className="text-[#0072CE]" />
+              <span className="text-[10px] mt-0.5 font-bold tracking-tight">Timeline</span>
+            </button>
+
+            {/* Tab 3: Arcade Pixel Game (Center Highlighted Tab) */}
+            <button
+              onClick={() => {
+                soundEngine.playClick();
+                setIsArcadeOpen(true);
+              }}
+              className="flex-1 flex flex-col items-center py-1 px-1 text-[#2D1A11] transition-transform active:scale-95 relative"
+            >
+              <div className="w-8 h-8 -mt-3 bg-gradient-to-r from-[#F37022] to-[#ED1B24] border-2 border-[#2D1A11] flex items-center justify-center shadow-md">
+                <Gamepad2 size={18} className="text-white drop-shadow" />
+              </div>
+              <span className="text-[10px] mt-0.5 font-bold tracking-tight">Arcade</span>
+            </button>
+
+            {/* Tab 4: Thông Báo (Notifications with Badge) */}
+            <button
+              onClick={() => {
+                soundEngine.playClick();
+                setIsNotificationsOpen(true);
+              }}
+              className="flex-1 flex flex-col items-center py-1 px-1 text-[#52372A] transition-transform active:scale-95 relative"
+            >
+              <div className="relative">
+                <Bell size={18} />
+                {unreadNotificationCount > 0 && (
+                  <span className="absolute -top-1.5 -right-2 bg-[#ED1B24] text-white text-[8px] font-bold px-1 rounded-full border border-[#2D1A11] animate-bounce">
+                    {unreadNotificationCount}
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] mt-0.5 font-bold tracking-tight">Thông báo</span>
+            </button>
+
+            {/* Tab 5: Hồ Sơ (Profile) */}
+            <button
+              onClick={() => {
+                soundEngine.playClick();
+                setIsProfileOpen(true);
+              }}
+              className="flex-1 flex flex-col items-center py-1 px-1 text-[#52372A] transition-transform active:scale-95"
+            >
+              <User size={18} className="text-[#753B94]" />
+              <span className="text-[10px] mt-0.5 font-bold tracking-tight">Cá nhân</span>
+            </button>
+          </div>
+        </nav>
+      </div>
 
       {/* Modals */}
-      <LoginModal
-        isOpen={isLoginOpen}
-        onClose={() => setIsLoginOpen(false)}
+      <NotificationDrawer
+        isOpen={isNotificationsOpen}
+        onClose={() => setIsNotificationsOpen(false)}
+      />
+
+      <ArcadeModal
+        isOpen={isArcadeOpen}
+        onClose={() => setIsArcadeOpen(false)}
       />
 
       <UserProfileModal
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
-        onOpenSwitchLogin={() => {
-          setIsProfileOpen(false);
-          setIsLoginOpen(true);
-        }}
       />
 
       <CreateWorldModal
@@ -110,15 +349,37 @@ const MainContent: React.FC = () => {
         isOpen={isApkModalOpen}
         onClose={() => setIsApkModalOpen(false)}
       />
+
+      {/* Timeline Modal rendered conditionally */}
+      {isTimelineOpen && (
+        <ErrorBoundary
+          fallbackTitle="LỖI HIỂN THỊ TIMELINE"
+          onReset={() => {
+            setIsTimelineOpen(false);
+            setTimelineWorldId(null);
+          }}
+        >
+          <TimelineModal
+            isOpen={true}
+            initialWorldId={timelineWorldId}
+            onClose={() => {
+              setIsTimelineOpen(false);
+              setTimelineWorldId(null);
+            }}
+          />
+        </ErrorBoundary>
+      )}
     </div>
   );
 };
 
 export function App() {
   return (
-    <AppProvider>
-      <MainContent />
-    </AppProvider>
+    <ErrorBoundary fallbackTitle="LỖI HỆ THỐNG MINETASK 1835s">
+      <AppProvider>
+        <MainContent />
+      </AppProvider>
+    </ErrorBoundary>
   );
 }
 

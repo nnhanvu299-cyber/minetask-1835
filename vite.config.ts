@@ -1,14 +1,207 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+function apiBackendPlugin() {
+  const dataFile = path.resolve(__dirname, 'data/store.json');
+
+  const isDefaultMockUser = (u: any) => {
+    if (!u) return true;
+    const em = (u.email || '').toLowerCase().trim();
+    const id = (u.id || '').toLowerCase().trim();
+    const name = (u.name || '').toLowerCase().trim();
+    return (
+      em === 'admin@1835.vn' ||
+      em === 'steve@1835.vn' ||
+      em.endsWith('@1835s.team') ||
+      id === 'user_steve_default' ||
+      id === 'steve' ||
+      id === 'alex' ||
+      id === 'devon' ||
+      id === 'luna' ||
+      name === 'steve' ||
+      name === 'alex' ||
+      name === 'devon' ||
+      name === 'thợ mỏ 1835'
+    );
+  };
+
+  const readStore = () => {
+    try {
+      if (fs.existsSync(dataFile)) {
+        const store = JSON.parse(fs.readFileSync(dataFile, 'utf-8'));
+        if (Array.isArray(store.users)) {
+          store.users = store.users.filter((u: any) => !isDefaultMockUser(u));
+        }
+        return store;
+      }
+    } catch (e) {
+      console.error('Read store error:', e);
+    }
+    return { users: [], worlds: [], tasks: [] };
+  };
+
+  const writeStore = (data: any) => {
+    try {
+      if (Array.isArray(data.users)) {
+        data.users = data.users.filter((u: any) => !isDefaultMockUser(u));
+      }
+      const dir = path.dirname(dataFile);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(dataFile, JSON.stringify(data, null, 2), 'utf-8');
+    } catch (e) {
+      console.error('Write store error:', e);
+    }
+  };
+
+  return {
+    name: 'api-backend-plugin',
+    configureServer(server: any) {
+      server.middlewares.use((req: any, res: any, next: any) => {
+        if (!req.url.startsWith('/api/')) return next();
+
+        // Enable CORS for local network and all devices (phones, tablets, PCs)
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+        if (req.method === 'OPTIONS') {
+          res.statusCode = 204;
+          return res.end();
+        }
+
+        if (req.url === '/api/sync' && req.method === 'GET') {
+          const store = readStore();
+          res.setHeader('Content-Type', 'application/json');
+          return res.end(JSON.stringify(store));
+        }
+
+        if (req.url === '/api/sync' && req.method === 'POST') {
+          let body = '';
+          req.on('data', (chunk: any) => { body += chunk; });
+          req.on('end', () => {
+            try {
+              const payload = JSON.parse(body);
+              const store = readStore();
+              if (Array.isArray(payload.users)) {
+                if (payload.replaceUsers) {
+                  store.users = payload.users;
+                } else {
+                  const userMap = new Map();
+                  store.users.forEach((u: any) => {
+                    if (u && u.email) userMap.set(u.email.toLowerCase(), u);
+                  });
+                  payload.users.forEach((u: any) => {
+                    if (u && u.email) userMap.set(u.email.toLowerCase(), u);
+                  });
+                  store.users = Array.from(userMap.values());
+                }
+              }
+              if (Array.isArray(payload.worlds) && payload.worlds.length > 0) {
+                store.worlds = payload.worlds;
+              }
+              if (Array.isArray(payload.tasks) && payload.tasks.length > 0) {
+                store.tasks = payload.tasks;
+              }
+              writeStore(store);
+              res.setHeader('Content-Type', 'application/json');
+              return res.end(JSON.stringify({ success: true, store }));
+            } catch (err: any) {
+              res.statusCode = 500;
+              return res.end(JSON.stringify({ success: false, error: err?.message }));
+            }
+          });
+          return;
+        }
+
+        if (req.url === '/api/register' && req.method === 'POST') {
+          let body = '';
+          req.on('data', (chunk: any) => { body += chunk; });
+          req.on('end', () => {
+            try {
+              const payload = JSON.parse(body);
+              const store = readStore();
+              const trimmedEmail = (payload.email || '').trim().toLowerCase();
+              const trimmedName = (payload.name || '').trim();
+
+              const existing = store.users.find((u: any) => 
+                (u.email && u.email.toLowerCase() === trimmedEmail) || 
+                (u.name && u.name.toLowerCase() === trimmedName.toLowerCase())
+              );
+
+              if (existing) {
+                res.setHeader('Content-Type', 'application/json');
+                return res.end(JSON.stringify({ success: false, message: 'Tên hoặc Email này đã được sử dụng.' }));
+              }
+
+              const newUser = {
+                id: `user_${Date.now()}`,
+                name: trimmedName,
+                email: trimmedEmail,
+                password: payload.password,
+                role: 'Thành viên Co-op 1835',
+                title: 'Thợ Mỏ Co-op',
+                level: 1,
+                avatarKey: payload.avatarKey || 'sniffer',
+                favoriteBiome: 'Rừng Hoa Anh Đào',
+                tasksMined: 0,
+                totalXp: 0,
+                primaryColor: '#F37022',
+              };
+
+              store.users.push(newUser);
+              writeStore(store);
+
+              res.setHeader('Content-Type', 'application/json');
+              return res.end(JSON.stringify({ success: true, user: newUser }));
+            } catch (err: any) {
+              res.statusCode = 500;
+              return res.end(JSON.stringify({ success: false, error: err?.message }));
+            }
+          });
+          return;
+        }
+
+        next();
+      });
+    }
+  };
+}
+
+function versionPlugin() {
+  return {
+    name: 'version-plugin',
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'version.json',
+        source: JSON.stringify({
+          version: Date.now(),
+          buildTime: new Date().toISOString()
+        }, null, 2)
+      });
+    }
+  };
+}
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  base: './',
+  plugins: [react(), tailwindcss(), apiBackendPlugin(), versionPlugin()],
   server: {
     port: 3000,
     host: true,
     watch: {
-      ignored: ['**/android/**', '**/dist/**']
+      ignored: ['**/android/**', '**/dist/**', '**/data/**', '**/*.apk']
     }
+  },
+  preview: {
+    port: 3000,
+    host: true
   }
 });

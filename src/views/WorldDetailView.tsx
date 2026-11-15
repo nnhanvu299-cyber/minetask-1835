@@ -2,16 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { World } from '../types';
 import { useApp } from '../context/AppContext';
 import { XPBar } from '../components/XPBar';
-import { TaskBlock } from '../components/TaskBlock';
+import { ZiczacTimelineMap } from '../components/ZiczacTimelineMap';
 import { BIOME_CONFIGS } from '../utils/pixelBlocks';
-import { PixelAvatar } from '../utils/pixelAvatars';
-import { ArrowLeft, Plus, Filter, Users, ShieldAlert, Sparkles } from 'lucide-react';
+import { ArrowLeft, Plus, ShieldAlert, Sparkles, MapPin, CheckCircle2, Trophy, Calendar } from 'lucide-react';
 
 interface WorldDetailViewProps {
   world: World;
   onBackToWorlds: () => void;
   onOpenCreateTask: () => void;
   onTriggerWinState: () => void;
+  onOpenTimeline: () => void;
 }
 
 export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
@@ -19,16 +19,15 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
   onBackToWorlds,
   onOpenCreateTask,
   onTriggerWinState,
+  onOpenTimeline,
 }) => {
-  const { tasks, users, getWorldProgress } = useApp();
+  const { tasks, getWorldProgress } = useApp();
   const progress = getWorldProgress(world.id);
   const biomeCfg = BIOME_CONFIGS[world.biome] || BIOME_CONFIGS.diamond_cavern;
 
-  const [filterAssignee, setFilterAssignee] = useState<string>('all');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'todo' | 'in_progress' | 'done'>('all');
   const [hasCelebrated, setHasCelebrated] = useState<boolean>(false);
 
-  // Tự động kích hoạt hiệu ứng Win State khi đạt 100%
+  // Kích hoạt ăn mừng Level-up khi đạt 100%
   useEffect(() => {
     if (progress.isCleared && !hasCelebrated) {
       setHasCelebrated(true);
@@ -39,46 +38,39 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
   // Tasks trong thế giới này
   const worldTasks = tasks.filter((t) => t.worldId === world.id);
 
-  // Lọc nhiệm vụ
-  const filteredTasks = worldTasks.filter((t) => {
-    const matchesAssignee = filterAssignee === 'all' || t.assigneeId === filterAssignee;
-    const matchesStatus = filterStatus === 'all' || t.status === filterStatus;
-    return matchesAssignee && matchesStatus;
-  });
-
   return (
-    <div className="space-y-5">
-      {/* 1. THANH TIẾN ĐỘ XP ĐỘI Ở ĐỈNH THẾ GIỚI (KHỞI ĐIỂM LEVEL 0, GRADIENT 1835s) */}
-      <div className="mc-panel p-4 bg-[#FAF2DC] border-4 border-[#2D1A11] shadow-[4px_4px_0px_#2D1A11]">
+    <div className="space-y-5 animate-fadeIn">
+      {/* 1. THANH TIẾN ĐỘ XP ĐỘI Ở ĐỈNH THẾ GIỚI (GRADIENT 1835s, KHỞI ĐIỂM LEVEL 0, 0% XP) */}
+      <div className="mc-panel p-3.5 sm:p-4 bg-[#FAF2DC] border-4 border-[#2D1A11] shadow-[4px_4px_0px_#2D1A11]">
         <XPBar
           currentXp={progress.earnedXp}
           totalXp={progress.totalXp}
           percentage={progress.percentage}
           level={progress.level}
-          label={`TIẾN ĐỘ XP ĐỘI 1835s: "${world.name.toUpperCase()}"`}
+          label={world.name.toUpperCase()}
           showDetails={true}
         />
       </div>
 
-      {/* 2. World Navigation & Biome Information Header */}
+      {/* 2. World Header & Navigation */}
       <div
         className={`mc-panel p-4 md:p-6 bg-gradient-to-r ${biomeCfg.gradient} border-4 border-[#2D1A11] relative overflow-hidden text-white shadow-[4px_4px_0px_#2D1A11]`}
       >
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            {/* Back Button */}
+            {/* Back Button - Icon Only */}
             <button
               onClick={onBackToWorlds}
-              className="mc-btn mc-btn-obsidian text-xs px-3 py-1 mb-2.5 inline-flex items-center gap-1.5"
+              className="mc-icon-btn bg-[#2D1A11] text-white mb-2.5 cursor-pointer"
+              title="Quay lại Không gian làm việc"
             >
-              <ArrowLeft size={13} />
-              <span>← QUAY LẠI TẤT CẢ THẾ GIỚI</span>
+              <ArrowLeft size={18} className="text-white shrink-0" />
             </button>
 
             {/* Title & Badges */}
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-2xl md:text-3xl drop-shadow">{biomeCfg.iconSvg}</span>
-              <h1 className="text-lg md:text-2xl font-bold text-white drop-shadow">
+              <h1 className="text-lg md:text-2xl font-bold text-white drop-shadow mc-title tracking-wider">
                 {world.name}
               </h1>
               <span
@@ -93,30 +85,39 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
                 <ShieldAlert size={11} className="inline mr-1" />
                 {world.difficulty === 'Hardcore' ? 'Cực Khó' : world.difficulty === 'Normal' ? 'Tiêu Chuẩn' : 'Nhàn Nhã'}
               </span>
+
               {progress.isCleared && (
                 <button
                   onClick={onTriggerWinState}
                   className="mc-btn mc-btn-1835 text-xs px-2.5 py-0.5 animate-pulse font-bold"
                 >
-                  <Sparkles size={12} className="inline mr-1" />
-                  HOÀN THÀNH 100%! (XEM LẠI LỄ ĂN MỪNG)
+                  <Trophy size={13} className="inline mr-1" />
+                  HOÀN THÀNH 100%!
                 </button>
               )}
             </div>
 
-            <p className="text-xs text-white/90 mt-2 max-w-2xl leading-relaxed drop-shadow">
-              {world.description || biomeCfg.description} • Mỗi khối quặng cần đủ 3 lần cập nhật đào để thu hoạch.
+            <p className="text-xs text-white/95 mt-2 max-w-2xl leading-relaxed drop-shadow font-medium">
+              {world.description || biomeCfg.description}
             </p>
           </div>
 
-          {/* Action: Chế tác khối nhiệm vụ (Giao Task tùy ý) */}
-          <div className="flex-shrink-0">
+          {/* Action Buttons: Timeline theo thế giới & Tạo nhiệm vụ */}
+          <div className="flex-shrink-0 flex items-center gap-2 flex-wrap">
+            <button
+              onClick={onOpenTimeline}
+              className="mc-btn bg-[#2D1A11] hover:bg-[#3D251A] text-[#FAF2DC] text-xs md:text-sm px-3.5 py-3 font-bold tracking-wider flex items-center gap-1.5 shadow-[2px_2px_0px_#836251] border-2 border-[#FFFFFF] cursor-pointer"
+              title={`Xem bản đồ Timeline theo thế giới ${world.name}`}
+            >
+              <Calendar size={16} className="text-[#F37022] shrink-0" />
+              <span>TIMELINE THẾ GIỚI</span>
+            </button>
             <button
               onClick={onOpenCreateTask}
-              className="mc-btn mc-btn-1835 text-xs md:text-sm px-5 py-3 w-full md:w-auto font-bold tracking-wider"
+              className="mc-btn mc-btn-1835 text-xs md:text-sm px-4 py-3 w-full sm:w-auto font-bold tracking-wider"
             >
               <Plus size={16} className="inline mr-1 stroke-[3]" />
-              CHẾ TÁC KHỐI QUẶNG (GIAO TASK)
+              THÊM NHIỆM VỤ
             </button>
           </div>
         </div>
@@ -125,103 +126,12 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
         <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px] opacity-15 pointer-events-none" />
       </div>
 
-      {/* 3. Filter Controls Toolbar */}
-      <div className="mc-panel p-3 bg-[#FAF2DC] border-3 border-[#2D1A11] flex flex-wrap items-center justify-between gap-3 text-xs">
-        {/* Status Filters */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
-          <span className="text-[#52372A] font-bold mr-1 flex items-center gap-1">
-            <Filter size={13} />
-            TRẠNG THÁI:
-          </span>
-          <button
-            onClick={() => setFilterStatus('all')}
-            className={`mc-btn px-2.5 py-1 text-xs ${
-              filterStatus === 'all' ? 'mc-btn-1835' : 'mc-btn'
-            }`}
-          >
-            TẤT CẢ ({worldTasks.length})
-          </button>
-          <button
-            onClick={() => setFilterStatus('todo')}
-            className={`mc-btn px-2 py-1 text-xs ${
-              filterStatus === 'todo' ? 'mc-btn-1835' : 'mc-btn'
-            }`}
-          >
-            ⛏️ CHƯA ĐÀO (0/3) ({worldTasks.filter((t) => t.status === 'todo').length})
-          </button>
-          <button
-            onClick={() => setFilterStatus('in_progress')}
-            className={`mc-btn px-2 py-1 text-xs ${
-              filterStatus === 'in_progress' ? 'mc-btn-1835' : 'mc-btn'
-            }`}
-          >
-            📜 ĐANG ĐÀO (1-2/3) ({worldTasks.filter((t) => t.status === 'in_progress').length})
-          </button>
-          <button
-            onClick={() => setFilterStatus('done')}
-            className={`mc-btn px-2 py-1 text-xs ${
-              filterStatus === 'done' ? 'mc-btn-1835' : 'mc-btn'
-            }`}
-          >
-            ✓ ĐÃ XONG (3/3) ({worldTasks.filter((t) => t.status === 'done').length})
-          </button>
-        </div>
-
-        {/* Assignee Filter Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5">
-          <span className="text-[#52372A] font-bold mr-1 flex items-center gap-1">
-            <Users size={13} />
-            THỢ MỎ:
-          </span>
-          <button
-            onClick={() => setFilterAssignee('all')}
-            className={`mc-btn px-2 py-1 text-xs ${
-              filterAssignee === 'all' ? 'mc-btn-1835' : 'mc-btn'
-            }`}
-          >
-            TẤT CẢ
-          </button>
-          {users.map((u) => {
-            const count = worldTasks.filter((t) => t.assigneeId === u.id).length;
-            if (count === 0 && filterAssignee !== u.id) return null;
-
-            return (
-              <button
-                key={u.id}
-                onClick={() => setFilterAssignee(u.id)}
-                className={`mc-btn px-2 py-1 text-xs flex items-center gap-1 ${
-                  filterAssignee === u.id ? 'mc-btn-1835' : 'mc-btn'
-                }`}
-              >
-                <PixelAvatar userId={u.id} size={15} showBorder={false} />
-                <span>{u.name} ({count})</span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 4. Task Blocks Grid 2x2 (2 hàng x 2 cột cân đối) */}
-      {filteredTasks.length === 0 ? (
-        <div className="mc-panel p-8 text-center text-[#52372A] bg-[#FAF2DC] border-4 border-[#2D1A11]">
-          <div className="text-4xl mb-2">⛏️</div>
-          <h3 className="text-base font-bold text-[#2D1A11] mb-1">KHÔNG CÓ KHỐI TÀI NGUYÊN NÀO TRONG MẠCH NÀY</h3>
-          <p className="text-xs mb-4">
-            {worldTasks.length === 0
-              ? 'Thế giới này chưa có nhiệm vụ nào. Hãy chế tác khối quặng đầu tiên để bắt đầu khai thác XP!'
-              : 'Không có nhiệm vụ nào phù hợp với bộ lọc hiện tại.'}
-          </p>
-          <button onClick={onOpenCreateTask} className="mc-btn mc-btn-1835 text-xs px-4 py-2 font-bold">
-            + CHẾ TÁC KHỐI QUẶNG (GIAO TASK)
-          </button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {filteredTasks.map((task) => (
-            <TaskBlock key={task.id} task={task} />
-          ))}
-        </div>
-      )}
+      {/* 3. BẢN ĐỒ TIMELINE ZICZAC TỪ BẮT ĐẦU ĐẾN KẾT THÚC */}
+      <ZiczacTimelineMap
+        world={world}
+        tasks={worldTasks}
+        onOpenCreateTask={onOpenCreateTask}
+      />
     </div>
   );
 };

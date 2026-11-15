@@ -1,22 +1,23 @@
-export type UserId = 'steve' | 'alex' | 'devon' | 'luna';
+export type UserId = string;
 
 export interface UserProfile {
   id: UserId;
   name: string;
+  email: string;
+  password?: string;
   role: string;
   title: string;
   level: number;
-  avatarKey: UserId;
+  avatarKey: string;
   favoriteBiome: string;
   tasksMined: number;
   totalXp: number;
   primaryColor: string;
-  isBoss: boolean; // Boss phân quyền
 }
 
 export type BiomeType = 'overworld' | 'diamond_cavern' | 'nether' | 'the_end' | 'lush_caves';
 
-export type BlockRarity = 'coal' | 'iron' | 'gold' | 'redstone' | 'diamond' | 'emerald' | 'netherite';
+export type BlockRarity = 'coal' | 'iron' | 'gold' | 'redstone' | 'diamond' | 'emerald' | 'netherite' | 'lapis';
 
 export interface BlockConfig {
   type: BlockRarity;
@@ -31,7 +32,7 @@ export interface BlockConfig {
 export type TaskStatus = 'todo' | 'in_progress' | 'done';
 
 export interface MiningLogEntry {
-  updateNumber: number; // 1, 2, hoặc 3
+  updateNumber: number;
   note: string;
   timestamp: number;
   authorId: UserId;
@@ -45,18 +46,22 @@ export interface Task {
   description: string;
   blockType: BlockRarity;
   xpValue: number;
-  assigneeId: UserId;
+  assigneeId: UserId; // Người phụ trách chính (tương thích ngược)
+  assigneeIds?: UserId[]; // Danh sách nhiều người cùng làm
   status: TaskStatus;
   createdAt: number;
   completedAt?: number;
   completedBy?: UserId;
   priority: 'low' | 'normal' | 'high' | 'legendary';
-  // Cơ chế 3 lần đào: 0/3 -> 1/3 -> 2/3 -> 3/3 (Đào xong)
-  miningUpdatesCount: number; // 0, 1, 2, 3
+  orderIndex: number; // Thứ tự trạm trên timeline ziczac (0, 1, 2, 3...)
+  miningUpdatesCount: number;
   miningLogs: MiningLogEntry[];
   progressNote?: string;
   progressUpdatedAt?: number;
   progressUpdatedBy?: UserId;
+  deadline?: string; // Định dạng YYYY-MM-DD
+  requiredHits?: number; // Tổng số lần cần đào để hoàn thành (mặc định 3 hoặc tự chọn)
+  currentHits?: number; // Số lần đã đào hiện tại
 }
 
 export interface World {
@@ -71,6 +76,20 @@ export interface World {
   createdBy: UserId;
 }
 
+export interface NotificationItem {
+  id: string;
+  type: 'congratulations' | 'turn_alert' | 'world_cleared' | 'system';
+  title: string;
+  message: string;
+  targetUserId: UserId;
+  senderName?: string;
+  createdAt: number;
+  read: boolean;
+  taskTitle?: string;
+  stationNumber?: number;
+  xpEarned?: number;
+}
+
 export interface AppState {
   users: UserProfile[];
   currentUser: UserProfile;
@@ -78,4 +97,5 @@ export interface AppState {
   tasks: Task[];
   activeWorldId: string | null;
   soundEnabled: boolean;
+  notifications: NotificationItem[];
 }

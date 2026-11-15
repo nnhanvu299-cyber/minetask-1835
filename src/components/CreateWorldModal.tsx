@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { BiomeType } from '../types';
 import { BIOME_CONFIGS } from '../utils/pixelBlocks';
-import { Crown } from 'lucide-react';
+import { Globe, Sparkles, X } from 'lucide-react';
 
 interface CreateWorldModalProps {
   isOpen: boolean;
@@ -15,7 +15,7 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
   onClose,
   onWorldCreated,
 }) => {
-  const { createWorld, createTask, isBoss } = useApp();
+  const { createWorld, createTask, users } = useApp();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -30,11 +30,6 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
     e.preventDefault();
     if (!name.trim()) return;
 
-    if (!isBoss) {
-      alert('Chỉ Boss (Steve) mới có quyền tạo Thế giới mới!');
-      return;
-    }
-
     const newWorld = createWorld({
       name: name.trim(),
       description: description.trim(),
@@ -43,123 +38,113 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
       targetDeadline: targetDeadline || undefined,
     });
 
-    // Mọi Thế giới mới tạo khởi điểm ở Level 0 (0% XP) với 4 task chưa đào chia đều cho cả 4 thành viên (kể cả Boss Steve)
-    if (createStarterTasks) {
-      // 1. Task cho Boss Steve
-      createTask({
-        worldId: newWorld.id,
-        title: 'Quy hoạch kiến trúc & Phê duyệt giải pháp',
-        description: 'Boss Steve trực tiếp kiểm tra cấu trúc, thiết lập mục tiêu sprint và hỗ trợ các thợ mỏ.',
-        blockType: 'netherite',
-        xpValue: 320,
-        assigneeId: 'steve',
-        priority: 'legendary',
-      });
+    // Tạo sẵn 4 trạm nhiệm vụ ban đầu nếu có thành viên
+    if (createStarterTasks && users.length > 0) {
+      const userList = users;
+      const tasksConfig = [
+        {
+          title: 'Trạm 1: Khởi động dự án & Lập kế hoạch',
+          desc: 'Thống nhất mục tiêu và chuẩn bị tài liệu ban đầu.',
+          block: 'gold' as const,
+          xp: 150,
+          priority: 'high' as const,
+        },
+        {
+          title: 'Trạm 2: Thiết kế giao diện và trải nghiệm',
+          desc: 'Hoàn thiện bản vẽ thiết kế các màn hình.',
+          block: 'diamond' as const,
+          xp: 220,
+          priority: 'high' as const,
+        },
+        {
+          title: 'Trạm 3: Phát triển chức năng cốt lõi',
+          desc: 'Xây dựng các module chức năng và xử lý dữ liệu.',
+          block: 'redstone' as const,
+          xp: 200,
+          priority: 'legendary' as const,
+        },
+        {
+          title: 'Trạm 4: Kiểm thử toàn diện và bàn giao',
+          desc: 'Đánh giá chất lượng và chuẩn bị bàn giao sản phẩm.',
+          block: 'emerald' as const,
+          xp: 300,
+          priority: 'legendary' as const,
+        },
+      ];
 
-      // 2. Task cho Alex
-      createTask({
-        worldId: newWorld.id,
-        title: 'Chế tác giao diện Voxel & Trải nghiệm người dùng',
-        description: 'Alex thiết kế bố cục các khối quặng, tối ưu font chữ tiếng Việt và màu sắc 1835s.',
-        blockType: 'diamond',
-        xpValue: 220,
-        assigneeId: 'alex',
-        priority: 'high',
-      });
-
-      // 3. Task cho Devon
-      createTask({
-        worldId: newWorld.id,
-        title: 'Xây dựng logic nghiệp vụ & Dữ liệu đồng bộ',
-        description: 'Devon hoàn thiện cơ chế lưu trữ cục bộ, tính toán tỷ lệ thanh XP và âm thanh 8-bit.',
-        blockType: 'redstone',
-        xpValue: 160,
-        assigneeId: 'devon',
-        priority: 'high',
-      });
-
-      // 4. Task cho Luna
-      createTask({
-        worldId: newWorld.id,
-        title: 'Kiểm thử toàn diện & Đóng gói bản phát hành',
-        description: 'Luna rà soát lỗi trên thiết bị di động, kiểm tra bảng gỗ tiến độ và xuất bản APK.',
-        blockType: 'emerald',
-        xpValue: 260,
-        assigneeId: 'luna',
-        priority: 'legendary',
+      tasksConfig.forEach((cfg, idx) => {
+        const targetAssignee = userList[idx % userList.length]?.id || userList[0]?.id || '';
+        createTask({
+          worldId: newWorld.id,
+          title: cfg.title,
+          description: cfg.desc,
+          blockType: cfg.block,
+          xpValue: cfg.xp,
+          assigneeId: targetAssignee,
+          priority: cfg.priority,
+        });
       });
     }
 
-    // Reset fields & close
+    // Reset & Navigate
     setName('');
     setDescription('');
     setBiome('overworld');
     setDifficulty('Normal');
     setTargetDeadline('');
-    onWorldCreated(newWorld.id);
     onClose();
+    onWorldCreated(newWorld.id);
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-      <div className="mc-panel w-full max-w-xl p-6 bg-[#FDF7E7] text-[#2D1A11] max-h-[90vh] overflow-y-auto border-4 border-[#2D1A11]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+      <div className="mc-panel w-full max-w-xl p-4 sm:p-6 bg-[#FDF7E7] text-[#2D1A11] max-h-[92vh] max-h-[92dvh] overflow-y-auto touch-scroll border-4 border-[#2D1A11] shadow-[6px_6px_0px_#2D1A11]">
         {/* Header */}
         <div className="flex items-center justify-between pb-3 mb-4 border-b-2 border-[#2D1A11]">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🌍</span>
-            <div>
-              <h2 className="text-lg font-bold text-[#2D1A11] flex items-center gap-1.5">
-                TẠO THẾ GIỚI MỚI (DỰ ÁN)
-                <span className="text-[10px] bg-[#F37022] text-white font-bold px-1.5 py-0.2 border border-[#2D1A11] inline-flex items-center gap-0.5">
-                  <Crown size={10} /> QUYỀN BOSS
-                </span>
-              </h2>
-              <p className="text-xs text-[#52372A]">
-                Thế giới mới tạo sẽ khởi điểm từ Level 0 (0% XP) cho cả 4 thành viên
-              </p>
-            </div>
-          </div>
-          <button onClick={onClose} className="mc-btn mc-btn-obsidian px-2.5 py-1 text-sm">
-            ✕
+          <h2 className="text-base font-bold text-[#2D1A11]">
+            TẠO THẾ GIỚI MỚI
+          </h2>
+          <button onClick={onClose} className="mc-btn mc-btn-obsidian px-2.5 py-1 text-xs text-[#FAF2DC]">
+            <X size={15} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* World Name */}
+          {/* Tên Thế Giới */}
           <div>
             <label className="block text-xs font-bold text-[#2D1A11] mb-1">
-              TÊN THẾ GIỚI (DỰ ÁN) *
+              TÊN THẾ GIỚI *
             </label>
             <input
               type="text"
               required
-              placeholder="Ví dụ: Chiến dịch Q4, Nâng cấp Hạ Tầng Cloud 1835s..."
+              placeholder="ví dụ: Dự Án Mobile App 1835s, Chiến Dịch Q4..."
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mc-input text-sm font-medium"
+              className="mc-input text-xs sm:text-sm font-medium"
             />
           </div>
 
-          {/* Description */}
+          {/* Mô tả */}
           <div>
             <label className="block text-xs font-bold text-[#2D1A11] mb-1">
-              MỤC TIÊU & NHIỆM VỤ CỦA THẾ GIỚI
+              MÔ TẢ MỤC TIÊU
             </label>
             <textarea
               rows={2}
-              placeholder="Mô tả mục tiêu của sprint hoặc dự án mới này..."
+              placeholder="Mục tiêu của thế giới này..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="mc-textarea text-xs"
+              className="mc-textarea text-xs font-medium"
             />
           </div>
 
-          {/* Biome Selection */}
+          {/* Chọn Quần Xã (Biome) */}
           <div>
             <label className="block text-xs font-bold text-[#2D1A11] mb-1.5">
-              CHỌN VÙNG ĐẤT (BIOME THEME)
+              QUẦN XÃ MÔI TRƯỜNG *
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {(Object.keys(BIOME_CONFIGS) as BiomeType[]).map((bKey) => {
                 const bCfg = BIOME_CONFIGS[bKey];
                 const isSelected = biome === bKey;
@@ -168,20 +153,16 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
                   <div
                     key={bKey}
                     onClick={() => setBiome(bKey)}
-                    className={`p-2.5 cursor-pointer border-2 transition-all flex items-center gap-2.5 ${
+                    className={`p-2.5 border-2 cursor-pointer transition-all flex items-center gap-2 ${
                       isSelected
-                        ? 'border-[#2D1A11] bg-[#FAF2DC] shadow-[2px_2px_0px_#2D1A11]'
+                        ? 'border-[#2D1A11] bg-[#FAF2DC] shadow-[3px_3px_0px_#2D1A11]'
                         : 'border-[#E5D6B6] bg-[#FFFDF7] hover:border-[#2D1A11]'
                     }`}
                   >
-                    <span className="text-xl flex-shrink-0">{bCfg.iconSvg}</span>
-                    <div className="min-w-0">
-                      <div className="text-xs font-bold text-[#2D1A11] truncate">
-                        {bCfg.name}
-                      </div>
-                      <div className="text-[11px] text-[#52372A] truncate">
-                        {bCfg.description}
-                      </div>
+                    <span className="text-xl">{bCfg.iconSvg}</span>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-bold text-[#2D1A11] truncate">{bCfg.name}</div>
+                      <div className="text-[10px] text-[#52372A] truncate">{bCfg.description}</div>
                     </div>
                   </div>
                 );
@@ -189,64 +170,64 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
             </div>
           </div>
 
-          {/* Difficulty & Deadline */}
+          {/* Độ Khó & Deadline */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-[#2D1A11] mb-1">
-                ĐỘ KHÓ DỰ ÁN
+                ĐỘ KHÓ
               </label>
               <select
                 value={difficulty}
-                onChange={(e) => setDifficulty(e.target.value as 'Peaceful' | 'Normal' | 'Hardcore')}
+                onChange={(e) => setDifficulty(e.target.value as typeof difficulty)}
                 className="mc-select text-xs font-medium"
               >
-                <option value="Peaceful">Nhàn Nhã (Tiến độ thoải mái)</option>
-                <option value="Normal">Tiêu Chuẩn (Sprint bình thường)</option>
-                <option value="Hardcore">Cực Khó (Thời hạn nghiêm ngặt)</option>
+                <option value="Peaceful">Nhàn Nhã (Peaceful)</option>
+                <option value="Normal">Tiêu Chuẩn (Normal)</option>
+                <option value="Hardcore">Cực Khó (Hardcore)</option>
               </select>
             </div>
 
             <div>
               <label className="block text-xs font-bold text-[#2D1A11] mb-1">
-                HẠN CHÓT DỰ KIẾN
+                HẠN CHÓT (DEADLINE)
               </label>
               <input
                 type="date"
                 value={targetDeadline}
                 onChange={(e) => setTargetDeadline(e.target.value)}
-                className="mc-input text-xs"
+                className="mc-input text-xs font-medium"
               />
             </div>
           </div>
 
-          {/* Starter Tasks Checkbox */}
-          <div className="p-3 bg-[#FAF2DC] border-2 border-[#2D1A11] flex items-center gap-2.5">
+          {/* Tự động tạo trạm ban đầu */}
+          <div className="p-3 bg-[#FAF2DC] border-2 border-[#2D1A11] flex items-center gap-2 text-xs">
             <input
               type="checkbox"
-              id="starter-tasks"
+              id="starterTasks"
               checked={createStarterTasks}
               onChange={(e) => setCreateStarterTasks(e.target.checked)}
-              className="w-4 h-4 cursor-pointer accent-[#F37022]"
+              className="w-4 h-4 text-[#F37022] rounded-none cursor-pointer"
             />
-            <label htmlFor="starter-tasks" className="text-xs text-[#2D1A11] font-medium cursor-pointer">
-              Tự động sinh sẵn 4 khối quặng khởi đầu chia đều cho cả 4 thành viên (Steve, Alex, Devon, Luna)
+            <label htmlFor="starterTasks" className="cursor-pointer font-bold text-[#2D1A11]">
+              Tự động khởi tạo các trạm nhiệm vụ ban đầu
             </label>
           </div>
 
-          {/* Form Actions */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t-2 border-[#2D1A11]/20">
+          {/* Submit */}
+          <div className="pt-3 border-t-2 border-[#2D1A11] flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="mc-btn mc-btn-obsidian text-sm px-4 py-2"
+              className="mc-btn mc-btn-obsidian px-3 py-1.5 text-xs text-[#FAF2DC]"
             >
-              HỦY BỎ
+              Hủy
             </button>
             <button
               type="submit"
-              className="mc-btn mc-btn-1835 text-sm px-5 py-2 font-bold tracking-wide"
+              className="mc-btn mc-btn-1835 px-4 py-1.5 text-xs font-bold tracking-wider"
             >
-              TẠO THẾ GIỚI (LEVEL 0)
+              Tạo thế giới
             </button>
           </div>
         </form>
