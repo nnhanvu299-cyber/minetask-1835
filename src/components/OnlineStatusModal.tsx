@@ -8,9 +8,7 @@ import {
   RefreshCw,
   X,
   CheckCircle,
-  HardDrive,
   Users,
-  ShieldCheck,
   Zap,
   Globe,
   Radio,
@@ -87,9 +85,8 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-bold text-[#2D1A11] uppercase tracking-wide leading-tight">
-                TRẠM ĐIỀU KHIỂN ONLINE & ĐỒNG BỘ
+                TRẠM ĐIỀU KHIỂN ONLINE
               </h2>
-              <p className="text-[10px] text-[#836251]">Hệ thống đồng bộ đa thiết bị & phiên đăng nhập 1835s</p>
             </div>
           </div>
           <button
@@ -113,7 +110,7 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
               </div>
               <div>
                 <div className="text-xs sm:text-sm font-bold text-[#2D1A11] flex items-center gap-1.5">
-                  <span>{isOnlineMode ? 'CHẾ ĐỘ ONLINE (TRỰC TUYẾN)' : 'CHẾ ĐỘ OFFLINE (LƯU TRÊN MÁY)'}</span>
+                  <span>{isOnlineMode ? 'CHẾ ĐỘ ONLINE' : 'CHẾ ĐỘ OFFLINE'}</span>
                   <span
                     className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${
                       isConnected
@@ -121,13 +118,8 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
                         : 'bg-amber-50 text-amber-800 border-amber-300'
                     }`}
                   >
-                    {isConnected ? '🟢 ĐANG KẾT NỐI' : '🟠 TRÊN MÁY'}
+                    {isConnected ? '🟢 ONLINE' : '🟠 OFFLINE'}
                   </span>
-                </div>
-                <div className="text-[11px] text-[#52372A] mt-0.5">
-                  {isOnlineMode
-                    ? 'Đồng bộ hai chiều 24/7 giữa máy tính và điện thoại. Tác vụ cập nhật tức thì.'
-                    : 'Hoạt động độc lập, không cần mạng, lưu an toàn trên máy tính này.'}
                 </div>
               </div>
             </div>
@@ -276,36 +268,19 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
           </div>
         </div>
 
-        {/* Section: Persistence On Machine Info */}
-        <div className="p-3 bg-[#FFFDF7] border-2 border-[#E5D6B6] rounded flex items-start gap-2.5 text-xs text-[#52372A]">
-          <div className="p-1.5 bg-amber-50 rounded border border-amber-200 text-amber-700 shrink-0">
-            <HardDrive size={16} />
+        {/* Device Notification Actions */}
+        <div className="p-2.5 bg-[#FFFDF7] border-2 border-[#E5D6B6] rounded flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 text-xs font-bold text-[#2D1A11]">
+            <Bell size={14} className="text-[#F37022]" />
+            <span>THÔNG BÁO THIẾT BỊ</span>
           </div>
-          <div className="leading-relaxed">
-            <strong className="text-[#2D1A11] block mb-0.5">💾 Chế độ lưu đăng nhập trên máy:</strong>
-            Tài khoản của bạn đã được lưu tự động trên thiết bị này. Khi bạn đóng trình duyệt, tắt tab hoặc mở lại ứng dụng sau này, hệ thống sẽ tự động đăng nhập mà không cần nhập lại mật khẩu. Bạn chỉ bị đăng xuất khi bấm nút <strong>Đăng xuất</strong> trên thanh tiêu đề.
-          </div>
-        </div>
-
-        {/* Section: Device Notifications */}
-        <div className="p-3 bg-[#FFFDF7] border-2 border-[#E5D6B6] rounded flex items-start justify-between gap-3 text-xs text-[#52372A] mt-3">
-          <div className="flex items-start gap-2.5">
-            <div className="p-1.5 bg-emerald-50 rounded border border-emerald-200 text-emerald-700 shrink-0">
-              <Bell size={16} />
-            </div>
-            <div className="leading-relaxed">
-              <strong className="text-[#2D1A11] block mb-0.5">🔔 Thông báo cập nhật về máy tính / điện thoại:</strong>
-              Hệ thống sẽ gửi thông báo hệ điều hành thẳng về khay thông báo Windows / Android / màn hình khóa khi có bản cập nhật mới hoặc khi đồng đội giao việc.
-            </div>
-          </div>
-          <div className="flex flex-col gap-1.5 shrink-0">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={async () => {
                 await requestDeviceNotificationPermission();
                 window.dispatchEvent(new CustomEvent('1835_TRIGGER_UPDATE_ALERT'));
               }}
-              className="mc-btn mc-btn-1835 text-[10px] px-2.5 py-1.5 font-bold text-white cursor-pointer shadow-xs active:scale-95 whitespace-nowrap"
-              title="Kích hoạt thông báo bản cập nhật mới về máy"
+              className="mc-btn mc-btn-1835 text-[10px] px-2.5 py-1 font-bold text-white cursor-pointer shadow-xs active:scale-95 whitespace-nowrap"
             >
               GỬI TB CẬP NHẬT 🚀
             </button>
@@ -315,7 +290,6 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
                 await sendTestDeviceNotification();
               }}
               className="mc-btn text-[10px] px-2.5 py-1 font-bold bg-[#FAF2DC] border border-[#2D1A11] hover:bg-[#F3E6C8] cursor-pointer whitespace-nowrap"
-              title="Gửi thử thông báo kiểm tra"
             >
               THỬ CHUÔNG 🔔
             </button>

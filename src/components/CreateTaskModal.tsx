@@ -197,7 +197,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
 
           {/* Số lần đào cần thiết (Tiến độ hoàn thành) */}
           <div className="p-3 bg-[#FAF2DC] border-2 border-[#2D1A11] shadow-[2px_2px_0px_#2D1A11]">
-            <div className="flex items-center justify-between mb-1.5">
+            <div className="flex items-center justify-between mb-2">
               <label className="text-xs font-bold text-[#2D1A11] flex items-center gap-1.5">
                 <span>⛏️</span> SỐ LẦN ĐÀO CẦN THIẾT (TIẾN ĐỘ) *
               </label>
@@ -205,10 +205,6 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 {requiredHits} lần đào
               </span>
             </div>
-
-            <p className="text-[11px] text-[#52372A] mb-2 leading-relaxed">
-              Bạn có thể tự chọn số lần bổ cuốc để hoàn thành mục tiêu đào này. Mỗi lần bổ cuốc sẽ tăng 1 lượt tiến độ kèm hiệu ứng nứt khối.
-            </p>
 
             <div className="flex items-center gap-1.5 flex-wrap">
               {[

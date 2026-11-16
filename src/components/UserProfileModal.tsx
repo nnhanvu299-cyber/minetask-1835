@@ -202,8 +202,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 <p className="text-xs text-[#52372A] font-medium mt-0.5">{currentUser.role} • {currentUser.title}</p>
                 <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap text-[11px] text-[#836251] mt-0.5">
                   <span>{currentUser.email}</span>
-                  <span>•</span>
-                  <span className="text-emerald-700 font-semibold">💾 Đã lưu đăng nhập trên máy</span>
                 </div>
 
                 <div className="mt-3">
@@ -399,14 +397,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               )}
             </div>
 
-            {/* Helpful sync info note */}
-            <div className="p-2.5 bg-[#fef6e4] border border-[#f3d99f] rounded text-[11px] text-[#6b4724] leading-relaxed flex items-start gap-2">
-              <span className="text-sm shrink-0">💡</span>
-              <div>
-                <strong>Kết nối đồng đội Co-op:</strong> Tìm kiếm hỗ trợ gõ <strong>có dấu hoặc không dấu</strong> (ví dụ: <em>nhan</em> khớp với <em>Nhàn</em>, <em>tuan</em> khớp với <em>Tuấn</em>). Nếu bạn bè vừa tạo tài khoản trên điện thoại của họ, bạn có thể bấm <strong>"+ Thêm nhanh"</strong> hoặc dùng <strong>"Đồng bộ mã đội"</strong> để liên kết ngay.
-              </div>
-            </div>
-
             {/* List of current members */}
             <div className="space-y-2">
               <div className="text-xs font-bold text-[#2D1A11] flex items-center justify-between">
@@ -467,21 +457,18 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   })}
 
                 {users.filter((u) => matchesUserSearch(u, searchQuery)).length === 0 && (
-                  <div className="col-span-1 sm:col-span-2 p-3.5 bg-[#FAF2DC] border-2 border-dashed border-[#F37022] rounded space-y-2 text-center animate-fadeIn">
+                  <div className="col-span-1 sm:col-span-2 p-3 bg-[#FAF2DC] border-2 border-dashed border-[#F37022] rounded space-y-2 text-center animate-fadeIn">
                     <div className="text-xs font-bold text-[#2D1A11]">
-                      Chưa tìm thấy bạn "{searchQuery}" trong danh sách máy này
+                      Không tìm thấy "{searchQuery}"
                     </div>
-                    <div className="text-[11px] text-[#6b4724] leading-relaxed max-w-sm mx-auto">
-                      Vì Web 1835 lưu trữ an toàn riêng biệt trên từng máy, nếu bạn bè vừa đăng ký tài khoản trên điện thoại của họ, bạn chỉ cần bấm thêm nhanh bên dưới để giao việc cho bạn ấy ngay!
-                    </div>
-                    <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                    <div className="flex flex-wrap items-center justify-center gap-2 pt-0.5">
                       <button
                         type="button"
                         onClick={() => handleQuickAdd(searchQuery)}
                         className="mc-btn mc-btn-emerald text-xs px-3 py-1.5 font-bold text-white flex items-center gap-1.5 shadow-xs cursor-pointer"
                       >
                         <UserPlus size={13} />
-                        <span>+ THÊM BẠN "{searchQuery.trim()}" VÀO ĐỘI NGAY</span>
+                        <span>+ THÊM BẠN "{searchQuery.trim()}" VÀO ĐỘI</span>
                       </button>
                       <button
                         type="button"
@@ -491,7 +478,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                         }}
                         className="mc-btn mc-btn-obsidian text-xs px-2.5 py-1.5 font-bold text-white flex items-center gap-1 cursor-pointer"
                       >
-                        <span>Tự điền chi tiết</span>
+                        <span>Điền chi tiết</span>
                       </button>
                     </div>
                   </div>
@@ -522,17 +509,17 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 className="text-xs text-[#F37022] hover:text-[#d45d17] font-bold cursor-pointer inline-flex items-center gap-1.5 py-1 px-2 bg-[#FAF2DC] border border-[#2D1A11]/20 rounded"
               >
                 <Share2 size={13} />
-                <span>{showSyncBox ? 'Đóng đồng bộ' : '📲 Đồng bộ mã đội (Sync)'}</span>
+                <span>{showSyncBox ? 'Đóng đồng bộ' : '📲 Đồng bộ mã đội'}</span>
               </button>
             </div>
 
             {/* Sync Box Drawer: Export & Import Team Code */}
             {showSyncBox && (
-              <div className="p-3 bg-[#FAF2DC] border-2 border-[#2D1A11] space-y-3 animate-fadeIn">
-                <div className="flex items-center justify-between pb-2 border-b border-[#2D1A11]/20">
+              <div className="p-3 bg-[#FAF2DC] border-2 border-[#2D1A11] space-y-2.5 animate-fadeIn">
+                <div className="flex items-center justify-between pb-1.5 border-b border-[#2D1A11]/20">
                   <span className="text-xs font-bold text-[#2D1A11] flex items-center gap-1.5">
                     <Share2 size={14} className="text-[#F37022]" />
-                    ĐỒNG BỘ ĐỘI NGŨ QUA MÃ CHIA SẺ (KHÔNG CẦN CÀI ĐẶT)
+                    ĐỒNG BỘ ĐỘI NGŨ
                   </span>
                   <button
                     type="button"
@@ -543,37 +530,28 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   </button>
                 </div>
 
-                <div className="text-[11px] text-[#52372A] leading-relaxed">
-                  Để điện thoại của bạn bè và máy tính của bạn có chung danh sách thành viên:
-                </div>
-
                 {/* Step 1: Copy My Team Code */}
-                <div className="p-2.5 bg-white border border-[#2D1A11]/30 rounded space-y-1.5">
-                  <div className="text-[11px] font-bold text-[#2D1A11] flex items-center justify-between">
-                    <span>1. Gửi danh sách đội cho bạn bè:</span>
-                    <button
-                      type="button"
-                      onClick={handleExportCode}
-                      className="mc-btn mc-btn-1835 text-[11px] px-2.5 py-1 font-bold flex items-center gap-1 cursor-pointer"
-                    >
-                      {copiedCode ? <Check size={12} className="text-white" /> : <Copy size={12} />}
-                      <span>{copiedCode ? '✓ ĐÃ CHÉP MÃ' : 'CHÉP MÃ ĐỘI'}</span>
-                    </button>
-                  </div>
-                  <div className="text-[10px] text-gray-500">
-                    Bấm "Chép mã đội" và gửi qua Zalo / Messenger cho bạn bè để họ dán vào điện thoại của họ.
-                  </div>
+                <div className="p-2 bg-white border border-[#2D1A11]/30 rounded flex items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-[#2D1A11]">1. Gửi mã đội cho bạn bè:</span>
+                  <button
+                    type="button"
+                    onClick={handleExportCode}
+                    className="mc-btn mc-btn-1835 text-xs px-3 py-1 font-bold flex items-center gap-1 cursor-pointer shrink-0"
+                  >
+                    {copiedCode ? <Check size={12} className="text-white" /> : <Copy size={12} />}
+                    <span>{copiedCode ? '✓ ĐÃ CHÉP' : 'CHÉP MÃ ĐỘI'}</span>
+                  </button>
                 </div>
 
                 {/* Step 2: Import Code From Friend */}
-                <form onSubmit={handleImportCode} className="p-2.5 bg-white border border-[#2D1A11]/30 rounded space-y-1.5">
-                  <div className="text-[11px] font-bold text-[#2D1A11]">
-                    2. Hoặc dán mã đội do bạn bè gửi:
+                <form onSubmit={handleImportCode} className="p-2 bg-white border border-[#2D1A11]/30 rounded space-y-1.5">
+                  <div className="text-xs font-bold text-[#2D1A11]">
+                    2. Nhập mã đội từ bạn bè:
                   </div>
                   <div className="flex gap-1.5">
                     <input
                       type="text"
-                      placeholder="Dán mã chia sẻ của bạn bè vào đây..."
+                      placeholder="Dán mã chia sẻ vào đây..."
                       value={importCodeInput}
                       onChange={(e) => setImportCodeInput(e.target.value)}
                       className="mc-input text-xs flex-1 py-1.5 px-2"

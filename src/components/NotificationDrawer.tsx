@@ -59,7 +59,6 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, 
               <h3 className="text-sm font-bold text-[#2D1A11] tracking-wider leading-none">
                 HỘP THƯ THÔNG BÁO CO-OP
               </h3>
-              <p className="text-[10px] text-[#52372A] mt-0.5">Báo hiệu chéo lượt làm việc & chúc mừng đào xong</p>
             </div>
           </div>
 
@@ -91,15 +90,8 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, 
               }`}
             ></span>
             <div className="min-w-0">
-              <div className="text-[11px] font-bold text-[#2D1A11] truncate">
-                {perm === 'granted' ? 'Thông báo về máy: ĐÃ BẬT ✅' : 'Thông báo về máy: CHƯA BẬT ⚠️'}
-              </div>
-              <div className="text-[10px] text-[#836251] truncate">
-                {perm === 'granted'
-                  ? testSent
-                    ? 'Đã gửi thông báo thử nghiệm về máy của bạn!'
-                    : 'Báo cập nhật mới & lượt đào vào Windows / Điện thoại'
-                  : 'Cấp quyền để nhận thông báo thẳng về máy tính / điện thoại'}
+              <div className="text-xs font-bold text-[#2D1A11] truncate">
+                {perm === 'granted' ? 'Thông báo thiết bị: BẬT ✅' : 'Thông báo thiết bị: TẮT ⚠️'}
               </div>
             </div>
           </div>
