@@ -41,6 +41,9 @@ interface AppContextValue {
   login: (email: string, pass: string) => Promise<{ success: boolean; message: string }> | { success: boolean; message: string };
   register: (name: string, email: string, pass: string, avatarKey: string) => Promise<{ success: boolean; message: string }> | { success: boolean; message: string };
   addTeamMember: (name: string, email: string, pass: string, avatarKey: string) => { success: boolean; message: string; user?: UserProfile };
+  importTeamMembers: (incomingUsers: UserProfile[]) => { success: boolean; count: number; message: string };
+  exportTeamCode: () => string;
+  importTeamCode: (code: string) => { success: boolean; count: number; message: string };
   updateUserAvatar: (userId: string, avatarKey: string) => void;
   logout: () => void;
   deleteAccount: (userId: string) => { success: boolean; message: string };
@@ -886,6 +889,79 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   };
 
+  const importTeamMembers = (incomingUsers: UserProfile[]): { success: boolean; count: number; message: string } => {
+    if (!Array.isArray(incomingUsers) || incomingUsers.length === 0) {
+      return { success: false, count: 0, message: 'Dữ liệu thành viên không hợp lệ.' };
+    }
+    const currentUsers = getStoredUsers();
+    const map = new Map<string, UserProfile>();
+    currentUsers.forEach((u) => {
+      if (u && u.email) map.set(u.email.trim().toLowerCase(), u);
+    });
+
+    let addedCount = 0;
+    incomingUsers.forEach((u) => {
+      if (u && u.name && u.email && !isDefaultMockUser(u)) {
+        const key = u.email.trim().toLowerCase();
+        if (!map.has(key)) {
+          map.set(key, {
+            ...u,
+            id: u.id || `user_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+          });
+          addedCount++;
+        }
+      }
+    });
+
+    const updatedUsers = Array.from(map.values());
+    try {
+      localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(updatedUsers));
+      localStorage.setItem('minetask_1835_backup_users', JSON.stringify(updatedUsers));
+    } catch {}
+
+    setUsers(updatedUsers);
+    pushToServer(updatedUsers);
+    broadcastStateChange(tasks, worlds, updatedUsers);
+    soundEngine.playVictoryFanfare();
+
+    return {
+      success: true,
+      count: addedCount,
+      message: `Đã kết nối và đồng bộ thành công ${addedCount} thành viên vào đội ngũ 1835!`,
+    };
+  };
+
+  const exportTeamCode = (): string => {
+    try {
+      const payload = {
+        app: '1835_MINETASK',
+        version: 'v22',
+        exportedAt: Date.now(),
+        users: users.filter((u) => !isDefaultMockUser(u)),
+      };
+      return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+    } catch {
+      return '';
+    }
+  };
+
+  const importTeamCode = (code: string): { success: boolean; count: number; message: string } => {
+    try {
+      if (!code || !code.trim()) {
+        return { success: false, count: 0, message: 'Vui lòng dán mã chia sẻ đội.' };
+      }
+      const raw = decodeURIComponent(escape(atob(code.trim())));
+      const parsed = JSON.parse(raw);
+      const incomingList = Array.isArray(parsed.users) ? parsed.users : (Array.isArray(parsed) ? parsed : []);
+      if (!incomingList || incomingList.length === 0) {
+        return { success: false, count: 0, message: 'Mã đội không chứa danh sách thành viên hợp lệ.' };
+      }
+      return importTeamMembers(incomingList);
+    } catch {
+      return { success: false, count: 0, message: 'Mã đội không hợp lệ hoặc sai định dạng.' };
+    }
+  };
+
   const updateUserAvatar = (userId: string, avatarKey: string) => {
     const currentUsers = getStoredUsers();
     const updatedUsers = currentUsers.map((u) => (u.id === userId ? { ...u, avatarKey } : u));
@@ -1510,6 +1586,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         login,
         register,
         addTeamMember,
+        importTeamMembers,
+        exportTeamCode,
+        importTeamCode,
         updateUserAvatar,
         logout,
         deleteAccount,

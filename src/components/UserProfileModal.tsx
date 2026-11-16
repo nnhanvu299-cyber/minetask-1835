@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { AVATAR_OPTIONS, PixelAvatar } from '../utils/pixelAvatars';
 import { XPBar } from './XPBar';
-import { Users, LogOut, X, Trash2, AlertTriangle, UserPlus, CheckCircle, Mail, Lock, User, Search, Sparkles } from 'lucide-react';
+import { Users, LogOut, X, Trash2, AlertTriangle, UserPlus, CheckCircle, Mail, Lock, User, Search, Sparkles, Share2, Copy, Check, Download, Upload } from 'lucide-react';
+import { matchesUserSearch, removeDiacritics } from '../utils/textUtils';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -20,6 +21,8 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     logout,
     deleteAccount,
     addTeamMember,
+    importTeamCode,
+    exportTeamCode,
     updateUserAvatar,
     isOnlineMode,
     onlineMembers,
@@ -36,6 +39,11 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const [newPassword, setNewPassword] = useState('123');
   const [newAvatarKey, setNewAvatarKey] = useState('sniffer');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Team Sync Drawer & Sharing
+  const [showSyncBox, setShowSyncBox] = useState(false);
+  const [importCodeInput, setImportCodeInput] = useState('');
+  const [copiedCode, setCopiedCode] = useState(false);
 
   if (!isOpen || !currentUser) return null;
 
@@ -72,6 +80,53 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         setShowAddMemberForm(false);
         setFeedback(null);
       }, 1500);
+    } else {
+      setFeedback({ type: 'error', message: res.message });
+    }
+  };
+
+  const handleQuickAdd = (rawName: string) => {
+    const name = rawName.trim();
+    if (!name) return;
+    const cleanSlug = removeDiacritics(name).replace(/[^a-z0-9]/g, '') || 'member';
+    const autoEmail = `${cleanSlug}${Math.floor(10 + Math.random() * 89)}@1835.vn`;
+    const randomAvatar = AVATAR_OPTIONS[Math.floor(Math.random() * AVATAR_OPTIONS.length)].key;
+
+    setFeedback(null);
+    const res = addTeamMember(name, autoEmail, '123', randomAvatar);
+    if (res.success) {
+      setFeedback({
+        type: 'success',
+        message: `Đã thêm bạn "${name}" (${autoEmail}) vào đội 1835 thành công! Bạn có thể phân công công việc ngay.`,
+      });
+    } else {
+      setFeedback({
+        type: 'error',
+        message: res.message,
+      });
+    }
+  };
+
+  const handleExportCode = () => {
+    const code = exportTeamCode();
+    if (code) {
+      navigator.clipboard.writeText(code).then(() => {
+        setCopiedCode(true);
+        setTimeout(() => setCopiedCode(false), 2500);
+      }).catch(() => {
+        setFeedback({ type: 'error', message: 'Không thể tự động sao chép mã. Hãy thử lại.' });
+      });
+    }
+  };
+
+  const handleImportCode = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFeedback(null);
+    const res = importTeamCode(importCodeInput);
+    if (res.success) {
+      setFeedback({ type: 'success', message: res.message });
+      setImportCodeInput('');
+      setShowSyncBox(false);
     } else {
       setFeedback({ type: 'error', message: res.message });
     }
@@ -302,11 +357,32 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         {/* ================= TAB 2: TEAM MEMBERS & SEARCH ================= */}
         {activeTab === 'team' && (
           <div className="space-y-3.5">
+            {/* Feedback Alert for Tab 2 actions */}
+            {feedback && (
+              <div
+                className={`p-2.5 rounded text-xs font-bold flex items-center gap-2 animate-fadeIn ${
+                  feedback.type === 'success'
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-300'
+                    : 'bg-red-50 text-red-600 border border-red-300'
+                }`}
+              >
+                {feedback.type === 'success' ? <CheckCircle size={15} className="shrink-0 text-emerald-600" /> : <AlertTriangle size={15} className="shrink-0" />}
+                <span className="flex-1 leading-snug">{feedback.message}</span>
+                <button
+                  type="button"
+                  onClick={() => setFeedback(null)}
+                  className="text-xs opacity-60 hover:opacity-100 font-bold px-1"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
             {/* Search Member Bar */}
             <div className="relative">
               <input
                 type="text"
-                placeholder="🔍 Gõ tên hoặc email để tìm thành viên..."
+                placeholder="🔍 Gõ tên hoặc email để tìm thành viên (có dấu hoặc không dấu)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="mc-input pl-8.5 pr-8 text-xs w-full py-2"
@@ -325,26 +401,24 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
             {/* Helpful sync info note */}
             <div className="p-2.5 bg-[#fef6e4] border border-[#f3d99f] rounded text-[11px] text-[#6b4724] leading-relaxed flex items-start gap-2">
-              <span className="text-sm shrink-0">✨</span>
+              <span className="text-sm shrink-0">💡</span>
               <div>
-                <strong>Đồng đội đã tự tạo tài khoản:</strong> Khi ai đó đăng ký tài khoản (qua máy tính hay điện thoại), họ sẽ <strong>tự động xuất hiện ngay tại đây</strong>! Bạn chỉ cần gõ tên vào ô tìm kiếm ở trên là thấy ngay để giao việc.
+                <strong>Kết nối đồng đội Co-op:</strong> Tìm kiếm hỗ trợ gõ <strong>có dấu hoặc không dấu</strong> (ví dụ: <em>nhan</em> khớp với <em>Nhàn</em>, <em>tuan</em> khớp với <em>Tuấn</em>). Nếu bạn bè vừa tạo tài khoản trên điện thoại của họ, bạn có thể bấm <strong>"+ Thêm nhanh"</strong> hoặc dùng <strong>"Đồng bộ mã đội"</strong> để liên kết ngay.
               </div>
             </div>
 
             {/* List of current members */}
             <div className="space-y-2">
               <div className="text-xs font-bold text-[#2D1A11] flex items-center justify-between">
-                <span>DANH SÁCH THÀNH VIÊN ({users.filter(u => !searchQuery.trim() || u.name.toLowerCase().includes(searchQuery.toLowerCase()) || u.email.toLowerCase().includes(searchQuery.toLowerCase())).length}/{users.length})</span>
+                <span>
+                  DANH SÁCH THÀNH VIÊN ({users.filter((u) => matchesUserSearch(u, searchQuery)).length}/{users.length})
+                </span>
                 <span className="text-[11px] text-[#F37022] font-semibold">{users.length} người</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[240px] overflow-y-auto pr-1">
                 {users
-                  .filter((u) => {
-                    if (!searchQuery.trim()) return true;
-                    const q = searchQuery.trim().toLowerCase();
-                    return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
-                  })
+                  .filter((u) => matchesUserSearch(u, searchQuery))
                   .map((u) => {
                     const isCurrent = u.id === currentUser.id;
                     const isMemberOnline = isOnlineMode && (isCurrent || onlineMembers.some((m) => m.userId === u.id));
@@ -391,58 +465,149 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       </div>
                     );
                   })}
-                {users.filter(u => !searchQuery.trim() || u.name.toLowerCase().includes(searchQuery.toLowerCase()) || u.email.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
-                  <div className="col-span-2 p-4 text-center text-xs text-gray-500 bg-gray-50 border border-dashed border-gray-300 rounded">
-                    Không tìm thấy thành viên nào khớp với "{searchQuery}".
+
+                {users.filter((u) => matchesUserSearch(u, searchQuery)).length === 0 && (
+                  <div className="col-span-1 sm:col-span-2 p-3.5 bg-[#FAF2DC] border-2 border-dashed border-[#F37022] rounded space-y-2 text-center animate-fadeIn">
+                    <div className="text-xs font-bold text-[#2D1A11]">
+                      Chưa tìm thấy bạn "{searchQuery}" trong danh sách máy này
+                    </div>
+                    <div className="text-[11px] text-[#6b4724] leading-relaxed max-w-sm mx-auto">
+                      Vì Web 1835 lưu trữ an toàn riêng biệt trên từng máy, nếu bạn bè vừa đăng ký tài khoản trên điện thoại của họ, bạn chỉ cần bấm thêm nhanh bên dưới để giao việc cho bạn ấy ngay!
+                    </div>
+                    <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => handleQuickAdd(searchQuery)}
+                        className="mc-btn mc-btn-emerald text-xs px-3 py-1.5 font-bold text-white flex items-center gap-1.5 shadow-xs cursor-pointer"
+                      >
+                        <UserPlus size={13} />
+                        <span>+ THÊM BẠN "{searchQuery.trim()}" VÀO ĐỘI NGAY</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewName(searchQuery.trim());
+                          setShowAddMemberForm(true);
+                        }}
+                        className="mc-btn mc-btn-obsidian text-xs px-2.5 py-1.5 font-bold text-white flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>Tự điền chi tiết</span>
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Optional secondary action: Create account on behalf of teammate */}
-            <div className="pt-1 border-t border-[#2D1A11]/15">
-              {!showAddMemberForm ? (
-                <div className="text-center">
+            {/* Quick Actions Bar: Add Teammate + Team Code Sync */}
+            <div className="pt-2 border-t border-[#2D1A11]/15 flex flex-wrap items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddMemberForm(!showAddMemberForm);
+                  setShowSyncBox(false);
+                }}
+                className="text-xs text-[#52372A] hover:text-[#2D1A11] font-semibold underline cursor-pointer inline-flex items-center gap-1 py-1"
+              >
+                <UserPlus size={13} />
+                <span>{showAddMemberForm ? 'Đóng form thêm' : '+ Tạo tài khoản hộ bạn bè'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowSyncBox(!showSyncBox);
+                  setShowAddMemberForm(false);
+                }}
+                className="text-xs text-[#F37022] hover:text-[#d45d17] font-bold cursor-pointer inline-flex items-center gap-1.5 py-1 px-2 bg-[#FAF2DC] border border-[#2D1A11]/20 rounded"
+              >
+                <Share2 size={13} />
+                <span>{showSyncBox ? 'Đóng đồng bộ' : '📲 Đồng bộ mã đội (Sync)'}</span>
+              </button>
+            </div>
+
+            {/* Sync Box Drawer: Export & Import Team Code */}
+            {showSyncBox && (
+              <div className="p-3 bg-[#FAF2DC] border-2 border-[#2D1A11] space-y-3 animate-fadeIn">
+                <div className="flex items-center justify-between pb-2 border-b border-[#2D1A11]/20">
+                  <span className="text-xs font-bold text-[#2D1A11] flex items-center gap-1.5">
+                    <Share2 size={14} className="text-[#F37022]" />
+                    ĐỒNG BỘ ĐỘI NGŨ QUA MÃ CHIA SẺ (KHÔNG CẦN CÀI ĐẶT)
+                  </span>
                   <button
                     type="button"
-                    onClick={() => setShowAddMemberForm(true)}
-                    className="text-xs text-[#52372A] hover:text-[#2D1A11] font-semibold underline cursor-pointer inline-flex items-center gap-1 py-1"
+                    onClick={() => setShowSyncBox(false)}
+                    className="text-gray-400 hover:text-gray-600 text-xs font-bold cursor-pointer"
                   >
-                    <UserPlus size={12} />
-                    <span>+ Hoặc tạo tài khoản hộ bạn bè chưa đăng ký</span>
+                    ✕
                   </button>
                 </div>
-              ) : (
-                /* Inline Form: Add Member */
-                <form onSubmit={handleAddMemberSubmit} className="p-3.5 bg-[#FFFDF7] border-2 border-[#2D1A11] space-y-3 animate-fadeIn mt-2">
-                  <div className="flex items-center justify-between pb-2 border-b border-[#2D1A11]/20">
-                    <span className="text-xs font-bold text-[#2D1A11] flex items-center gap-1.5">
-                      <UserPlus size={14} className="text-[#1aa64e]" />
-                      TẠO TÀI KHOẢN HỘ ĐỒNG ĐỘI
-                    </span>
+
+                <div className="text-[11px] text-[#52372A] leading-relaxed">
+                  Để điện thoại của bạn bè và máy tính của bạn có chung danh sách thành viên:
+                </div>
+
+                {/* Step 1: Copy My Team Code */}
+                <div className="p-2.5 bg-white border border-[#2D1A11]/30 rounded space-y-1.5">
+                  <div className="text-[11px] font-bold text-[#2D1A11] flex items-center justify-between">
+                    <span>1. Gửi danh sách đội cho bạn bè:</span>
                     <button
                       type="button"
-                      onClick={() => setShowAddMemberForm(false)}
-                      className="text-gray-400 hover:text-gray-600 text-xs font-bold cursor-pointer"
+                      onClick={handleExportCode}
+                      className="mc-btn mc-btn-1835 text-[11px] px-2.5 py-1 font-bold flex items-center gap-1 cursor-pointer"
                     >
-                      ✕ Hủy
+                      {copiedCode ? <Check size={12} className="text-white" /> : <Copy size={12} />}
+                      <span>{copiedCode ? '✓ ĐÃ CHÉP MÃ' : 'CHÉP MÃ ĐỘI'}</span>
                     </button>
                   </div>
+                  <div className="text-[10px] text-gray-500">
+                    Bấm "Chép mã đội" và gửi qua Zalo / Messenger cho bạn bè để họ dán vào điện thoại của họ.
+                  </div>
+                </div>
 
-                  {feedback && (
-                    <div
-                      className={`p-2 rounded text-xs font-bold flex items-center gap-2 ${
-                        feedback.type === 'success'
-                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
-                          : 'bg-red-50 text-red-600 border border-red-300'
-                      }`}
+                {/* Step 2: Import Code From Friend */}
+                <form onSubmit={handleImportCode} className="p-2.5 bg-white border border-[#2D1A11]/30 rounded space-y-1.5">
+                  <div className="text-[11px] font-bold text-[#2D1A11]">
+                    2. Hoặc dán mã đội do bạn bè gửi:
+                  </div>
+                  <div className="flex gap-1.5">
+                    <input
+                      type="text"
+                      placeholder="Dán mã chia sẻ của bạn bè vào đây..."
+                      value={importCodeInput}
+                      onChange={(e) => setImportCodeInput(e.target.value)}
+                      className="mc-input text-xs flex-1 py-1.5 px-2"
+                    />
+                    <button
+                      type="submit"
+                      disabled={!importCodeInput.trim()}
+                      className="mc-btn mc-btn-emerald text-xs px-3 py-1.5 font-bold text-white shrink-0 disabled:opacity-50 cursor-pointer"
                     >
-                      {feedback.type === 'success' ? <CheckCircle size={14} /> : <AlertTriangle size={14} />}
-                      <span>{feedback.message}</span>
-                    </div>
-                  )}
+                      KẾT NỐI
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {/* Optional secondary action: Create account on behalf of teammate */}
+            {showAddMemberForm && (
+              <form onSubmit={handleAddMemberSubmit} className="p-3.5 bg-[#FFFDF7] border-2 border-[#2D1A11] space-y-3 animate-fadeIn mt-2">
+                <div className="flex items-center justify-between pb-2 border-b border-[#2D1A11]/20">
+                  <span className="text-xs font-bold text-[#2D1A11] flex items-center gap-1.5">
+                    <UserPlus size={14} className="text-[#1aa64e]" />
+                    TẠO TÀI KHOẢN HỘ ĐỒNG ĐỘI
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddMemberForm(false)}
+                    className="text-gray-400 hover:text-gray-600 text-xs font-bold cursor-pointer"
+                  >
+                    ✕ Hủy
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div>
                       <label className="block text-[11px] font-bold text-[#52372A] mb-1">
                         HỌ VÀ TÊN *
@@ -544,7 +709,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 </form>
               )}
             </div>
-          </div>
         )}
 
         {/* Footer Actions */}
