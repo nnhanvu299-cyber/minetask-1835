@@ -1,4 +1,4 @@
-const CACHE_NAME = 'minetask-1835s-v28-auto-update-notify';
+const CACHE_NAME = 'minetask-1835s-v29-resilient-cloud-sync';
 
 const PRECACHE_ASSETS = [
   './',

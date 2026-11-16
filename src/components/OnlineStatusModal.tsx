@@ -152,7 +152,7 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
                   isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
                 }`}
               ></span>
-              <span>{networkOnline ? (serverConnected ? 'Online 24/7' : 'Mất kết nối máy chủ') : 'Mất mạng Internet'}</span>
+              <span>{networkOnline ? (serverConnected ? 'Online 24/7' : 'Đám Mây đang kết nối...') : 'Ngoại tuyến (Offline)'}</span>
             </div>
             <div className="text-[10px] text-[#6b4724]">
               {networkOnline ? 'Sẵn sàng trao đổi' : 'Tự động lưu ngoại tuyến'}

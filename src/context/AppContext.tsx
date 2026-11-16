@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { UserProfile, UserId, World, Task, TaskStatus, NotificationItem } from '../types';
 import { soundEngine } from '../utils/audio';
 import { sendOtpEmail } from '../utils/emailService';
@@ -267,12 +267,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return saved !== null ? saved === 'true' : true;
   });
 
-  const [networkOnline, setNetworkOnline] = useState<boolean>(() => {
-    if (typeof navigator !== 'undefined' && 'onLine' in navigator) {
-      return navigator.onLine;
-    }
-    return true;
-  });
+  const [networkOnline, setNetworkOnline] = useState<boolean>(true);
+  const isFetchingRef = useRef(false);
+  const isPushingRef = useRef(false);
 
   const [serverConnected, setServerConnected] = useState<boolean>(true);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'offline' | 'error'>('synced');
@@ -533,10 +530,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const CLOUD_SYNC_ENDPOINT = 'https://api.restful-api.dev/objects/ff808181a09d98f701a1e3549c593725';
 
   const pushToServer = async (usersList?: UserProfile[], worldsList?: World[], tasksList?: Task[], replaceUsers?: boolean) => {
-    if (!isOnlineMode) {
-      setSyncStatus('offline');
-      return;
+    if (isPushingRef.current) {
+      await new Promise(r => setTimeout(r, 400));
     }
+    isPushingRef.current = true;
 
     const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
@@ -564,6 +561,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
 
         if (res.ok) {
+          setNetworkOnline(true);
           setServerConnected(true);
           setSyncStatus('synced');
           setLastSyncTime(Date.now());
@@ -596,9 +594,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         let mergedTasks = tasksList || tasks;
         let mergedPresences = currentPresence ? [currentPresence] : [];
 
-        // Pre-fetch current cloud data to merge real users without ever overwriting
+        // Pre-fetch current cloud data with timeout
         try {
-          const cloudRes = await fetch(`${CLOUD_SYNC_ENDPOINT}?t=${now}`);
+          const cPre = new AbortController();
+          const tPre = setTimeout(() => cPre.abort(), 6000);
+          const cloudRes = await fetch(`${CLOUD_SYNC_ENDPOINT}?t=${now}`, { signal: cPre.signal });
+          clearTimeout(tPre);
+
           if (cloudRes.ok) {
             const cloudJson = await cloudRes.json();
             const cloudData = cloudJson.data || {};
@@ -649,6 +651,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           console.warn('[1835 Cloud] Pre-fetch merge warning:', err);
         }
 
+        const cPut = new AbortController();
+        const tPut = setTimeout(() => cPut.abort(), 8000);
         const res = await fetch(CLOUD_SYNC_ENDPOINT, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -661,10 +665,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               onlinePresences: mergedPresences,
               updatedAt: now,
             }
-          })
+          }),
+          signal: cPut.signal
         });
+        clearTimeout(tPut);
 
         if (res.ok) {
+          setNetworkOnline(true);
           setServerConnected(true);
           setSyncStatus('synced');
           setLastSyncTime(now);
@@ -678,15 +685,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     } catch (err) {
       console.warn('[1835 Sync] Push error:', err);
-      setServerConnected(false);
-      setSyncStatus(networkOnline ? 'error' : 'offline');
+    } finally {
+      isPushingRef.current = false;
     }
   };
 
-  const fetchServerState = useCallback(async (): Promise<boolean> => {
+  const fetchServerState = useCallback(async (force = false): Promise<boolean> => {
+    if (isFetchingRef.current && !force) {
+      return true;
+    }
+    isFetchingRef.current = true;
+
+    // Always ensure online mode is enabled on sync
     if (!isOnlineMode) {
-      setSyncStatus('offline');
-      return false;
+      setIsOnlineMode(true);
+      try {
+        localStorage.setItem(STORAGE_KEY_ONLINE_MODE, 'true');
+      } catch {}
     }
 
     const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
@@ -710,6 +725,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setServerPing(ping);
 
         if (res.ok) {
+          setNetworkOnline(true);
           setServerConnected(true);
           setSyncStatus('synced');
           setLastSyncTime(Date.now());
@@ -775,12 +791,31 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           return true;
         }
       } else {
-        // Production Cloud Sync Relay
-        const res = await fetch(`${CLOUD_SYNC_ENDPOINT}?t=${Date.now()}`);
+        // Production Cloud Sync Relay with timeout & 1 retry
+        let res: Response | null = null;
+        try {
+          const c = new AbortController();
+          const t = setTimeout(() => c.abort(), 6500);
+          res = await fetch(`${CLOUD_SYNC_ENDPOINT}?t=${Date.now()}`, { signal: c.signal });
+          clearTimeout(t);
+        } catch {
+          // Retry once after 1s in case of temporary rate-limiting or network glitch
+          try {
+            await new Promise((r) => setTimeout(r, 1000));
+            const cRetry = new AbortController();
+            const tRetry = setTimeout(() => cRetry.abort(), 6500);
+            res = await fetch(`${CLOUD_SYNC_ENDPOINT}?t=${Date.now()}`, { signal: cRetry.signal });
+            clearTimeout(tRetry);
+          } catch {
+            res = null;
+          }
+        }
+
         const ping = Math.round(performance.now() - startPing);
         setServerPing(ping);
 
-        if (res.ok) {
+        if (res && res.ok) {
+          setNetworkOnline(true);
           setServerConnected(true);
           setSyncStatus('synced');
           setLastSyncTime(Date.now());
@@ -858,25 +893,38 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
       }
 
-      setServerConnected(false);
       setSyncStatus('error');
       return false;
     } catch {
-      setServerConnected(false);
-      setSyncStatus(networkOnline ? 'error' : 'offline');
+      setSyncStatus('error');
       return false;
+    } finally {
+      isFetchingRef.current = false;
     }
-  }, [isOnlineMode, currentUser, networkOnline]);
+  }, [isOnlineMode, currentUser]);
 
   useEffect(() => {
     fetchServerState();
     const interval = setInterval(() => {
-      if (isOnlineMode) {
-        fetchServerState();
-      }
-    }, 3000); // Poll every 3 seconds for seamless cross-device sync
+      fetchServerState();
+    }, 12000); // 12s interval: smooth & avoids public API rate-limits
     return () => clearInterval(interval);
-  }, [fetchServerState, isOnlineMode]);
+  }, [fetchServerState]);
+
+  // Sync immediately when user switches tabs or focuses the window
+  useEffect(() => {
+    const handleFocus = () => {
+      if (document.visibilityState === 'visible') {
+        fetchServerState(true);
+      }
+    };
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleFocus);
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleFocus);
+    };
+  }, [fetchServerState]);
 
   // Diacritic helper for flexible name matching (e.g. 'Quan' matches 'Quân')
   const removeDiacritics = (str: string): string => {
@@ -1780,7 +1828,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         serverPing,
         onlineMembers,
         toggleOnlineMode,
-        syncNow: fetchServerState,
+        syncNow: () => fetchServerState(true),
 
         setActiveWorldId,
         login,

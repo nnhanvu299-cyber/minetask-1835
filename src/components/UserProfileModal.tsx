@@ -109,12 +109,12 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
       const ok = await syncNow();
       if (ok) {
         soundEngine.playLevelUp();
-        setFeedback({ type: 'success', message: 'Đã cập nhật danh sách tài khoản mới nhất từ Đám Mây!' });
+        setFeedback({ type: 'success', message: 'Đã kết nối và đồng bộ danh sách tài khoản mới nhất từ Đám Mây 1835!' });
       } else {
-        setFeedback({ type: 'error', message: 'Không thể kết nối Đám Mây. Hãy kiểm tra kết nối mạng.' });
+        setFeedback({ type: 'error', message: 'Máy chủ Đám Mây đang bận xử lý. Dữ liệu trên máy vẫn an toàn, vui lòng thử lại sau vài giây!' });
       }
     } catch {
-      setFeedback({ type: 'error', message: 'Lỗi đồng bộ Đám Mây.' });
+      setFeedback({ type: 'error', message: 'Đang kết nối lại với Đám Mây, vui lòng thử lại sau vài giây.' });
     } finally {
       setIsSyncingCloud(false);
       setTimeout(() => setFeedback(null), 3500);
