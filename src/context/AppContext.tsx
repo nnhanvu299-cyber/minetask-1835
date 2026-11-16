@@ -962,6 +962,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  // Auto-connect teammate if opened via invite link (?team=... or ?join=...)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const teamCode = urlParams.get('team') || urlParams.get('join');
+      if (teamCode) {
+        const res = importTeamCode(teamCode);
+        if (res.success && res.count > 0) {
+          soundEngine.playVictoryFanfare();
+        }
+        const cleanUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, '', cleanUrl);
+      }
+    } catch (err) {
+      console.warn('[1835] Invite link auto-join error:', err);
+    }
+  }, []);
+
   const updateUserAvatar = (userId: string, avatarKey: string) => {
     const currentUsers = getStoredUsers();
     const updatedUsers = currentUsers.map((u) => (u.id === userId ? { ...u, avatarKey } : u));

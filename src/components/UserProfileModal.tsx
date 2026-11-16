@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { AVATAR_OPTIONS, PixelAvatar } from '../utils/pixelAvatars';
 import { XPBar } from './XPBar';
-import { Users, LogOut, X, Trash2, AlertTriangle, UserPlus, CheckCircle, Mail, Lock, User, Search, Sparkles, Share2, Copy, Check, Download, Upload } from 'lucide-react';
+import { Users, LogOut, X, Trash2, AlertTriangle, UserPlus, CheckCircle, Mail, Lock, User, Search, Sparkles, Share2, Copy, Check, Download, Upload, Link2 } from 'lucide-react';
 import { matchesUserSearch, removeDiacritics } from '../utils/textUtils';
 
 interface UserProfileModalProps {
@@ -44,6 +44,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const [showSyncBox, setShowSyncBox] = useState(false);
   const [importCodeInput, setImportCodeInput] = useState('');
   const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   if (!isOpen || !currentUser) return null;
 
@@ -115,6 +116,19 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         setTimeout(() => setCopiedCode(false), 2500);
       }).catch(() => {
         setFeedback({ type: 'error', message: 'Không thể tự động sao chép mã. Hãy thử lại.' });
+      });
+    }
+  };
+
+  const handleExportLink = () => {
+    const code = exportTeamCode();
+    if (code) {
+      const inviteUrl = `${window.location.origin}${window.location.pathname}?team=${encodeURIComponent(code)}`;
+      navigator.clipboard.writeText(inviteUrl).then(() => {
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2500);
+      }).catch(() => {
+        setFeedback({ type: 'error', message: 'Không thể tự động sao chép link. Hãy thử lại.' });
       });
     }
   };
@@ -530,17 +544,27 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   </button>
                 </div>
 
-                {/* Step 1: Copy My Team Code */}
-                <div className="p-2 bg-white border border-[#2D1A11]/30 rounded flex items-center justify-between gap-2">
-                  <span className="text-xs font-bold text-[#2D1A11]">1. Gửi mã đội cho bạn bè:</span>
-                  <button
-                    type="button"
-                    onClick={handleExportCode}
-                    className="mc-btn mc-btn-1835 text-xs px-3 py-1 font-bold flex items-center gap-1 cursor-pointer shrink-0"
-                  >
-                    {copiedCode ? <Check size={12} className="text-white" /> : <Copy size={12} />}
-                    <span>{copiedCode ? '✓ ĐÃ CHÉP' : 'CHÉP MÃ ĐỘI'}</span>
-                  </button>
+                {/* Step 1: Copy My Team Link / Code */}
+                <div className="p-2 bg-white border border-[#2D1A11]/30 rounded space-y-2">
+                  <div className="text-xs font-bold text-[#2D1A11]">1. Gửi cho bạn bè (chọn 1 trong 2):</div>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <button
+                      type="button"
+                      onClick={handleExportLink}
+                      className="mc-btn mc-btn-emerald text-xs px-3 py-1.5 font-bold flex items-center justify-center gap-1.5 cursor-pointer flex-1"
+                    >
+                      {copiedLink ? <Check size={13} className="text-white" /> : <Link2 size={13} />}
+                      <span>{copiedLink ? '✓ ĐÃ CHÉP LINK MỜI' : '🔗 CHÉP LINK GỬI QUA ZALO'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleExportCode}
+                      className="mc-btn mc-btn-1835 text-xs px-3 py-1.5 font-bold flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                    >
+                      {copiedCode ? <Check size={13} className="text-white" /> : <Copy size={13} />}
+                      <span>{copiedCode ? '✓ ĐÃ CHÉP' : 'CHÉP MÃ ĐỘI'}</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Step 2: Import Code From Friend */}
