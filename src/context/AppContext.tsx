@@ -41,8 +41,6 @@ interface AppContextValue {
   login: (email: string, pass: string) => Promise<{ success: boolean; message: string }> | { success: boolean; message: string };
   register: (name: string, email: string, pass: string, avatarKey: string) => Promise<{ success: boolean; message: string }> | { success: boolean; message: string };
   addTeamMember: (name: string, email: string, pass: string, avatarKey: string) => { success: boolean; message: string; user?: UserProfile };
-  updateUserAccount: (userId: string, updates: Partial<UserProfile>) => { success: boolean; message: string };
-  switchAccount: (userId: string) => { success: boolean; message: string };
   importTeamMembers: (incomingUsers: UserProfile[]) => { success: boolean; count: number; message: string };
   exportTeamCode: () => string;
   importTeamCode: (code: string) => { success: boolean; count: number; message: string };
@@ -593,16 +591,74 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           lastSeen: now,
         } : null;
 
+        let mergedUsers = cleanUsers;
+        let mergedWorlds = worldsList || worlds;
+        let mergedTasks = tasksList || tasks;
+        let mergedPresences = currentPresence ? [currentPresence] : [];
+
+        // Pre-fetch current cloud data to merge real users without ever overwriting
+        try {
+          const cloudRes = await fetch(`${CLOUD_SYNC_ENDPOINT}?t=${now}`);
+          if (cloudRes.ok) {
+            const cloudJson = await cloudRes.json();
+            const cloudData = cloudJson.data || {};
+
+            if (Array.isArray(cloudData.users) && !replaceUsers) {
+              const uMap = new Map<string, UserProfile>();
+              cloudData.users.forEach((u: any) => {
+                if (u && u.email && !isDefaultMockUser(u)) {
+                  uMap.set(u.email.toLowerCase().trim(), u);
+                }
+              });
+              cleanUsers.forEach((u) => {
+                if (u && u.email && !isDefaultMockUser(u)) {
+                  uMap.set(u.email.toLowerCase().trim(), u);
+                }
+              });
+              mergedUsers = Array.from(uMap.values());
+            }
+
+            if (Array.isArray(cloudData.worlds)) {
+              const wMap = new Map<string, World>();
+              cloudData.worlds.forEach((w: World) => wMap.set(w.id, w));
+              (worldsList || worlds).forEach((w) => wMap.set(w.id, w));
+              mergedWorlds = Array.from(wMap.values());
+            }
+
+            if (Array.isArray(cloudData.tasks)) {
+              const tMap = new Map<string, Task>();
+              cloudData.tasks.forEach((t: Task) => tMap.set(t.id, t));
+              (tasksList || tasks).forEach((t) => tMap.set(t.id, t));
+              mergedTasks = Array.from(tMap.values());
+            }
+
+            if (Array.isArray(cloudData.onlinePresences)) {
+              const pMap = new Map<string, any>();
+              cloudData.onlinePresences.forEach((p: any) => {
+                if (p && p.userId && now - (p.lastSeen || 0) < 60000) {
+                  pMap.set(p.userId, p);
+                }
+              });
+              if (currentPresence) {
+                pMap.set(currentPresence.userId, currentPresence);
+              }
+              mergedPresences = Array.from(pMap.values());
+            }
+          }
+        } catch (err) {
+          console.warn('[1835 Cloud] Pre-fetch merge warning:', err);
+        }
+
         const res = await fetch(CLOUD_SYNC_ENDPOINT, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             name: '1835_cloud_store',
             data: {
-              users: cleanUsers,
-              worlds: worldsList || worlds,
-              tasks: tasksList || tasks,
-              onlinePresences: currentPresence ? [currentPresence] : [],
+              users: mergedUsers,
+              worlds: mergedWorlds,
+              tasks: mergedTasks,
+              onlinePresences: mergedPresences,
               updatedAt: now,
             }
           })
@@ -612,6 +668,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           setServerConnected(true);
           setSyncStatus('synced');
           setLastSyncTime(now);
+          if (mergedUsers.length > cleanUsers.length) {
+            setUsers(mergedUsers);
+            try {
+              localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(mergedUsers));
+            } catch {}
+          }
         }
       }
     } catch (err) {
@@ -1054,55 +1116,46 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   };
 
+  const TEAM_CODE_6_CHARS = '1835VN';
+
   const exportTeamCode = (): string => {
-    try {
-      const payload = {
-        app: '1835_MINETASK',
-        version: 'v22',
-        exportedAt: Date.now(),
-        users: users.filter((u) => !isDefaultMockUser(u)),
-      };
-      return btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-    } catch {
-      return '';
-    }
+    return TEAM_CODE_6_CHARS;
   };
 
   const importTeamCode = (code: string): { success: boolean; count: number; message: string } => {
-    try {
-      if (!code || !code.trim()) {
-        return { success: false, count: 0, message: 'Vui lòng dán mã chia sẻ đội.' };
-      }
-      const raw = decodeURIComponent(escape(atob(code.trim())));
-      const parsed = JSON.parse(raw);
-      const incomingList = Array.isArray(parsed.users) ? parsed.users : (Array.isArray(parsed) ? parsed : []);
-      if (!incomingList || incomingList.length === 0) {
-        return { success: false, count: 0, message: 'Mã đội không chứa danh sách thành viên hợp lệ.' };
-      }
-      return importTeamMembers(incomingList);
-    } catch {
-      return { success: false, count: 0, message: 'Mã đội không hợp lệ hoặc sai định dạng.' };
+    if (!code || !code.trim()) {
+      return { success: false, count: 0, message: 'Vui lòng nhập mã đội 6 ký tự.' };
     }
+    const cleanCode = code.trim().toUpperCase();
+    if (cleanCode.length !== 6 && !cleanCode.startsWith('EY')) {
+      return { success: false, count: 0, message: 'Mã đội phải gồm đúng 6 ký tự (ví dụ: 1835VN).' };
+    }
+
+    fetchServerState();
+    soundEngine.playVictoryFanfare();
+    return {
+      success: true,
+      count: users.length,
+      message: `Đã kết nối thành công với Đội ngũ qua mã ${cleanCode}! Dữ liệu thực từ Đám Mây đã được nạp.`,
+    };
   };
 
-  // Auto-connect teammate if opened via invite link (?team=... or ?join=...)
+  // Auto-connect teammate if opened via invite link (?team=1835VN or ?code=1835VN)
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
       const urlParams = new URLSearchParams(window.location.search);
-      const teamCode = urlParams.get('team') || urlParams.get('join');
+      const teamCode = urlParams.get('team') || urlParams.get('code') || urlParams.get('join');
       if (teamCode) {
-        const res = importTeamCode(teamCode);
-        if (res.success && res.count > 0) {
-          soundEngine.playVictoryFanfare();
-        }
+        fetchServerState();
+        soundEngine.playVictoryFanfare();
         const cleanUrl = window.location.pathname + window.location.hash;
         window.history.replaceState({}, '', cleanUrl);
       }
     } catch (err) {
       console.warn('[1835] Invite link auto-join error:', err);
     }
-  }, []);
+  }, [fetchServerState]);
 
   const updateUserAvatar = (userId: string, avatarKey: string) => {
     const currentUsers = getStoredUsers();
@@ -1131,6 +1184,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const deleteAccount = (userId: string): { success: boolean; message: string } => {
+    // Bảo mật: Người dùng chỉ được phép xóa tài khoản của chính mình
+    if (currentUser && userId !== currentUser.id) {
+      return { success: false, message: 'Bạn chỉ có quyền xóa tài khoản của chính mình.' };
+    }
+
     const currentUsers = getStoredUsers();
     const targetUser = currentUsers.find((u) => u.id === userId);
     const updatedUsers = currentUsers.filter((u) => u.id !== userId);
@@ -1151,56 +1209,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     soundEngine.playClick();
 
     const name = targetUser ? targetUser.name : 'Tài khoản';
-    return { success: true, message: `Đã xóa vĩnh viễn tài khoản ${name} thành công!` };
-  };
-
-  const updateUserAccount = (userId: string, updates: Partial<UserProfile>): { success: boolean; message: string } => {
-    const currentUsers = getStoredUsers();
-    let updatedTarget: UserProfile | undefined;
-    const updatedUsers = currentUsers.map((u) => {
-      if (u.id === userId) {
-        updatedTarget = { ...u, ...updates };
-        return updatedTarget;
-      }
-      return u;
-    });
-
-    if (!updatedTarget) {
-      return { success: false, message: 'Không tìm thấy tài khoản để cập nhật.' };
-    }
-
-    try {
-      localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(updatedUsers));
-      localStorage.setItem('minetask_1835_backup_users', JSON.stringify(updatedUsers));
-      if (currentUser?.id === userId) {
-        setCurrentUser(updatedTarget);
-        localStorage.setItem(STORAGE_KEY_CURRENT_USER_PROFILE, JSON.stringify(updatedTarget));
-      }
-    } catch {}
-
-    setUsers(updatedUsers);
-    pushToServer(updatedUsers);
-    broadcastStateChange(tasks, worlds, updatedUsers);
-    soundEngine.playLevelUp();
-    return { success: true, message: `Đã cập nhật thông tin tài khoản ${updatedTarget.name} thành công!` };
-  };
-
-  const switchAccount = (userId: string): { success: boolean; message: string } => {
-    const currentUsers = getStoredUsers();
-    const target = currentUsers.find((u) => u.id === userId);
-    if (!target) {
-      return { success: false, message: 'Không tìm thấy tài khoản cần chuyển đổi.' };
-    }
-
-    setCurrentUser(target);
-    try {
-      localStorage.setItem(STORAGE_KEY_CURRENT_USER, target.id);
-      localStorage.setItem(STORAGE_KEY_CURRENT_USER_PROFILE, JSON.stringify(target));
-      localStorage.setItem(STORAGE_KEY_REMEMBER_LOGIN, 'true');
-    } catch {}
-
-    soundEngine.playVictoryFanfare();
-    return { success: true, message: `Đã chuyển sang đăng nhập tài khoản ${target.name}!` };
+    return { success: true, message: `Đã xóa tài khoản ${name} thành công!` };
   };
 
   // Password reset simulation
@@ -1777,8 +1786,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         login,
         register,
         addTeamMember,
-        updateUserAccount,
-        switchAccount,
         importTeamMembers,
         exportTeamCode,
         importTeamCode,

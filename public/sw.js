@@ -1,4 +1,4 @@
-const CACHE_NAME = 'minetask-1835s-v26-clean-accounts';
+const CACHE_NAME = 'minetask-1835s-v27-secure-team-code';
 
 const PRECACHE_ASSETS = [
   './',

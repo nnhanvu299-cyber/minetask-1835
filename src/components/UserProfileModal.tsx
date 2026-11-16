@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { AVATAR_OPTIONS, PixelAvatar } from '../utils/pixelAvatars';
 import { XPBar } from './XPBar';
-import { Users, LogOut, X, Trash2, AlertTriangle, CheckCircle, Mail, Lock, User, Search, Sparkles, Share2, Copy, Check, Download, Upload, Link2, Cloud, Edit2, RefreshCw, Shield } from 'lucide-react';
+import { Users, LogOut, X, Trash2, AlertTriangle, CheckCircle, Mail, Lock, User, Search, Sparkles, Share2, Copy, Check, Download, Upload, Link2, Cloud, RefreshCw, Shield } from 'lucide-react';
 import { soundEngine } from '../utils/audio';
 import { UserProfile } from '../types';
 import { matchesUserSearch, removeDiacritics } from '../utils/textUtils';
@@ -22,7 +22,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     tasks,
     logout,
     deleteAccount,
-    updateUserAccount,
     importTeamCode,
     exportTeamCode,
     updateUserAvatar,
@@ -34,15 +33,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [avatarCategoryFilter, setAvatarCategoryFilter] = useState<'all' | 'zodiac' | 'minecraft'>('zodiac');
-
-  // Account Editing & Management
-  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
-  const [editName, setEditName] = useState('');
-  const [editRole, setEditRole] = useState('');
-  const [editPassword, setEditPassword] = useState('');
-  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [isSyncingCloud, setIsSyncingCloud] = useState(false);
-
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Team Sync Drawer & Sharing
@@ -130,40 +121,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     }
   };
 
-  const handleStartEditUser = (u: UserProfile) => {
-    setEditingUser(u);
-    setEditName(u.name);
-    setEditRole(u.role || 'Thành viên Co-op 1835s');
-    setEditPassword(u.password || '');
-  };
-
-  const handleSaveEditUser = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingUser) return;
-    const trimmedName = editName.trim();
-    if (!trimmedName) {
-      setFeedback({ type: 'error', message: 'Tên không được để trống.' });
-      return;
-    }
-    const res = updateUserAccount(editingUser.id, {
-      name: trimmedName,
-      role: editRole.trim() || 'Thành viên Co-op 1835s',
-      password: editPassword.trim() || editingUser.password,
-    });
-    if (res.success) {
-      setFeedback({ type: 'success', message: res.message });
-      setEditingUser(null);
-    } else {
-      setFeedback({ type: 'error', message: res.message });
-    }
-  };
-
-  const handleConfirmDeleteUser = (userId: string) => {
-    const res = deleteAccount(userId);
-    setDeletingUserId(null);
-    setFeedback({ type: res.success ? 'success' : 'error', message: res.message });
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
       <div className="mc-panel w-full max-w-xl p-4 sm:p-6 bg-[#FDF7E7] text-[#2D1A11] max-h-[92vh] max-h-[92dvh] overflow-y-auto touch-scroll border-4 border-[#2D1A11] shadow-[6px_6px_0px_#2D1A11]">
@@ -204,7 +161,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             }`}
           >
             <Users size={13} />
-            <span>QUẢN LÝ TÀI KHOẢN ({users.length})</span>
+            <span>ĐỘI NGŨ 1835 ({users.length} NGƯỜI)</span>
           </button>
         </div>
 
@@ -416,103 +373,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               </button>
             </div>
 
-            {/* Inline Account Editor */}
-            {editingUser && (
-              <form onSubmit={handleSaveEditUser} className="p-3 bg-[#FFFDF7] border-2 border-[#2D1A11] space-y-2.5 animate-fadeIn">
-                <div className="flex items-center justify-between pb-1.5 border-b border-[#2D1A11]/20">
-                  <span className="text-xs font-bold text-[#2D1A11] flex items-center gap-1.5">
-                    <Edit2 size={13} className="text-[#F37022]" />
-                    QUẢN LÝ TÀI KHOẢN: {editingUser.name}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setEditingUser(null)}
-                    className="text-gray-400 hover:text-gray-600 text-xs font-bold px-1"
-                  >
-                    ✕
-                  </button>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[10px] font-bold text-[#52372A] block mb-0.5">Tên hiển thị:</label>
-                    <input
-                      type="text"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      className="mc-input text-xs w-full py-1.5 px-2"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-[#52372A] block mb-0.5">Vai trò:</label>
-                    <select
-                      value={editRole}
-                      onChange={(e) => setEditRole(e.target.value)}
-                      className="mc-input text-xs w-full py-1.5 px-2"
-                    >
-                      <option value="Thành viên Co-op 1835s">Thành viên Co-op 1835s</option>
-                      <option value="Đội trưởng 1835">Đội trưởng 1835</option>
-                      <option value="Thợ mỏ tinh nhuệ">Thợ mỏ tinh nhuệ</option>
-                      <option value="Kiểm toán viên">Kiểm toán viên</option>
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-[#52372A] block mb-0.5">Đổi mật khẩu mới:</label>
-                  <input
-                    type="text"
-                    value={editPassword}
-                    onChange={(e) => setEditPassword(e.target.value)}
-                    placeholder="Nhập mật khẩu mới cho tài khoản..."
-                    className="mc-input text-xs w-full py-1.5 px-2 font-mono"
-                  />
-                </div>
-                <div className="flex justify-end gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setEditingUser(null)}
-                    className="mc-btn mc-btn-obsidian text-xs px-2.5 py-1 text-white font-bold"
-                  >
-                    HỦY
-                  </button>
-                  <button
-                    type="submit"
-                    className="mc-btn mc-btn-emerald text-xs px-3 py-1 text-white font-bold"
-                  >
-                    LƯU THAY ĐỔI
-                  </button>
-                </div>
-              </form>
-            )}
-
-            {/* Delete Confirmation Box */}
-            {deletingUserId && (
-              <div className="p-3 bg-red-50 border-2 border-red-500 space-y-2 animate-fadeIn">
-                <div className="text-xs font-bold text-red-900">
-                  ⚠️ Xác nhận xóa tài khoản này khỏi hệ thống & đám mây?
-                </div>
-                <div className="text-[11px] text-red-700">
-                  Tài khoản: {users.find((u) => u.id === deletingUserId)?.name} ({users.find((u) => u.id === deletingUserId)?.email})
-                </div>
-                <div className="flex justify-end gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => setDeletingUserId(null)}
-                    className="mc-btn mc-btn-obsidian text-xs px-2.5 py-1 text-white font-bold"
-                  >
-                    HỦY
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleConfirmDeleteUser(deletingUserId)}
-                    className="mc-btn bg-red-600 hover:bg-red-700 text-xs px-3 py-1 text-white font-bold"
-                  >
-                    XÁC NHẬN XÓA
-                  </button>
-                </div>
-              </div>
-            )}
-
             {/* Feedback Alert for Tab 2 actions */}
             {feedback && (
               <div
@@ -610,28 +470,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                             </div>
                           </div>
                         </div>
-
-                        {/* Account Actions */}
-                        <div className="flex items-center gap-1 shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => handleStartEditUser(u)}
-                            className="mc-btn bg-[#FAF2DC] hover:bg-[#E5D6B6] text-[#2D1A11] text-[10px] p-1.5 border border-[#2D1A11]/30 rounded font-bold cursor-pointer"
-                            title="Chỉnh sửa thông tin tài khoản & mật khẩu"
-                          >
-                            <Edit2 size={12} />
-                          </button>
-                          {!isCurrent && (
-                            <button
-                              type="button"
-                              onClick={() => setDeletingUserId(u.id)}
-                              className="mc-btn bg-red-100 hover:bg-red-200 text-red-700 text-[10px] p-1.5 border border-red-300 rounded font-bold cursor-pointer"
-                              title="Xóa tài khoản khỏi hệ thống & đám mây"
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          )}
-                        </div>
                       </div>
                     );
                   })}
@@ -693,7 +531,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       className="mc-btn mc-btn-1835 text-xs px-3 py-1.5 font-bold flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
                     >
                       {copiedCode ? <Check size={13} className="text-white" /> : <Copy size={13} />}
-                      <span>{copiedCode ? '✓ ĐÃ CHÉP' : 'CHÉP MÃ ĐỘI'}</span>
+                      <span>{copiedCode ? '✓ ĐÃ CHÉP' : 'CHÉP MÃ ĐỘI (1835VN)'}</span>
                     </button>
                   </div>
                 </div>
@@ -701,19 +539,20 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 {/* Step 2: Import Code From Friend */}
                 <form onSubmit={handleImportCode} className="p-2 bg-white border border-[#2D1A11]/30 rounded space-y-1.5">
                   <div className="text-xs font-bold text-[#2D1A11]">
-                    2. Nhập mã đội từ bạn bè:
+                    2. Nhập mã đội 6 ký tự:
                   </div>
                   <div className="flex gap-1.5">
                     <input
                       type="text"
-                      placeholder="Dán mã chia sẻ vào đây..."
+                      maxLength={6}
+                      placeholder="Mã 6 ký tự (VD: 1835VN)"
                       value={importCodeInput}
-                      onChange={(e) => setImportCodeInput(e.target.value)}
-                      className="mc-input text-xs flex-1 py-1.5 px-2"
+                      onChange={(e) => setImportCodeInput(e.target.value.toUpperCase())}
+                      className="mc-input text-xs flex-1 py-1.5 px-2 font-mono uppercase tracking-widest font-bold"
                     />
                     <button
                       type="submit"
-                      disabled={!importCodeInput.trim()}
+                      disabled={importCodeInput.trim().length !== 6}
                       className="mc-btn mc-btn-emerald text-xs px-3 py-1.5 font-bold text-white shrink-0 disabled:opacity-50 cursor-pointer"
                     >
                       KẾT NỐI
