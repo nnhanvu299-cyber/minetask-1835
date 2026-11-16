@@ -41,6 +41,8 @@ interface AppContextValue {
   login: (email: string, pass: string) => Promise<{ success: boolean; message: string }> | { success: boolean; message: string };
   register: (name: string, email: string, pass: string, avatarKey: string) => Promise<{ success: boolean; message: string }> | { success: boolean; message: string };
   addTeamMember: (name: string, email: string, pass: string, avatarKey: string) => { success: boolean; message: string; user?: UserProfile };
+  updateUserAccount: (userId: string, updates: Partial<UserProfile>) => { success: boolean; message: string };
+  switchAccount: (userId: string) => { success: boolean; message: string };
   importTeamMembers: (incomingUsers: UserProfile[]) => { success: boolean; count: number; message: string };
   exportTeamCode: () => string;
   importTeamCode: (code: string) => { success: boolean; count: number; message: string };
@@ -529,55 +531,91 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return finalUsers;
   };
 
-  // 0. Realtime server synchronization across devices (Phone, PC, etc.)
+  // 0. Realtime server & Cloud synchronization across devices (Phone, PC, etc.)
+  const CLOUD_SYNC_ENDPOINT = 'https://api.restful-api.dev/objects/ff808181a09d98f701a1e3549c593725';
+
   const pushToServer = async (usersList?: UserProfile[], worldsList?: World[], tasksList?: Task[], replaceUsers?: boolean) => {
     if (!isOnlineMode) {
       setSyncStatus('offline');
       return;
     }
 
+    const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
     try {
       setSyncStatus('syncing');
       const cleanUsers = (usersList || users).filter(u => !isDefaultMockUser(u));
-      const res = await fetch('/api/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          users: cleanUsers,
-          worlds: worldsList || worlds,
-          tasks: tasksList || tasks,
-          replaceUsers: !!replaceUsers,
-          presence: currentUser ? {
-            userId: currentUser.id,
-            name: currentUser.name,
-            avatarKey: currentUser.avatarKey,
-            role: currentUser.role,
-            timestamp: Date.now(),
-          } : undefined,
-        }),
-      });
 
-      if (res.ok) {
-        setServerConnected(true);
-        setSyncStatus('synced');
-        setLastSyncTime(Date.now());
-        const data = await res.json();
-        if (Array.isArray(data.onlineMembers)) {
-          setLocalPresences((prev) => {
-            const next = new Map(prev);
-            data.onlineMembers.forEach((m: any) => {
-              if (m && m.userId && (!currentUser || m.userId !== currentUser.id)) {
-                next.set(m.userId, { ...m, isSelf: false });
-              }
+      if (isLocalhost) {
+        const res = await fetch('/api/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            users: cleanUsers,
+            worlds: worldsList || worlds,
+            tasks: tasksList || tasks,
+            replaceUsers: !!replaceUsers,
+            presence: currentUser ? {
+              userId: currentUser.id,
+              name: currentUser.name,
+              avatarKey: currentUser.avatarKey,
+              role: currentUser.role,
+              timestamp: Date.now(),
+            } : undefined,
+          }),
+        });
+
+        if (res.ok) {
+          setServerConnected(true);
+          setSyncStatus('synced');
+          setLastSyncTime(Date.now());
+          const data = await res.json();
+          if (Array.isArray(data.onlineMembers)) {
+            setLocalPresences((prev) => {
+              const next = new Map(prev);
+              data.onlineMembers.forEach((m: any) => {
+                if (m && m.userId && (!currentUser || m.userId !== currentUser.id)) {
+                  next.set(m.userId, { ...m, isSelf: false });
+                }
+              });
+              return next;
             });
-            return next;
-          });
+          }
         }
       } else {
-        setServerConnected(false);
-        setSyncStatus('error');
+        // Production: Global Cloud Store Relay
+        const now = Date.now();
+        const currentPresence = currentUser ? {
+          userId: currentUser.id,
+          name: currentUser.name,
+          avatarKey: currentUser.avatarKey,
+          role: currentUser.role,
+          lastSeen: now,
+        } : null;
+
+        const res = await fetch(CLOUD_SYNC_ENDPOINT, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: '1835_cloud_store',
+            data: {
+              users: cleanUsers,
+              worlds: worldsList || worlds,
+              tasks: tasksList || tasks,
+              onlinePresences: currentPresence ? [currentPresence] : [],
+              updatedAt: now,
+            }
+          })
+        });
+
+        if (res.ok) {
+          setServerConnected(true);
+          setSyncStatus('synced');
+          setLastSyncTime(now);
+        }
       }
-    } catch {
+    } catch (err) {
+      console.warn('[1835 Sync] Push error:', err);
       setServerConnected(false);
       setSyncStatus(networkOnline ? 'error' : 'offline');
     }
@@ -589,93 +627,178 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return false;
     }
 
+    const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
     try {
       setSyncStatus('syncing');
       const startPing = performance.now();
-      const params = new URLSearchParams({
-        t: Date.now().toString(),
-        ...(currentUser ? {
-          uid: currentUser.id,
-          name: currentUser.name,
-          avatar: currentUser.avatarKey,
-        } : {})
-      });
 
-      const res = await fetch(`/api/sync?${params.toString()}`);
-      const ping = Math.round(performance.now() - startPing);
-      setServerPing(ping);
-
-      if (res.ok) {
-        setServerConnected(true);
-        setSyncStatus('synced');
-        setLastSyncTime(Date.now());
-        const data = await res.json();
-
-        // Update online presence from server
-        if (Array.isArray(data.onlineMembers)) {
-          setLocalPresences((prev) => {
-            const next = new Map(prev);
-            data.onlineMembers.forEach((m: any) => {
-              if (m && m.userId && (!currentUser || m.userId !== currentUser.id)) {
-                next.set(m.userId, { ...m, isSelf: false });
-              }
-            });
-            return next;
-          });
-        }
-
-        const serverUsers = (Array.isArray(data.users) ? data.users : []).filter((u: any) => !isDefaultMockUser(u));
-
-        setUsers((prev) => {
-          const cleanPrev = prev.filter((u) => !isDefaultMockUser(u));
-          const map = new Map<string, UserProfile>();
-          cleanPrev.forEach((u) => map.set(u.email.toLowerCase(), u));
-          serverUsers.forEach((u: UserProfile) => {
-            if (u && u.email) map.set(u.email.toLowerCase(), u);
-          });
-          const merged = Array.from(map.values());
-          const finalUsers = merged.length > 0 ? merged : DEFAULT_USERS;
-          try {
-            localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(finalUsers));
-          } catch {}
-          return finalUsers;
+      if (isLocalhost) {
+        const params = new URLSearchParams({
+          t: Date.now().toString(),
+          ...(currentUser ? {
+            uid: currentUser.id,
+            name: currentUser.name,
+            avatar: currentUser.avatarKey,
+          } : {})
         });
 
-        if (Array.isArray(data.worlds) && data.worlds.length > 0) {
-          setWorlds((prev) => {
-            const map = new Map<string, World>();
-            prev.forEach((w) => map.set(w.id, w));
-            data.worlds.forEach((w: World) => map.set(w.id, w));
-            return Array.from(map.values());
-          });
-        }
+        const res = await fetch(`/api/sync?${params.toString()}`);
+        const ping = Math.round(performance.now() - startPing);
+        setServerPing(ping);
 
-        if (Array.isArray(data.tasks) && data.tasks.length > 0) {
-          setTasks((prev) => {
-            if (prev.length === 0 || (prev.length <= 4 && data.tasks.length > prev.length)) {
-              return data.tasks;
-            }
-            const map = new Map<string, Task>();
-            prev.forEach((t) => map.set(t.id, t));
-            data.tasks.forEach((t: Task) => {
-              if (!map.has(t.id)) {
-                map.set(t.id, t);
-              } else {
-                const existing = map.get(t.id)!;
-                if (t.deadline && !existing.deadline) {
-                  map.set(t.id, { ...existing, deadline: t.deadline });
+        if (res.ok) {
+          setServerConnected(true);
+          setSyncStatus('synced');
+          setLastSyncTime(Date.now());
+          const data = await res.json();
+
+          if (Array.isArray(data.onlineMembers)) {
+            setLocalPresences((prev) => {
+              const next = new Map(prev);
+              data.onlineMembers.forEach((m: any) => {
+                if (m && m.userId && (!currentUser || m.userId !== currentUser.id)) {
+                  next.set(m.userId, { ...m, isSelf: false });
                 }
-              }
+              });
+              return next;
             });
-            return Array.from(map.values());
+          }
+
+          const serverUsers = (Array.isArray(data.users) ? data.users : []).filter((u: any) => !isDefaultMockUser(u));
+          setUsers((prev) => {
+            const cleanPrev = prev.filter((u) => !isDefaultMockUser(u));
+            const map = new Map<string, UserProfile>();
+            cleanPrev.forEach((u) => map.set(u.email.toLowerCase(), u));
+            serverUsers.forEach((u: UserProfile) => {
+              if (u && u.email) map.set(u.email.toLowerCase(), u);
+            });
+            const merged = Array.from(map.values());
+            const finalUsers = merged.length > 0 ? merged : DEFAULT_USERS;
+            try {
+              localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(finalUsers));
+            } catch {}
+            return finalUsers;
           });
+
+          if (Array.isArray(data.worlds) && data.worlds.length > 0) {
+            setWorlds((prev) => {
+              const map = new Map<string, World>();
+              prev.forEach((w) => map.set(w.id, w));
+              data.worlds.forEach((w: World) => map.set(w.id, w));
+              return Array.from(map.values());
+            });
+          }
+
+          if (Array.isArray(data.tasks) && data.tasks.length > 0) {
+            setTasks((prev) => {
+              if (prev.length === 0 || (prev.length <= 4 && data.tasks.length > prev.length)) {
+                return data.tasks;
+              }
+              const map = new Map<string, Task>();
+              prev.forEach((t) => map.set(t.id, t));
+              data.tasks.forEach((t: Task) => {
+                if (!map.has(t.id)) {
+                  map.set(t.id, t);
+                } else {
+                  const existing = map.get(t.id)!;
+                  if (t.deadline && !existing.deadline) {
+                    map.set(t.id, { ...existing, deadline: t.deadline });
+                  }
+                }
+              });
+              return Array.from(map.values());
+            });
+          }
+          return true;
         }
-        return true;
       } else {
-        setServerConnected(false);
-        setSyncStatus('error');
-        return false;
+        // Production Cloud Sync Relay
+        const res = await fetch(`${CLOUD_SYNC_ENDPOINT}?t=${Date.now()}`);
+        const ping = Math.round(performance.now() - startPing);
+        setServerPing(ping);
+
+        if (res.ok) {
+          setServerConnected(true);
+          setSyncStatus('synced');
+          setLastSyncTime(Date.now());
+          const json = await res.json();
+          const cloudData = json.data || {};
+
+          // Sync presences
+          if (Array.isArray(cloudData.onlinePresences)) {
+            setLocalPresences((prev) => {
+              const next = new Map(prev);
+              const now = Date.now();
+              cloudData.onlinePresences.forEach((m: any) => {
+                if (m && m.userId && (!currentUser || m.userId !== currentUser.id)) {
+                  if (now - (m.lastSeen || 0) < 60000) {
+                    next.set(m.userId, { ...m, isSelf: false });
+                  }
+                }
+              });
+              return next;
+            });
+          }
+
+          // Sync cloud users
+          if (Array.isArray(cloudData.users) && cloudData.users.length > 0) {
+            const serverUsers = cloudData.users.filter((u: any) => !isDefaultMockUser(u));
+            setUsers((prev) => {
+              const cleanPrev = prev.filter((u) => !isDefaultMockUser(u));
+              const map = new Map<string, UserProfile>();
+              cleanPrev.forEach((u) => map.set(u.email.toLowerCase(), u));
+              serverUsers.forEach((u: UserProfile) => {
+                if (u && u.email) map.set(u.email.toLowerCase(), u);
+              });
+              const merged = Array.from(map.values());
+              const finalUsers = merged.length > 0 ? merged : DEFAULT_USERS;
+              try {
+                localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(finalUsers));
+              } catch {}
+              return finalUsers;
+            });
+          }
+
+          // Sync worlds
+          if (Array.isArray(cloudData.worlds) && cloudData.worlds.length > 0) {
+            setWorlds((prev) => {
+              const map = new Map<string, World>();
+              prev.forEach((w) => map.set(w.id, w));
+              cloudData.worlds.forEach((w: World) => map.set(w.id, w));
+              return Array.from(map.values());
+            });
+          }
+
+          // Sync tasks
+          if (Array.isArray(cloudData.tasks) && cloudData.tasks.length > 0) {
+            setTasks((prev) => {
+              if (prev.length === 0 || (prev.length <= 4 && cloudData.tasks.length > prev.length)) {
+                return cloudData.tasks;
+              }
+              const map = new Map<string, Task>();
+              prev.forEach((t) => map.set(t.id, t));
+              cloudData.tasks.forEach((t: Task) => {
+                if (!map.has(t.id)) {
+                  map.set(t.id, t);
+                } else {
+                  const existing = map.get(t.id)!;
+                  if (t.deadline && !existing.deadline) {
+                    map.set(t.id, { ...existing, deadline: t.deadline });
+                  }
+                }
+              });
+              return Array.from(map.values());
+            });
+          }
+
+          return true;
+        }
       }
+
+      setServerConnected(false);
+      setSyncStatus('error');
+      return false;
     } catch {
       setServerConnected(false);
       setSyncStatus(networkOnline ? 'error' : 'offline');
@@ -1029,6 +1152,55 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const name = targetUser ? targetUser.name : 'Tài khoản';
     return { success: true, message: `Đã xóa vĩnh viễn tài khoản ${name} thành công!` };
+  };
+
+  const updateUserAccount = (userId: string, updates: Partial<UserProfile>): { success: boolean; message: string } => {
+    const currentUsers = getStoredUsers();
+    let updatedTarget: UserProfile | undefined;
+    const updatedUsers = currentUsers.map((u) => {
+      if (u.id === userId) {
+        updatedTarget = { ...u, ...updates };
+        return updatedTarget;
+      }
+      return u;
+    });
+
+    if (!updatedTarget) {
+      return { success: false, message: 'Không tìm thấy tài khoản để cập nhật.' };
+    }
+
+    try {
+      localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(updatedUsers));
+      localStorage.setItem('minetask_1835_backup_users', JSON.stringify(updatedUsers));
+      if (currentUser?.id === userId) {
+        setCurrentUser(updatedTarget);
+        localStorage.setItem(STORAGE_KEY_CURRENT_USER_PROFILE, JSON.stringify(updatedTarget));
+      }
+    } catch {}
+
+    setUsers(updatedUsers);
+    pushToServer(updatedUsers);
+    broadcastStateChange(tasks, worlds, updatedUsers);
+    soundEngine.playLevelUp();
+    return { success: true, message: `Đã cập nhật thông tin tài khoản ${updatedTarget.name} thành công!` };
+  };
+
+  const switchAccount = (userId: string): { success: boolean; message: string } => {
+    const currentUsers = getStoredUsers();
+    const target = currentUsers.find((u) => u.id === userId);
+    if (!target) {
+      return { success: false, message: 'Không tìm thấy tài khoản cần chuyển đổi.' };
+    }
+
+    setCurrentUser(target);
+    try {
+      localStorage.setItem(STORAGE_KEY_CURRENT_USER, target.id);
+      localStorage.setItem(STORAGE_KEY_CURRENT_USER_PROFILE, JSON.stringify(target));
+      localStorage.setItem(STORAGE_KEY_REMEMBER_LOGIN, 'true');
+    } catch {}
+
+    soundEngine.playVictoryFanfare();
+    return { success: true, message: `Đã chuyển sang đăng nhập tài khoản ${target.name}!` };
   };
 
   // Password reset simulation
@@ -1605,6 +1777,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         login,
         register,
         addTeamMember,
+        updateUserAccount,
+        switchAccount,
         importTeamMembers,
         exportTeamCode,
         importTeamCode,
