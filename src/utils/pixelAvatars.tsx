@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface AvatarProps {
   userId: string;
@@ -17,34 +17,60 @@ export interface AvatarOption {
   image?: string;
 }
 
+/**
+ * Safely resolves asset paths across all deployment environments:
+ * 1. GitHub Pages subpath: https://nnhanvu299-cyber.github.io/minetask-1835/
+ * 2. Localhost Vite dev: http://localhost:5173/
+ * 3. Capacitor Native Android: capacitor://localhost
+ */
+export const resolveAssetPath = (path: string | undefined): string => {
+  if (!path) return '';
+  if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('data:')) {
+    return path;
+  }
+  // Strip any leading slashes or dots
+  const clean = path.replace(/^(\.|\/)+/, '');
+
+  if (typeof window !== 'undefined') {
+    const pathname = window.location.pathname || '';
+    if (pathname.includes('/minetask-1835')) {
+      return `/minetask-1835/${clean}`;
+    }
+  }
+
+  const base = ((import.meta as any).env?.BASE_URL as string) || './';
+  const cleanBase = base.endsWith('/') ? base : `${base}/`;
+  return `${cleanBase}${clean}`;
+};
+
 export const AVATAR_OPTIONS: AvatarOption[] = [
   // ================= BỘ 12 CON GIÁP CUTE 3D =================
-  { key: 'zodiac_ty', name: 'Tý - Chuột Vàng (Cute 3D)', color: '#f59e0b', category: 'zodiac', zodiacName: 'Tý (Chuột)', image: '/characters/zodiac_ty.jpg' },
-  { key: 'zodiac_suu', name: 'Sửu - Trâu Vàng (Cute 3D)', color: '#8d6e63', category: 'zodiac', zodiacName: 'Sửu (Trâu)', image: '/characters/zodiac_suu.svg' },
-  { key: 'zodiac_dan', name: 'Dần - Hổ Con (Cute 3D)', color: '#ea580c', category: 'zodiac', zodiacName: 'Dần (Hổ)', image: '/characters/zodiac_dan.svg' },
-  { key: 'zodiac_mao', name: 'Mão - Mèo Con (Cute 3D)', color: '#f97316', category: 'zodiac', zodiacName: 'Mão (Mèo)', image: '/characters/zodiac_mao.svg' },
-  { key: 'zodiac_thin', name: 'Thìn - Rồng Con (Cute 3D)', color: '#10b981', category: 'zodiac', zodiacName: 'Thìn (Rồng)', image: '/characters/zodiac_thin.svg' },
-  { key: 'zodiac_ty_ran', name: 'Tỵ - Rắn Lục (Cute 3D)', color: '#059669', category: 'zodiac', zodiacName: 'Tỵ (Rắn)', image: '/characters/zodiac_ty_ran.svg' },
-  { key: 'zodiac_ngo', name: 'Ngọ - Ngựa Pony (Cute 3D)', color: '#b45309', category: 'zodiac', zodiacName: 'Ngọ (Ngựa)', image: '/characters/zodiac_ngo.svg' },
-  { key: 'zodiac_mui', name: 'Mùi - Dê Mây (Cute 3D)', color: '#cbd5e1', category: 'zodiac', zodiacName: 'Mùi (Dê)', image: '/characters/zodiac_mui.svg' },
-  { key: 'zodiac_than', name: 'Thân - Khỉ Con (Cute 3D)', color: '#a16207', category: 'zodiac', zodiacName: 'Thân (Khỉ)', image: '/characters/zodiac_than.svg' },
-  { key: 'zodiac_dau', name: 'Dậu - Gà Con (Cute 3D)', color: '#eab308', category: 'zodiac', zodiacName: 'Dậu (Gà)', image: '/characters/zodiac_dau.svg' },
-  { key: 'zodiac_tuat', name: 'Tuất - Cún Shiba (Cute 3D)', color: '#f97316', category: 'zodiac', zodiacName: 'Tuất (Chó)', image: '/characters/zodiac_tuat.svg' },
-  { key: 'zodiac_hoi', name: 'Hợi - Heo Hồng (Cute 3D)', color: '#ec4899', category: 'zodiac', zodiacName: 'Hợi (Heo)', image: '/characters/zodiac_hoi.svg' },
+  { key: 'zodiac_ty', name: 'Tý - Chuột Vàng (Cute 3D)', color: '#f59e0b', category: 'zodiac', zodiacName: 'Tý (Chuột)', image: 'characters/zodiac_ty.jpg' },
+  { key: 'zodiac_suu', name: 'Sửu - Trâu Vàng (Cute 3D)', color: '#8d6e63', category: 'zodiac', zodiacName: 'Sửu (Trâu)', image: 'characters/zodiac_suu.svg' },
+  { key: 'zodiac_dan', name: 'Dần - Hổ Con (Cute 3D)', color: '#ea580c', category: 'zodiac', zodiacName: 'Dần (Hổ)', image: 'characters/zodiac_dan.svg' },
+  { key: 'zodiac_mao', name: 'Mão - Mèo Con (Cute 3D)', color: '#f97316', category: 'zodiac', zodiacName: 'Mão (Mèo)', image: 'characters/zodiac_mao.svg' },
+  { key: 'zodiac_thin', name: 'Thìn - Rồng Con (Cute 3D)', color: '#10b981', category: 'zodiac', zodiacName: 'Thìn (Rồng)', image: 'characters/zodiac_thin.svg' },
+  { key: 'zodiac_ty_ran', name: 'Tỵ - Rắn Lục (Cute 3D)', color: '#059669', category: 'zodiac', zodiacName: 'Tỵ (Rắn)', image: 'characters/zodiac_ty_ran.svg' },
+  { key: 'zodiac_ngo', name: 'Ngọ - Ngựa Pony (Cute 3D)', color: '#b45309', category: 'zodiac', zodiacName: 'Ngọ (Ngựa)', image: 'characters/zodiac_ngo.svg' },
+  { key: 'zodiac_mui', name: 'Mùi - Dê Mây (Cute 3D)', color: '#cbd5e1', category: 'zodiac', zodiacName: 'Mùi (Dê)', image: 'characters/zodiac_mui.svg' },
+  { key: 'zodiac_than', name: 'Thân - Khỉ Con (Cute 3D)', color: '#a16207', category: 'zodiac', zodiacName: 'Thân (Khỉ)', image: 'characters/zodiac_than.svg' },
+  { key: 'zodiac_dau', name: 'Dậu - Gà Con (Cute 3D)', color: '#eab308', category: 'zodiac', zodiacName: 'Dậu (Gà)', image: 'characters/zodiac_dau.svg' },
+  { key: 'zodiac_tuat', name: 'Tuất - Cún Shiba (Cute 3D)', color: '#f97316', category: 'zodiac', zodiacName: 'Tuất (Chó)', image: 'characters/zodiac_tuat.svg' },
+  { key: 'zodiac_hoi', name: 'Hợi - Heo Hồng (Cute 3D)', color: '#ec4899', category: 'zodiac', zodiacName: 'Hợi (Heo)', image: 'characters/zodiac_hoi.svg' },
 
   // ================= MINECRAFT 3D =================
-  { key: 'steve', name: 'Steve (Thợ mỏ 3D)', color: '#F37022', category: 'minecraft', image: '/characters/steve.jpg' },
-  { key: 'alex', name: 'Alex (Chế tác 3D)', color: '#ED1B24', category: 'minecraft', image: '/characters/alex.jpg' },
-  { key: 'sniffer', name: 'Sniffer (Cổ đại hoa 3D)', color: '#e69900', category: 'minecraft', image: '/characters/sniffer.jpg' },
-  { key: 'axolotl', name: 'Axolotl (Kỳ nhông hồng 3D)', color: '#fbb4cb', category: 'minecraft', image: '/characters/axolotl.jpg' },
-  { key: 'creeper', name: 'Creeper (Bộc phá 3D)', color: '#509e3a', category: 'minecraft', image: '/characters/creeper.jpg' },
-  { key: 'devon', name: 'Devon (Redstone 3D)', color: '#753B94', category: 'minecraft', image: '/characters/devon.jpg' },
-  { key: 'luna', name: 'Luna (Nether Knight 3D)', color: '#0072CE', category: 'minecraft', image: '/characters/luna.jpg' },
-  { key: 'enderman', name: 'Enderman (Bóng đêm 3D)', color: '#161616', category: 'minecraft', image: '/characters/enderman.jpg' },
-  { key: 'zombie', name: 'Zombie (Xác sống 3D)', color: '#568C52', category: 'minecraft', image: '/characters/zombie.jpg' },
-  { key: 'skeleton', name: 'Skeleton (Cung thủ 3D)', color: '#c7c7c7', category: 'minecraft', image: '/characters/skeleton.jpg' },
-  { key: 'iron_golem', name: 'Iron Golem (Hộ vệ 3D)', color: '#d1d1d1', category: 'minecraft', image: '/characters/iron_golem.jpg' },
-  { key: 'fox', name: 'Cáo Tuyết / Hoa 3D)', color: '#d9651e', category: 'minecraft', image: '/characters/fox.jpg' },
+  { key: 'steve', name: 'Steve (Thợ mỏ 3D)', color: '#F37022', category: 'minecraft', image: 'characters/steve.jpg' },
+  { key: 'alex', name: 'Alex (Chế tác 3D)', color: '#ED1B24', category: 'minecraft', image: 'characters/alex.jpg' },
+  { key: 'sniffer', name: 'Sniffer (Cổ đại hoa 3D)', color: '#e69900', category: 'minecraft', image: 'characters/sniffer.jpg' },
+  { key: 'axolotl', name: 'Axolotl (Kỳ nhông hồng 3D)', color: '#fbb4cb', category: 'minecraft', image: 'characters/axolotl.jpg' },
+  { key: 'creeper', name: 'Creeper (Bộc phá 3D)', color: '#509e3a', category: 'minecraft', image: 'characters/creeper.jpg' },
+  { key: 'devon', name: 'Devon (Redstone 3D)', color: '#753B94', category: 'minecraft', image: 'characters/devon.jpg' },
+  { key: 'luna', name: 'Luna (Nether Knight 3D)', color: '#0072CE', category: 'minecraft', image: 'characters/luna.jpg' },
+  { key: 'enderman', name: 'Enderman (Bóng đêm 3D)', color: '#161616', category: 'minecraft', image: 'characters/enderman.jpg' },
+  { key: 'zombie', name: 'Zombie (Xác sống 3D)', color: '#568C52', category: 'minecraft', image: 'characters/zombie.jpg' },
+  { key: 'skeleton', name: 'Skeleton (Cung thủ 3D)', color: '#c7c7c7', category: 'minecraft', image: 'characters/skeleton.jpg' },
+  { key: 'iron_golem', name: 'Iron Golem (Hộ vệ 3D)', color: '#d1d1d1', category: 'minecraft', image: 'characters/iron_golem.jpg' },
+  { key: 'fox', name: 'Cáo Tuyết / Hoa 3D)', color: '#d9651e', category: 'minecraft', image: 'characters/fox.jpg' },
   { key: 'blaze', name: 'Blaze (Quỷ lửa 3D)', color: '#f5b025', category: 'minecraft' },
   { key: 'piglin', name: 'Piglin (Nether Gold 3D)', color: '#d98579', category: 'minecraft' },
   { key: 'villager', name: 'Villager (Thương nhân 3D)', color: '#8F5434', category: 'minecraft' },
@@ -53,32 +79,32 @@ export const AVATAR_OPTIONS: AvatarOption[] = [
 
 export const AVATAR_3D_IMAGES: Record<string, string> = {
   // 12 Con Giáp Cute 3D
-  zodiac_ty: '/characters/zodiac_ty.jpg',
-  zodiac_suu: '/characters/zodiac_suu.svg',
-  zodiac_dan: '/characters/zodiac_dan.svg',
-  zodiac_mao: '/characters/zodiac_mao.svg',
-  zodiac_thin: '/characters/zodiac_thin.svg',
-  zodiac_ty_ran: '/characters/zodiac_ty_ran.svg',
-  zodiac_ngo: '/characters/zodiac_ngo.svg',
-  zodiac_mui: '/characters/zodiac_mui.svg',
-  zodiac_than: '/characters/zodiac_than.svg',
-  zodiac_dau: '/characters/zodiac_dau.svg',
-  zodiac_tuat: '/characters/zodiac_tuat.svg',
-  zodiac_hoi: '/characters/zodiac_hoi.svg',
+  zodiac_ty: 'characters/zodiac_ty.jpg',
+  zodiac_suu: 'characters/zodiac_suu.svg',
+  zodiac_dan: 'characters/zodiac_dan.svg',
+  zodiac_mao: 'characters/zodiac_mao.svg',
+  zodiac_thin: 'characters/zodiac_thin.svg',
+  zodiac_ty_ran: 'characters/zodiac_ty_ran.svg',
+  zodiac_ngo: 'characters/zodiac_ngo.svg',
+  zodiac_mui: 'characters/zodiac_mui.svg',
+  zodiac_than: 'characters/zodiac_than.svg',
+  zodiac_dau: 'characters/zodiac_dau.svg',
+  zodiac_tuat: 'characters/zodiac_tuat.svg',
+  zodiac_hoi: 'characters/zodiac_hoi.svg',
 
   // Minecraft 3D
-  steve: '/characters/steve.jpg',
-  alex: '/characters/alex.jpg',
-  sniffer: '/characters/sniffer.jpg',
-  axolotl: '/characters/axolotl.jpg',
-  creeper: '/characters/creeper.jpg',
-  devon: '/characters/devon.jpg',
-  luna: '/characters/luna.jpg',
-  enderman: '/characters/enderman.jpg',
-  zombie: '/characters/zombie.jpg',
-  skeleton: '/characters/skeleton.jpg',
-  iron_golem: '/characters/iron_golem.jpg',
-  fox: '/characters/fox.jpg',
+  steve: 'characters/steve.jpg',
+  alex: 'characters/alex.jpg',
+  sniffer: 'characters/sniffer.jpg',
+  axolotl: 'characters/axolotl.jpg',
+  creeper: 'characters/creeper.jpg',
+  devon: 'characters/devon.jpg',
+  luna: 'characters/luna.jpg',
+  enderman: 'characters/enderman.jpg',
+  zombie: 'characters/zombie.jpg',
+  skeleton: 'characters/skeleton.jpg',
+  iron_golem: 'characters/iron_golem.jpg',
+  fox: 'characters/fox.jpg',
 };
 
 // 3D Isometric Voxel Cube Face Renderer (used for fallback or SVG mode)
@@ -249,6 +275,33 @@ const renderIsometric3DFace = (key: string) => {
 
     case 'steve':
     default:
+      if (key.startsWith('zodiac_')) {
+        const zodiacMap: Record<string, { emoji: string; name: string; bg: string }> = {
+          zodiac_ty: { emoji: '🐭', name: 'Tý', bg: '#fef3c7' },
+          zodiac_suu: { emoji: '🐮', name: 'Sửu', bg: '#f5ebe0' },
+          zodiac_dan: { emoji: '🐯', name: 'Dần', bg: '#ffedd5' },
+          zodiac_mao: { emoji: '🐱', name: 'Mão', bg: '#fed7aa' },
+          zodiac_thin: { emoji: '🐲', name: 'Thìn', bg: '#d1fae5' },
+          zodiac_ty_ran: { emoji: '🐍', name: 'Tỵ', bg: '#a7f3d0' },
+          zodiac_ngo: { emoji: '🐴', name: 'Ngọ', bg: '#fde68a' },
+          zodiac_mui: { emoji: '🐐', name: 'Mùi', bg: '#f1f5f9' },
+          zodiac_than: { emoji: '🐵', name: 'Thân', bg: '#fef08a' },
+          zodiac_dau: { emoji: '🐔', name: 'Dậu', bg: '#fef9c3' },
+          zodiac_tuat: { emoji: '🐶', name: 'Tuất', bg: '#fed7aa' },
+          zodiac_hoi: { emoji: '🐷', name: 'Hợi', bg: '#fce7f3' },
+        };
+        const z = zodiacMap[key] || { emoji: '✨', name: 'Zodiac', bg: '#FAF2DC' };
+        return (
+          <div
+            style={{ backgroundColor: z.bg }}
+            className="w-full h-full flex flex-col items-center justify-center select-none"
+          >
+            <span className="text-sm leading-none">{z.emoji}</span>
+            <span className="text-[7px] font-bold text-[#2D1A11] mt-0.5">{z.name}</span>
+          </div>
+        );
+      }
+
       return (
         <svg viewBox="0 0 32 32" width="100%" height="100%" className="block">
           <ellipse cx="16" cy="30" rx="10" ry="2" fill="rgba(45,26,17,0.3)" />
@@ -282,7 +335,13 @@ export const PixelAvatar: React.FC<AvatarProps> = ({
 }) => {
   const [imageError, setImageError] = useState(false);
   const key = (avatarKey || userId || 'steve').toLowerCase().trim();
-  const imageUrl = AVATAR_3D_IMAGES[key];
+  const rawPath = AVATAR_3D_IMAGES[key];
+  const imageUrl = rawPath ? resolveAssetPath(rawPath) : undefined;
+
+  // Whenever avatar key changes, reset error state so new avatar loads immediately
+  useEffect(() => {
+    setImageError(false);
+  }, [key, rawPath]);
 
   return (
     <div
