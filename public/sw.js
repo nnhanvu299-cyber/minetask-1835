@@ -1,4 +1,4 @@
-const CACHE_NAME = 'minetask-1835s-v25-cloud-sync';
+const CACHE_NAME = 'minetask-1835s-v26-clean-accounts';
 
 const PRECACHE_ASSETS = [
   './',

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { AVATAR_OPTIONS, PixelAvatar } from '../utils/pixelAvatars';
 import { XPBar } from './XPBar';
-import { Users, LogOut, X, Trash2, AlertTriangle, UserPlus, CheckCircle, Mail, Lock, User, Search, Sparkles, Share2, Copy, Check, Download, Upload, Link2, Cloud, Edit2, LogIn, RefreshCw, Shield } from 'lucide-react';
+import { Users, LogOut, X, Trash2, AlertTriangle, CheckCircle, Mail, Lock, User, Search, Sparkles, Share2, Copy, Check, Download, Upload, Link2, Cloud, Edit2, RefreshCw, Shield } from 'lucide-react';
 import { soundEngine } from '../utils/audio';
 import { UserProfile } from '../types';
 import { matchesUserSearch, removeDiacritics } from '../utils/textUtils';
@@ -22,9 +22,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     tasks,
     logout,
     deleteAccount,
-    addTeamMember,
     updateUserAccount,
-    switchAccount,
     importTeamCode,
     exportTeamCode,
     updateUserAvatar,
@@ -45,12 +43,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [isSyncingCloud, setIsSyncingCloud] = useState(false);
 
-  // Form for adding a new member to the team
-  const [showAddMemberForm, setShowAddMemberForm] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [newEmail, setNewEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('123');
-  const [newAvatarKey, setNewAvatarKey] = useState('sniffer');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Team Sync Drawer & Sharing
@@ -79,46 +71,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   const handleDeleteAccount = () => {
     deleteAccount(currentUser.id);
     onClose();
-  };
-
-  const handleAddMemberSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setFeedback(null);
-    const res = addTeamMember(newName, newEmail, newPassword, newAvatarKey);
-    if (res.success) {
-      setFeedback({ type: 'success', message: res.message });
-      setNewName('');
-      setNewEmail('');
-      setNewPassword('123');
-      setTimeout(() => {
-        setShowAddMemberForm(false);
-        setFeedback(null);
-      }, 1500);
-    } else {
-      setFeedback({ type: 'error', message: res.message });
-    }
-  };
-
-  const handleQuickAdd = (rawName: string) => {
-    const name = rawName.trim();
-    if (!name) return;
-    const cleanSlug = removeDiacritics(name).replace(/[^a-z0-9]/g, '') || 'member';
-    const autoEmail = `${cleanSlug}${Math.floor(10 + Math.random() * 89)}@1835.vn`;
-    const randomAvatar = AVATAR_OPTIONS[Math.floor(Math.random() * AVATAR_OPTIONS.length)].key;
-
-    setFeedback(null);
-    const res = addTeamMember(name, autoEmail, '123', randomAvatar);
-    if (res.success) {
-      setFeedback({
-        type: 'success',
-        message: `Đã thêm bạn "${name}" (${autoEmail}) vào đội 1835 thành công! Bạn có thể phân công công việc ngay.`,
-      });
-    } else {
-      setFeedback({
-        type: 'error',
-        message: res.message,
-      });
-    }
   };
 
   const handleExportCode = () => {
@@ -661,20 +613,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 
                         {/* Account Actions */}
                         <div className="flex items-center gap-1 shrink-0">
-                          {!isCurrent && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const res = switchAccount(u.id);
-                                setFeedback({ type: 'success', message: res.message });
-                              }}
-                              className="mc-btn mc-btn-obsidian text-[10px] px-2 py-1 text-white font-bold flex items-center gap-1 cursor-pointer"
-                              title="Chuyển sang đăng nhập tài khoản này"
-                            >
-                              <LogIn size={11} />
-                              <span className="hidden sm:inline">Chuyển</span>
-                            </button>
-                          )}
                           <button
                             type="button"
                             onClick={() => handleStartEditUser(u)}
@@ -699,59 +637,24 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   })}
 
                 {users.filter((u) => matchesUserSearch(u, searchQuery)).length === 0 && (
-                  <div className="col-span-1 sm:col-span-2 p-3 bg-[#FAF2DC] border-2 border-dashed border-[#F37022] rounded space-y-2 text-center animate-fadeIn">
+                  <div className="p-3 bg-[#FAF2DC] border-2 border-dashed border-[#F37022] rounded space-y-1 text-center animate-fadeIn">
                     <div className="text-xs font-bold text-[#2D1A11]">
                       Không tìm thấy "{searchQuery}"
-                    </div>
-                    <div className="flex flex-wrap items-center justify-center gap-2 pt-0.5">
-                      <button
-                        type="button"
-                        onClick={() => handleQuickAdd(searchQuery)}
-                        className="mc-btn mc-btn-emerald text-xs px-3 py-1.5 font-bold text-white flex items-center gap-1.5 shadow-xs cursor-pointer"
-                      >
-                        <UserPlus size={13} />
-                        <span>+ THÊM BẠN "{searchQuery.trim()}" VÀO ĐỘI</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setNewName(searchQuery.trim());
-                          setShowAddMemberForm(true);
-                        }}
-                        className="mc-btn mc-btn-obsidian text-xs px-2.5 py-1.5 font-bold text-white flex items-center gap-1 cursor-pointer"
-                      >
-                        <span>Điền chi tiết</span>
-                      </button>
                     </div>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Quick Actions Bar: Add Teammate + Team Code Sync */}
-            <div className="pt-2 border-t border-[#2D1A11]/15 flex flex-wrap items-center justify-between gap-2">
+            {/* Quick Actions Bar: Team Code & Link Sync */}
+            <div className="pt-2 border-t border-[#2D1A11]/15 flex items-center justify-end gap-2">
               <button
                 type="button"
-                onClick={() => {
-                  setShowAddMemberForm(!showAddMemberForm);
-                  setShowSyncBox(false);
-                }}
-                className="text-xs text-[#52372A] hover:text-[#2D1A11] font-semibold underline cursor-pointer inline-flex items-center gap-1 py-1"
-              >
-                <UserPlus size={13} />
-                <span>{showAddMemberForm ? 'Đóng form thêm' : '+ Tạo tài khoản hộ bạn bè'}</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setShowSyncBox(!showSyncBox);
-                  setShowAddMemberForm(false);
-                }}
-                className="text-xs text-[#F37022] hover:text-[#d45d17] font-bold cursor-pointer inline-flex items-center gap-1.5 py-1 px-2 bg-[#FAF2DC] border border-[#2D1A11]/20 rounded"
+                onClick={() => setShowSyncBox(!showSyncBox)}
+                className="text-xs text-[#F37022] hover:text-[#d45d17] font-bold cursor-pointer inline-flex items-center gap-1.5 py-1 px-2.5 bg-[#FAF2DC] border border-[#2D1A11]/20 rounded"
               >
                 <Share2 size={13} />
-                <span>{showSyncBox ? 'Đóng đồng bộ' : '📲 Đồng bộ mã đội'}</span>
+                <span>{showSyncBox ? 'Đóng đồng bộ' : '📲 Đồng bộ mã đội & Link'}</span>
               </button>
             </div>
 
@@ -819,126 +722,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 </form>
               </div>
             )}
-
-            {/* Optional secondary action: Create account on behalf of teammate */}
-            {showAddMemberForm && (
-              <form onSubmit={handleAddMemberSubmit} className="p-3.5 bg-[#FFFDF7] border-2 border-[#2D1A11] space-y-3 animate-fadeIn mt-2">
-                <div className="flex items-center justify-between pb-2 border-b border-[#2D1A11]/20">
-                  <span className="text-xs font-bold text-[#2D1A11] flex items-center gap-1.5">
-                    <UserPlus size={14} className="text-[#1aa64e]" />
-                    TẠO TÀI KHOẢN HỘ ĐỒNG ĐỘI
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowAddMemberForm(false)}
-                    className="text-gray-400 hover:text-gray-600 text-xs font-bold cursor-pointer"
-                  >
-                    ✕ Hủy
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#52372A] mb-1">
-                        HỌ VÀ TÊN *
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          required
-                          placeholder="ví dụ: Dev Quân, Miner Linh..."
-                          value={newName}
-                          onChange={(e) => setNewName(e.target.value)}
-                          className="mc-input pl-8 text-xs"
-                        />
-                        <User size={13} className="text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[11px] font-bold text-[#52372A] mb-1">
-                        EMAIL ĐĂNG NHẬP *
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="email"
-                          required
-                          placeholder="ví dụ: quan@1835.vn"
-                          value={newEmail}
-                          onChange={(e) => setNewEmail(e.target.value)}
-                          className="mc-input pl-8 text-xs"
-                        />
-                        <Mail size={13} className="text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-bold text-[#52372A] mb-1">
-                      MẬT KHẨU KHỞI TẠO *
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        required
-                        placeholder="Mật khẩu cho thành viên"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        className="mc-input pl-8 text-xs"
-                      />
-                      <Lock size={13} className="text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                    </div>
-                  </div>
-
-                  {/* Avatar Picker for New Member */}
-                  <div>
-                    <label className="block text-[11px] font-bold text-[#52372A] mb-1">
-                      CHỌN AVATAR NHÂN VẬT:
-                    </label>
-                    <div className="grid grid-cols-4 sm:grid-cols-8 gap-1.5 p-1 bg-gray-50 border border-gray-200 rounded max-h-[120px] overflow-y-auto">
-                      {AVATAR_OPTIONS.map((opt) => {
-                        const isChosen = newAvatarKey === opt.key;
-                        return (
-                          <button
-                            key={opt.key}
-                            type="button"
-                            onClick={() => setNewAvatarKey(opt.key)}
-                            className={`p-1 rounded text-center transition-all flex flex-col items-center cursor-pointer ${
-                              isChosen
-                                ? 'border-2 border-[#719e22] bg-[#f4fae8] shadow-xs'
-                                : 'border border-gray-200 bg-white hover:border-gray-300'
-                            }`}
-                            title={opt.name}
-                          >
-                            <PixelAvatar userId={opt.key} avatarKey={opt.key} size={24} showBorder={false} />
-                            <span className="text-[8px] font-semibold text-[#444] truncate w-full mt-0.5">
-                              {opt.name.split(' ')[0]}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-1">
-                    <button
-                      type="submit"
-                      className="mc-btn mc-btn-emerald text-xs px-4 py-2 font-bold text-white flex items-center gap-1.5 shadow-xs"
-                    >
-                      <UserPlus size={13} />
-                      <span>XÁC NHẬN THÊM VÀO ĐỘI</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowAddMemberForm(false)}
-                      className="mc-btn mc-btn-obsidian text-xs px-3 py-2 font-bold text-white"
-                    >
-                      HỦY
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
+          </div>
         )}
 
         {/* Footer Actions */}
