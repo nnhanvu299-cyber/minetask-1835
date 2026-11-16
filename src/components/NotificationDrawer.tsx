@@ -35,6 +35,16 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, 
     setTimeout(() => setTestSent(false), 3000);
   };
 
+  const handleTriggerUpdateAlert = async () => {
+    if (perm !== 'granted') {
+      await requestDeviceNotificationPermission();
+      setPerm(getNotificationPermission());
+    }
+    window.dispatchEvent(new CustomEvent('1835_TRIGGER_UPDATE_ALERT'));
+    setTestSent(true);
+    setTimeout(() => setTestSent(false), 3000);
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-end p-2 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn" onClick={onClose}>
       <div
@@ -112,6 +122,24 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, 
               </button>
             )}
           </div>
+        </div>
+
+        {/* Quick Send Update Alert Banner */}
+        <div className="p-2.5 bg-gradient-to-r from-[#F37022]/15 to-[#ED1B24]/15 border-b-2 border-[#2D1A11] flex items-center justify-between gap-2 shadow-2xs">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-base animate-pulse">🚀</span>
+            <div className="min-w-0">
+              <div className="text-[11px] font-bold text-[#2D1A11]">THÔNG BÁO BẢN CẬP NHẬT</div>
+              <div className="text-[10px] text-[#52372A]">Bắn thông báo bản mới & chuông về máy</div>
+            </div>
+          </div>
+          <button
+            onClick={handleTriggerUpdateAlert}
+            className="mc-btn mc-btn-1835 px-2.5 py-1 text-[11px] font-bold text-white shrink-0 cursor-pointer shadow-xs active:scale-95 flex items-center gap-1"
+            title="Nhấn để gửi ngay thông báo cập nhật về máy"
+          >
+            <span>GỬI TB CẬP NHẬT 🔔</span>
+          </button>
         </div>
 
         {/* List of Notifications */}

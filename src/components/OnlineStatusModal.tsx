@@ -298,16 +298,28 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
               Hệ thống sẽ gửi thông báo hệ điều hành thẳng về khay thông báo Windows / Android / màn hình khóa khi có bản cập nhật mới hoặc khi đồng đội giao việc.
             </div>
           </div>
-          <button
-            onClick={async () => {
-              await requestDeviceNotificationPermission();
-              await sendTestDeviceNotification();
-            }}
-            className="mc-btn shrink-0 text-[10px] px-2.5 py-1.5 font-bold bg-[#FAF2DC] border border-[#2D1A11] hover:bg-[#F3E6C8] cursor-pointer"
-            title="Nhấn để gửi thử thông báo về máy"
-          >
-            THỬ GỬI 🚀
-          </button>
+          <div className="flex flex-col gap-1.5 shrink-0">
+            <button
+              onClick={async () => {
+                await requestDeviceNotificationPermission();
+                window.dispatchEvent(new CustomEvent('1835_TRIGGER_UPDATE_ALERT'));
+              }}
+              className="mc-btn mc-btn-1835 text-[10px] px-2.5 py-1.5 font-bold text-white cursor-pointer shadow-xs active:scale-95 whitespace-nowrap"
+              title="Kích hoạt thông báo bản cập nhật mới về máy"
+            >
+              GỬI TB CẬP NHẬT 🚀
+            </button>
+            <button
+              onClick={async () => {
+                await requestDeviceNotificationPermission();
+                await sendTestDeviceNotification();
+              }}
+              className="mc-btn text-[10px] px-2.5 py-1 font-bold bg-[#FAF2DC] border border-[#2D1A11] hover:bg-[#F3E6C8] cursor-pointer whitespace-nowrap"
+              title="Gửi thử thông báo kiểm tra"
+            >
+              THỬ CHUÔNG 🔔
+            </button>
+          </div>
         </div>
 
         {/* Footer */}

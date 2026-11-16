@@ -39,6 +39,19 @@ const MainContent: React.FC = () => {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    const handleTrigger = () => {
+      setHasNewUpdate(true);
+      sendUpdateAvailableNotification(Date.now(), handleApplyUpdate);
+      soundEngine.playTurnNotification();
+    };
+
+    window.addEventListener('1835_TRIGGER_UPDATE_ALERT', handleTrigger);
+    return () => window.removeEventListener('1835_TRIGGER_UPDATE_ALERT', handleTrigger);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const checkVersion = async () => {
       try {
         const res = await fetch(`./version.json?t=${Date.now()}`, { cache: 'no-store' });
@@ -46,6 +59,11 @@ const MainContent: React.FC = () => {
           const data = await res.json();
           if (data && data.version) {
             if (currentAppVersion.current === null) {
+              const lastKnown = localStorage.getItem('minetask_1835_installed_version');
+              if (lastKnown && Number(data.version) > Number(lastKnown)) {
+                setHasNewUpdate(true);
+                sendUpdateAvailableNotification(data.version, handleApplyUpdate);
+              }
               currentAppVersion.current = data.version;
             } else if (data.version > currentAppVersion.current) {
               setHasNewUpdate(true);
@@ -59,22 +77,33 @@ const MainContent: React.FC = () => {
     };
 
     checkVersion();
-    const interval = setInterval(checkVersion, 30000);
+    const interval = setInterval(checkVersion, 10000); // Check every 10s for fast detection
 
     const onVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         checkVersion();
       }
     };
+    const onWindowFocus = () => {
+      checkVersion();
+    };
+
     document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('focus', onWindowFocus);
 
     return () => {
       clearInterval(interval);
       document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('focus', onWindowFocus);
     };
   }, []);
 
   const handleApplyUpdate = () => {
+    if (currentAppVersion.current) {
+      try {
+        localStorage.setItem('minetask_1835_installed_version', String(currentAppVersion.current));
+      } catch {}
+    }
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.getRegistrations().then((regs) => {
         for (const reg of regs) {
