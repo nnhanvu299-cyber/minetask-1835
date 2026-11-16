@@ -63,6 +63,10 @@ const MainContent: React.FC = () => {
               if (lastKnown && Number(data.version) > Number(lastKnown)) {
                 setHasNewUpdate(true);
                 sendUpdateAvailableNotification(data.version, handleApplyUpdate);
+              } else if (!lastKnown) {
+                try {
+                  localStorage.setItem('minetask_1835_installed_version', String(data.version));
+                } catch {}
               }
               currentAppVersion.current = data.version;
             } else if (data.version > currentAppVersion.current) {

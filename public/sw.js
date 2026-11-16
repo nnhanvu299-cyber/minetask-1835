@@ -1,4 +1,4 @@
-const CACHE_NAME = 'minetask-1835s-v27-secure-team-code';
+const CACHE_NAME = 'minetask-1835s-v28-auto-update-notify';
 
 const PRECACHE_ASSETS = [
   './',

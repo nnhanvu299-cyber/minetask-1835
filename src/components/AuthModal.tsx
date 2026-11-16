@@ -3,6 +3,7 @@ import { useApp } from '../context/AppContext';
 import { UserProfile } from '../types';
 import { AVATAR_OPTIONS, PixelAvatar } from '../utils/pixelAvatars';
 import { maskEmail } from '../utils/maskEmail';
+import { requestDeviceNotificationPermission } from '../utils/deviceNotification';
 import { Mail, KeyRound, User, CheckCircle, AlertCircle, X, ShieldCheck, Eye, EyeOff, Send, Sparkles } from 'lucide-react';
 
 interface AuthModalProps {
@@ -82,6 +83,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
 
     const res = await login(loginEmail, loginPassword);
     if (res.success) {
+      try {
+        requestDeviceNotificationPermission();
+      } catch {}
       setFeedback({ type: 'success', message: res.message });
       setTimeout(() => {
         if (onClose) onClose();
@@ -106,6 +110,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
 
     const res = await register(regName, regEmail, regPassword, selectedAvatarKey);
     if (res.success) {
+      try {
+        requestDeviceNotificationPermission();
+      } catch {}
       setFeedback({ type: 'success', message: res.message });
       setTimeout(() => {
         if (onClose) onClose();
