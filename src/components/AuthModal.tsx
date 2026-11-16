@@ -24,8 +24,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
   // Always start immediately on LOGIN tab as requested
   const [tab, setTab] = useState<'login' | 'register' | 'forgot'>('login');
 
-  // Login form: Clean and completely empty on load
-  const [loginEmail, setLoginEmail] = useState('');
+  const STORAGE_KEY_REMEMBER_LOGIN = 'minetask_1835_remember_login_v22';
+  const STORAGE_KEY_REMEMBERED_ACCOUNT = 'minetask_1835_remembered_account_v22';
+
+  const [rememberOnMachine, setRememberOnMachine] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const saved = localStorage.getItem(STORAGE_KEY_REMEMBER_LOGIN);
+    return saved !== null ? saved === 'true' : true;
+  });
+
+  // Login form: Pre-filled with remembered account if available
+  const [loginEmail, setLoginEmail] = useState(() => {
+    if (typeof window === 'undefined') return '';
+    return localStorage.getItem(STORAGE_KEY_REMEMBERED_ACCOUNT) || '';
+  });
   const [loginPassword, setLoginPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
@@ -55,6 +67,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
     e.preventDefault();
     setFeedback(null);
     setShowForgotShortcut(false);
+
+    if (rememberOnMachine) {
+      try {
+        localStorage.setItem(STORAGE_KEY_REMEMBER_LOGIN, 'true');
+        localStorage.setItem(STORAGE_KEY_REMEMBERED_ACCOUNT, loginEmail.trim());
+      } catch {}
+    } else {
+      try {
+        localStorage.setItem(STORAGE_KEY_REMEMBER_LOGIN, 'false');
+        localStorage.removeItem(STORAGE_KEY_REMEMBERED_ACCOUNT);
+      } catch {}
+    }
+
     const res = await login(loginEmail, loginPassword);
     if (res.success) {
       setFeedback({ type: 'success', message: res.message });
@@ -71,6 +96,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFeedback(null);
+
+    if (rememberOnMachine) {
+      try {
+        localStorage.setItem(STORAGE_KEY_REMEMBER_LOGIN, 'true');
+        localStorage.setItem(STORAGE_KEY_REMEMBERED_ACCOUNT, regEmail.trim());
+      } catch {}
+    }
+
     const res = await register(regName, regEmail, regPassword, selectedAvatarKey);
     if (res.success) {
       setFeedback({ type: 'success', message: res.message });
@@ -200,9 +233,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
             <h2 className="text-base sm:text-lg font-bold text-[#374151] uppercase tracking-wider">
               LOGIN
             </h2>
-            <span className="text-[11px] bg-[#fff0f5] text-[#d63384] font-semibold px-2.5 py-0.5 rounded-full border border-[#fcc2d7] shadow-xs flex items-center gap-1">
-              🌸 1835s
-            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-2 py-0.5 rounded-full border border-emerald-300 shadow-xs flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                Online
+              </span>
+              <span className="text-[11px] bg-[#fff0f5] text-[#d63384] font-semibold px-2.5 py-0.5 rounded-full border border-[#fcc2d7] shadow-xs flex items-center gap-1">
+                🌸 1835s
+              </span>
+            </div>
           </div>
 
           {feedback && (
@@ -292,6 +331,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
                 </button>
               </div>
             )}
+
+            {/* Remember Login on Machine Checkbox */}
+            <div className="flex items-center justify-between pt-1">
+              <label className="flex items-center gap-2 cursor-pointer select-none group">
+                <input
+                  type="checkbox"
+                  checked={rememberOnMachine}
+                  onChange={(e) => setRememberOnMachine(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 text-[#10b981] accent-[#10b981] cursor-pointer"
+                />
+                <span className="text-[12px] font-medium text-[#4b5563] group-hover:text-[#111827] flex items-center gap-1">
+                  💾 Lưu đăng nhập trên máy này
+                </span>
+              </label>
+              <span className="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-semibold">
+                Tự động vào app
+              </span>
+            </div>
 
             {/* Green Gradient Sign In Button matching Image 2 */}
             <button

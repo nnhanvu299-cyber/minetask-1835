@@ -10,6 +10,17 @@ const __dirname = path.dirname(__filename);
 
 function apiBackendPlugin() {
   const dataFile = path.resolve(__dirname, 'data/store.json');
+  const onlinePresences = new Map<string, { userId: string; name: string; avatarKey: string; role: string; lastSeen: number }>();
+
+  const getCleanOnlinePresences = () => {
+    const now = Date.now();
+    for (const [id, p] of onlinePresences.entries()) {
+      if (now - p.lastSeen > 25000) {
+        onlinePresences.delete(id);
+      }
+    }
+    return Array.from(onlinePresences.values());
+  };
 
   const isDefaultMockUser = (u: any) => {
     if (!u) return true;
@@ -82,18 +93,44 @@ function apiBackendPlugin() {
           return res.end();
         }
 
-        if (req.url === '/api/sync' && req.method === 'GET') {
+        if (req.url.startsWith('/api/sync') && req.method === 'GET') {
+          try {
+            const urlObj = new URL(req.url, 'http://localhost');
+            const uid = urlObj.searchParams.get('uid');
+            const name = urlObj.searchParams.get('name');
+            const avatar = urlObj.searchParams.get('avatar');
+            if (uid) {
+              onlinePresences.set(uid, {
+                userId: uid,
+                name: name ? decodeURIComponent(name) : 'Thợ Mỏ 1835',
+                avatarKey: avatar || 'sniffer',
+                role: 'Thành viên Co-op',
+                lastSeen: Date.now(),
+              });
+            }
+          } catch {}
           const store = readStore();
+          const onlineMembers = getCleanOnlinePresences();
           res.setHeader('Content-Type', 'application/json');
-          return res.end(JSON.stringify(store));
+          return res.end(JSON.stringify({ ...store, onlineMembers }));
         }
 
-        if (req.url === '/api/sync' && req.method === 'POST') {
+        if (req.url.startsWith('/api/sync') && req.method === 'POST') {
           let body = '';
           req.on('data', (chunk: any) => { body += chunk; });
           req.on('end', () => {
             try {
               const payload = JSON.parse(body);
+              if (payload.presence && payload.presence.userId) {
+                onlinePresences.set(payload.presence.userId, {
+                  userId: payload.presence.userId,
+                  name: payload.presence.name,
+                  avatarKey: payload.presence.avatarKey || 'sniffer',
+                  role: payload.presence.role || 'Thành viên Co-op',
+                  lastSeen: Date.now(),
+                });
+              }
+
               const store = readStore();
               if (Array.isArray(payload.users)) {
                 if (payload.replaceUsers) {
@@ -116,8 +153,9 @@ function apiBackendPlugin() {
                 store.tasks = payload.tasks;
               }
               writeStore(store);
+              const onlineMembers = getCleanOnlinePresences();
               res.setHeader('Content-Type', 'application/json');
-              return res.end(JSON.stringify({ success: true, store }));
+              return res.end(JSON.stringify({ success: true, store, onlineMembers }));
             } catch (err: any) {
               res.statusCode = 500;
               return res.end(JSON.stringify({ success: false, error: err?.message }));

@@ -2,24 +2,36 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { PixelAvatar } from '../utils/pixelAvatars';
 import { soundEngine } from '../utils/audio';
-import { Volume2, VolumeX, Smartphone, Users, Bell, Gamepad2, LogOut, Download, Calendar } from 'lucide-react';
+import { Volume2, VolumeX, Smartphone, Users, Bell, Gamepad2, LogOut, Calendar } from 'lucide-react';
 
 interface HeaderProps {
-  onOpenApkModal: () => void;
   onOpenProfileModal: () => void;
   onOpenArcade: () => void;
   onOpenNotifications: () => void;
   onOpenTimeline?: () => void;
+  onOpenOnlineModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  onOpenApkModal,
   onOpenProfileModal,
   onOpenArcade,
   onOpenNotifications,
   onOpenTimeline,
+  onOpenOnlineModal,
 }) => {
-  const { currentUser, users, logout, soundEnabled, toggleSound, setActiveWorldId, unreadNotificationCount } = useApp();
+  const {
+    currentUser,
+    users,
+    logout,
+    soundEnabled,
+    toggleSound,
+    setActiveWorldId,
+    unreadNotificationCount,
+    isOnlineMode,
+    networkOnline,
+    serverConnected,
+    onlineMembers,
+  } = useApp();
   const activeUser = currentUser;
 
   if (!activeUser) return null;
@@ -47,6 +59,35 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Live Online Mode Status Badge (Desktop) */}
+        {onOpenOnlineModal && (
+          <button
+            onClick={onOpenOnlineModal}
+            className={`hidden sm:flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold border-2 border-[#2D1A11] rounded cursor-pointer transition-all shadow-[1px_1px_0px_#2D1A11] active:scale-95 ${
+              isOnlineMode && networkOnline && serverConnected
+                ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800'
+                : 'bg-amber-100 hover:bg-amber-200 text-amber-900'
+            }`}
+            title="Nhấn để mở Bảng điều khiển Online & Đồng bộ đa thiết bị"
+          >
+            <span className="relative flex h-2 w-2">
+              {isOnlineMode && networkOnline && serverConnected && (
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+              )}
+              <span
+                className={`relative inline-flex rounded-full h-2 w-2 ${
+                  isOnlineMode && networkOnline && serverConnected ? 'bg-emerald-500' : 'bg-amber-500'
+                }`}
+              ></span>
+            </span>
+            <span className="uppercase tracking-wide text-[11px]">
+              {isOnlineMode && networkOnline && serverConnected
+                ? `ONLINE (${onlineMembers.length > 0 ? onlineMembers.length : 1})`
+                : 'OFFLINE (MÁY)'}
+            </span>
+          </button>
+        )}
 
         {/* Desktop Action Controls & Active User Profile */}
         <div className="hidden md:flex items-center gap-1.5 sm:gap-2">
@@ -104,15 +145,6 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
 
-          {/* Compact Install App Button */}
-          <button
-            onClick={onOpenApkModal}
-            className="mc-icon-btn mc-btn-emerald text-white"
-            title="Cài đặt ứng dụng (Desktop Windows / Android APK / iOS)"
-          >
-            <Download size={18} className="text-white drop-shadow shrink-0" />
-          </button>
-
           {/* User Profile & Logout */}
           <div className="flex items-center gap-1.5 pl-1.5 border-l-2 border-[#2D1A11]">
             <button
@@ -136,6 +168,22 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Mobile Header Quick Actions (Compact & Never Overflows) */}
         <div className="flex md:hidden items-center gap-1.5">
+          {/* Mobile Online Status Button */}
+          {onOpenOnlineModal && (
+            <button
+              onClick={onOpenOnlineModal}
+              className={`mc-icon-btn !w-auto !h-8 !px-2 flex items-center gap-1 text-[10px] font-bold border-2 border-[#2D1A11] cursor-pointer ${
+                isOnlineMode && networkOnline && serverConnected
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : 'bg-amber-100 text-amber-900'
+              }`}
+              title="Nhấn xem Trạng thái Online"
+            >
+              <span className={`w-2 h-2 rounded-full ${isOnlineMode && networkOnline && serverConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
+              <span>{isOnlineMode && networkOnline && serverConnected ? 'ONLINE' : 'OFFLINE'}</span>
+            </button>
+          )}
+
           {/* Sound FX Switch */}
           <button
             onClick={toggleSound}
@@ -151,15 +199,6 @@ export const Header: React.FC<HeaderProps> = ({
             ) : (
               <VolumeX size={15} className="text-[#836251] shrink-0" />
             )}
-          </button>
-
-          {/* App Install Button */}
-          <button
-            onClick={onOpenApkModal}
-            className="mc-icon-btn !w-8 !h-8 !min-w-8 !min-h-8 mc-btn-emerald text-white"
-            title="Cài đặt App Android / iOS / Desktop"
-          >
-            <Download size={15} className="text-white drop-shadow shrink-0" />
           </button>
 
           {/* Profile Avatar */}

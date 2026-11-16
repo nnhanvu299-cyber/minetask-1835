@@ -13,7 +13,17 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { users, currentUser, tasks, logout, deleteAccount, addTeamMember, updateUserAvatar } = useApp();
+  const {
+    users,
+    currentUser,
+    tasks,
+    logout,
+    deleteAccount,
+    addTeamMember,
+    updateUserAvatar,
+    isOnlineMode,
+    onlineMembers,
+  } = useApp();
   const [activeTab, setActiveTab] = useState<'profile' | 'team'>('profile');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -119,15 +129,27 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
               <PixelAvatar userId={currentUser.id} avatarKey={currentUser.avatarKey} size={72} />
               <div className="flex-1 text-center sm:text-left min-w-0">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                  <h3 className="text-lg font-bold text-[#2D1A11] flex items-center justify-center sm:justify-start gap-1.5">
-                    {currentUser.name}
+                  <h3 className="text-lg font-bold text-[#2D1A11] flex items-center justify-center sm:justify-start gap-1.5 flex-wrap">
+                    <span>{currentUser.name}</span>
                     <span className="bg-[#2D1A11] text-[#FAF2DC] text-[10px] px-2 py-0.5 border border-[#2D1A11] font-bold inline-flex items-center gap-1">
                       <Users size={11} /> 1835 MEMBER
+                    </span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border inline-flex items-center gap-1 ${
+                      isOnlineMode
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                        : 'bg-amber-50 text-amber-800 border-amber-300'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${isOnlineMode ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
+                      {isOnlineMode ? 'Online (Đang đồng bộ)' : 'Offline (Trên máy)'}
                     </span>
                   </h3>
                 </div>
                 <p className="text-xs text-[#52372A] font-medium mt-0.5">{currentUser.role} • {currentUser.title}</p>
-                <p className="text-[11px] text-[#836251]">{currentUser.email}</p>
+                <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap text-[11px] text-[#836251] mt-0.5">
+                  <span>{currentUser.email}</span>
+                  <span>•</span>
+                  <span className="text-emerald-700 font-semibold">💾 Đã lưu đăng nhập trên máy</span>
+                </div>
 
                 <div className="mt-3">
                   <XPBar
@@ -325,6 +347,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   })
                   .map((u) => {
                     const isCurrent = u.id === currentUser.id;
+                    const isMemberOnline = isOnlineMode && (isCurrent || onlineMembers.some((m) => m.userId === u.id));
                     const memberTasks = tasks.filter((t) => t.assigneeId === u.id || (Array.isArray(t.assigneeIds) && t.assigneeIds.includes(u.id)));
                     const memberMined = memberTasks.filter((t) => t.status === 'done');
 
@@ -337,15 +360,28 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                             : 'border-[#E5D6B6] bg-[#FFFDF7]'
                         }`}
                       >
-                        <PixelAvatar userId={u.id} avatarKey={u.avatarKey} size={36} showBorder={false} />
+                        <div className="relative shrink-0">
+                          <PixelAvatar userId={u.id} avatarKey={u.avatarKey} size={36} showBorder={false} />
+                          <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-white ${
+                            isMemberOnline ? 'bg-emerald-500' : 'bg-gray-400'
+                          }`}></span>
+                        </div>
                         <div className="min-w-0 flex-1">
-                          <div className="text-xs font-bold text-[#2D1A11] truncate flex items-center gap-1.5">
-                            <span>{u.name}</span>
-                            {isCurrent && (
-                              <span className="text-[9px] bg-[#2D1A11] text-white px-1 py-0.2 font-bold rounded">
-                                BẠN
-                              </span>
-                            )}
+                          <div className="text-xs font-bold text-[#2D1A11] truncate flex items-center justify-between gap-1.5">
+                            <div className="flex items-center gap-1.5 truncate">
+                              <span>{u.name}</span>
+                              {isCurrent && (
+                                <span className="text-[9px] bg-[#2D1A11] text-white px-1 py-0.2 font-bold rounded">
+                                  BẠN
+                                </span>
+                              )}
+                            </div>
+                            <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold shrink-0 flex items-center gap-1 ${
+                              isMemberOnline ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-gray-100 text-gray-500 border border-gray-200'
+                            }`}>
+                              <span className={`w-1.5 h-1.5 rounded-full ${isMemberOnline ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`}></span>
+                              {isMemberOnline ? 'Online' : 'Offline'}
+                            </span>
                           </div>
                           <div className="text-[10px] text-[#52372A] truncate">{u.email}</div>
                           <div className="text-[10px] text-[#1aa64e] font-semibold mt-0.5">

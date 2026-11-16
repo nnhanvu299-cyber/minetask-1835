@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import { UserProfile, UserId, World, Task, TaskStatus, NotificationItem } from '../types';
 import { soundEngine } from '../utils/audio';
 import { sendOtpEmail } from '../utils/emailService';
+import { sendDeviceNotification } from '../utils/deviceNotification';
 
 import { DEFAULT_USERS, INITIAL_WORLDS, INITIAL_TASKS } from '../data/initialData';
 
@@ -16,6 +17,24 @@ interface AppContextValue {
   notifications: NotificationItem[];
   activePopupNotification: NotificationItem | null;
   unreadNotificationCount: number;
+
+  // Online Mode & Realtime Presence
+  isOnlineMode: boolean;
+  networkOnline: boolean;
+  serverConnected: boolean;
+  syncStatus: 'synced' | 'syncing' | 'offline' | 'error';
+  lastSyncTime: number | null;
+  serverPing: number | null;
+  onlineMembers: Array<{
+    userId: string;
+    name: string;
+    avatarKey?: string;
+    role?: string;
+    lastSeen: number;
+    isSelf?: boolean;
+  }>;
+  toggleOnlineMode: (enabled?: boolean) => void;
+  syncNow: () => Promise<boolean>;
 
   // Actions
   setActiveWorldId: (id: string | null) => void;
@@ -107,12 +126,13 @@ function purgeLegacyAppData() {
       const key = localStorage.key(i);
       if (key && (key.startsWith('minetask_') || key.startsWith('1835_'))) {
         if (!key.includes(CURRENT_VERSION_TAG)) {
-          keysToRemove.push(key);
+          if (!key.includes('remember') && !key.includes('credentials')) {
+            keysToRemove.push(key);
+          }
         }
       }
     }
     keysToRemove.forEach((k) => localStorage.removeItem(k));
-    localStorage.removeItem(STORAGE_KEY_CURRENT_USER);
 
     // Also purge outdated Service Worker caches
     if ('caches' in window) {
@@ -131,6 +151,10 @@ function purgeLegacyAppData() {
 
 const STORAGE_KEY_USERS = 'minetask_1835_flat_users_v22';
 const STORAGE_KEY_CURRENT_USER = 'minetask_1835_flat_session_v22';
+const STORAGE_KEY_CURRENT_USER_PROFILE = 'minetask_1835_flat_session_profile_v22';
+const STORAGE_KEY_REMEMBER_LOGIN = 'minetask_1835_remember_login_v22';
+const STORAGE_KEY_REMEMBERED_ACCOUNT = 'minetask_1835_remembered_account_v22';
+const STORAGE_KEY_ONLINE_MODE = 'minetask_1835_online_mode_v22';
 const STORAGE_KEY_WORLDS = 'minetask_1835_flat_worlds_v22';
 const STORAGE_KEY_TASKS = 'minetask_1835_flat_tasks_v22';
 const STORAGE_KEY_SOUND = 'minetask_1835_flat_sound_v22';
@@ -160,7 +184,34 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
 
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
-    // Luôn mở màn hình đăng nhập đầu tiên khi vào ứng dụng
+    if (typeof window === 'undefined') return null;
+    try {
+      const rememberPref = localStorage.getItem(STORAGE_KEY_REMEMBER_LOGIN);
+      // Mặc định lưu đăng nhập trên máy trừ khi người dùng chủ động bỏ chọn
+      if (rememberPref === 'false') return null;
+
+      const savedProfileJson = localStorage.getItem(STORAGE_KEY_CURRENT_USER_PROFILE);
+      if (savedProfileJson) {
+        const parsed: UserProfile = JSON.parse(savedProfileJson);
+        if (parsed && parsed.id && !isDefaultMockUser(parsed)) {
+          return parsed;
+        }
+      }
+
+      const savedUserId = localStorage.getItem(STORAGE_KEY_CURRENT_USER);
+      if (savedUserId) {
+        const savedUsersJson = localStorage.getItem(STORAGE_KEY_USERS) || localStorage.getItem('minetask_1835_flat_users_v20');
+        if (savedUsersJson) {
+          const parsedList: UserProfile[] = JSON.parse(savedUsersJson);
+          const matched = parsedList.find((u) => u.id === savedUserId && !isDefaultMockUser(u));
+          if (matched) return matched;
+        }
+        const defFound = DEFAULT_USERS.find((u) => u.id === savedUserId && !isDefaultMockUser(u));
+        if (defFound) return defFound;
+      }
+    } catch (err) {
+      console.warn('[1835] Error restoring current user session:', err);
+    }
     return null;
   });
 
@@ -206,7 +257,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return saved !== null ? JSON.parse(saved) : true;
   });
 
-  // Realtime Broadcast Channel
+  // Online Mode, Connectivity & Live Presence
+  const [isOnlineMode, setIsOnlineMode] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true;
+    const saved = localStorage.getItem(STORAGE_KEY_ONLINE_MODE);
+    return saved !== null ? saved === 'true' : true;
+  });
+
+  const [networkOnline, setNetworkOnline] = useState<boolean>(() => {
+    if (typeof navigator !== 'undefined' && 'onLine' in navigator) {
+      return navigator.onLine;
+    }
+    return true;
+  });
+
+  const [serverConnected, setServerConnected] = useState<boolean>(true);
+  const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'offline' | 'error'>('synced');
+  const [lastSyncTime, setLastSyncTime] = useState<number | null>(Date.now());
+  const [serverPing, setServerPing] = useState<number | null>(null);
+
+  const [localPresences, setLocalPresences] = useState<Map<string, {
+    userId: string;
+    name: string;
+    avatarKey?: string;
+    role?: string;
+    lastSeen: number;
+    isSelf?: boolean;
+  }>>(new Map());
+
+  // Realtime Broadcast Channel across browser tabs
   const [broadcastChannel, setBroadcastChannel] = useState<BroadcastChannel | null>(null);
 
   useEffect(() => {
@@ -228,6 +307,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           setNotifications((prev) => [notif, ...prev]);
           setActivePopupNotification(notif);
           soundEngine.playTurnNotification();
+        } else if (type === 'PRESENCE_HEARTBEAT') {
+          const p = payload;
+          if (p && p.userId) {
+            setLocalPresences((prev) => {
+              const next = new Map(prev);
+              next.set(p.userId, { ...p, lastSeen: Date.now(), isSelf: false });
+              return next;
+            });
+          }
         }
       };
 
@@ -237,6 +325,80 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, []);
 
+  // Broadcast presence heartbeat cross-tab & prune old members
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const sendHeartbeat = () => {
+      const selfItem = {
+        userId: currentUser.id,
+        name: currentUser.name,
+        avatarKey: currentUser.avatarKey,
+        role: currentUser.role,
+        lastSeen: Date.now(),
+        isSelf: true,
+      };
+
+      if (broadcastChannel) {
+        try {
+          broadcastChannel.postMessage({
+            type: 'PRESENCE_HEARTBEAT',
+            payload: selfItem,
+          });
+        } catch {}
+      }
+
+      setLocalPresences((prev) => {
+        const next = new Map(prev);
+        next.set(currentUser.id, selfItem);
+        const now = Date.now();
+        for (const [id, item] of next.entries()) {
+          if (now - item.lastSeen > 25000 && id !== currentUser.id) {
+            next.delete(id);
+          }
+        }
+        return next;
+      });
+    };
+
+    sendHeartbeat();
+    const interval = setInterval(sendHeartbeat, 4000);
+    return () => clearInterval(interval);
+  }, [currentUser, broadcastChannel]);
+
+  // Unified list of active online members
+  const onlineMembers = React.useMemo(() => {
+    const now = Date.now();
+    const list: Array<{
+      userId: string;
+      name: string;
+      avatarKey?: string;
+      role?: string;
+      lastSeen: number;
+      isSelf?: boolean;
+    }> = [];
+
+    if (currentUser) {
+      list.push({
+        userId: currentUser.id,
+        name: currentUser.name,
+        avatarKey: currentUser.avatarKey,
+        role: currentUser.role,
+        lastSeen: now,
+        isSelf: true,
+      });
+    }
+
+    for (const [id, item] of localPresences.entries()) {
+      if (currentUser && id === currentUser.id) continue;
+      if (now - item.lastSeen < 25000) {
+        list.push({ ...item, isSelf: false });
+      }
+    }
+
+    return list;
+  }, [localPresences, currentUser]);
+
   // Sync to local storage
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
@@ -245,8 +407,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     if (currentUser) {
       localStorage.setItem(STORAGE_KEY_CURRENT_USER, currentUser.id);
+      localStorage.setItem(STORAGE_KEY_CURRENT_USER_PROFILE, JSON.stringify(currentUser));
     } else {
       localStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+      localStorage.removeItem(STORAGE_KEY_CURRENT_USER_PROFILE);
     }
   }, [currentUser]);
 
@@ -266,6 +430,47 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     localStorage.setItem(STORAGE_KEY_SOUND, JSON.stringify(soundEnabled));
     soundEngine.enabled = soundEnabled;
   }, [soundEnabled]);
+
+  // Listen to browser network connectivity
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleOnline = () => {
+      setNetworkOnline(true);
+      if (isOnlineMode) {
+        fetchServerState();
+      }
+    };
+    const handleOffline = () => {
+      setNetworkOnline(false);
+      setServerConnected(false);
+      setSyncStatus('offline');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [isOnlineMode]);
+
+  // Toggle Online Mode (Online vs Offline on Machine)
+  const toggleOnlineMode = (enabled?: boolean) => {
+    const nextVal = typeof enabled === 'boolean' ? enabled : !isOnlineMode;
+    setIsOnlineMode(nextVal);
+    try {
+      localStorage.setItem(STORAGE_KEY_ONLINE_MODE, String(nextVal));
+    } catch {}
+    if (nextVal) {
+      soundEngine.playLevelUp();
+      fetchServerState();
+    } else {
+      soundEngine.playClick();
+      setSyncStatus('offline');
+      setServerConnected(false);
+    }
+  };
 
   // Helper to broadcast changes
   const broadcastStateChange = useCallback((updatedTasks?: Task[], updatedWorlds?: World[], updatedUsers?: UserProfile[]) => {
@@ -323,9 +528,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // 0. Realtime server synchronization across devices (Phone, PC, etc.)
   const pushToServer = async (usersList?: UserProfile[], worldsList?: World[], tasksList?: Task[], replaceUsers?: boolean) => {
+    if (!isOnlineMode) {
+      setSyncStatus('offline');
+      return;
+    }
+
     try {
+      setSyncStatus('syncing');
       const cleanUsers = (usersList || users).filter(u => !isDefaultMockUser(u));
-      await fetch('/api/sync', {
+      const res = await fetch('/api/sync', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -333,71 +544,151 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           worlds: worldsList || worlds,
           tasks: tasksList || tasks,
           replaceUsers: !!replaceUsers,
+          presence: currentUser ? {
+            userId: currentUser.id,
+            name: currentUser.name,
+            avatarKey: currentUser.avatarKey,
+            role: currentUser.role,
+            timestamp: Date.now(),
+          } : undefined,
         }),
       });
-    } catch {}
+
+      if (res.ok) {
+        setServerConnected(true);
+        setSyncStatus('synced');
+        setLastSyncTime(Date.now());
+        const data = await res.json();
+        if (Array.isArray(data.onlineMembers)) {
+          setLocalPresences((prev) => {
+            const next = new Map(prev);
+            data.onlineMembers.forEach((m: any) => {
+              if (m && m.userId && (!currentUser || m.userId !== currentUser.id)) {
+                next.set(m.userId, { ...m, isSelf: false });
+              }
+            });
+            return next;
+          });
+        }
+      } else {
+        setServerConnected(false);
+        setSyncStatus('error');
+      }
+    } catch {
+      setServerConnected(false);
+      setSyncStatus(networkOnline ? 'error' : 'offline');
+    }
   };
 
-  useEffect(() => {
-    const fetchServerState = async () => {
-      try {
-        const res = await fetch('/api/sync');
-        if (res.ok) {
-          const data = await res.json();
-          const serverUsers = (Array.isArray(data.users) ? data.users : []).filter((u: any) => !isDefaultMockUser(u));
+  const fetchServerState = useCallback(async (): Promise<boolean> => {
+    if (!isOnlineMode) {
+      setSyncStatus('offline');
+      return false;
+    }
 
-          setUsers((prev) => {
-            const cleanPrev = prev.filter((u) => !isDefaultMockUser(u));
-            const map = new Map<string, UserProfile>();
-            cleanPrev.forEach((u) => map.set(u.email.toLowerCase(), u));
-            serverUsers.forEach((u: UserProfile) => {
-              if (u && u.email) map.set(u.email.toLowerCase(), u);
-            });
-            const merged = Array.from(map.values());
-            const finalUsers = merged.length > 0 ? merged : DEFAULT_USERS;
-            try {
-              localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(finalUsers));
-            } catch {}
-            return finalUsers;
-          });
+    try {
+      setSyncStatus('syncing');
+      const startPing = performance.now();
+      const params = new URLSearchParams({
+        t: Date.now().toString(),
+        ...(currentUser ? {
+          uid: currentUser.id,
+          name: currentUser.name,
+          avatar: currentUser.avatarKey,
+        } : {})
+      });
 
-          if (Array.isArray(data.worlds) && data.worlds.length > 0) {
-            setWorlds((prev) => {
-              const map = new Map<string, World>();
-              prev.forEach((w) => map.set(w.id, w));
-              data.worlds.forEach((w: World) => map.set(w.id, w));
-              return Array.from(map.values());
-            });
-          }
+      const res = await fetch(`/api/sync?${params.toString()}`);
+      const ping = Math.round(performance.now() - startPing);
+      setServerPing(ping);
 
-          if (Array.isArray(data.tasks) && data.tasks.length > 0) {
-            setTasks((prev) => {
-              if (prev.length === 0 || (prev.length <= 4 && data.tasks.length > prev.length)) {
-                return data.tasks;
+      if (res.ok) {
+        setServerConnected(true);
+        setSyncStatus('synced');
+        setLastSyncTime(Date.now());
+        const data = await res.json();
+
+        // Update online presence from server
+        if (Array.isArray(data.onlineMembers)) {
+          setLocalPresences((prev) => {
+            const next = new Map(prev);
+            data.onlineMembers.forEach((m: any) => {
+              if (m && m.userId && (!currentUser || m.userId !== currentUser.id)) {
+                next.set(m.userId, { ...m, isSelf: false });
               }
-              const map = new Map<string, Task>();
-              prev.forEach((t) => map.set(t.id, t));
-              data.tasks.forEach((t: Task) => {
-                if (!map.has(t.id)) {
-                  map.set(t.id, t);
-                } else {
-                  const existing = map.get(t.id)!;
-                  if (t.deadline && !existing.deadline) {
-                    map.set(t.id, { ...existing, deadline: t.deadline });
-                  }
-                }
-              });
-              return Array.from(map.values());
             });
-          }
+            return next;
+          });
         }
-      } catch {}
-    };
 
+        const serverUsers = (Array.isArray(data.users) ? data.users : []).filter((u: any) => !isDefaultMockUser(u));
+
+        setUsers((prev) => {
+          const cleanPrev = prev.filter((u) => !isDefaultMockUser(u));
+          const map = new Map<string, UserProfile>();
+          cleanPrev.forEach((u) => map.set(u.email.toLowerCase(), u));
+          serverUsers.forEach((u: UserProfile) => {
+            if (u && u.email) map.set(u.email.toLowerCase(), u);
+          });
+          const merged = Array.from(map.values());
+          const finalUsers = merged.length > 0 ? merged : DEFAULT_USERS;
+          try {
+            localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(finalUsers));
+          } catch {}
+          return finalUsers;
+        });
+
+        if (Array.isArray(data.worlds) && data.worlds.length > 0) {
+          setWorlds((prev) => {
+            const map = new Map<string, World>();
+            prev.forEach((w) => map.set(w.id, w));
+            data.worlds.forEach((w: World) => map.set(w.id, w));
+            return Array.from(map.values());
+          });
+        }
+
+        if (Array.isArray(data.tasks) && data.tasks.length > 0) {
+          setTasks((prev) => {
+            if (prev.length === 0 || (prev.length <= 4 && data.tasks.length > prev.length)) {
+              return data.tasks;
+            }
+            const map = new Map<string, Task>();
+            prev.forEach((t) => map.set(t.id, t));
+            data.tasks.forEach((t: Task) => {
+              if (!map.has(t.id)) {
+                map.set(t.id, t);
+              } else {
+                const existing = map.get(t.id)!;
+                if (t.deadline && !existing.deadline) {
+                  map.set(t.id, { ...existing, deadline: t.deadline });
+                }
+              }
+            });
+            return Array.from(map.values());
+          });
+        }
+        return true;
+      } else {
+        setServerConnected(false);
+        setSyncStatus('error');
+        return false;
+      }
+    } catch {
+      setServerConnected(false);
+      setSyncStatus(networkOnline ? 'error' : 'offline');
+      return false;
+    }
+  }, [isOnlineMode, currentUser, networkOnline]);
+
+  useEffect(() => {
     fetchServerState();
-    const interval = setInterval(fetchServerState, 3000); // Poll every 3 seconds for seamless cross-device sync
+    const interval = setInterval(() => {
+      if (isOnlineMode) {
+        fetchServerState();
+      }
+    }, 3000); // Poll every 3 seconds for seamless cross-device sync
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchServerState, isOnlineMode]);
 
   // Diacritic helper for flexible name matching (e.g. 'Quan' matches 'Quân')
   const removeDiacritics = (str: string): string => {
@@ -479,6 +770,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setActiveWorldId(null); // Direct entry into the Workspace screen (Không gian làm việc)!
     try {
       localStorage.setItem(STORAGE_KEY_CURRENT_USER, found.id);
+      localStorage.setItem(STORAGE_KEY_CURRENT_USER_PROFILE, JSON.stringify(found));
+      localStorage.setItem(STORAGE_KEY_REMEMBER_LOGIN, 'true');
+      localStorage.setItem(STORAGE_KEY_REMEMBERED_ACCOUNT, input);
     } catch {}
     soundEngine.playVictoryFanfare();
     return { success: true, message: `Chào mừng ${found.name} trở lại!` };
@@ -524,6 +818,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(updatedUsers));
       localStorage.setItem('minetask_1835_backup_users', JSON.stringify(updatedUsers));
       localStorage.setItem(STORAGE_KEY_CURRENT_USER, newUser.id);
+      localStorage.setItem(STORAGE_KEY_CURRENT_USER_PROFILE, JSON.stringify(newUser));
+      localStorage.setItem(STORAGE_KEY_REMEMBER_LOGIN, 'true');
+      localStorage.setItem(STORAGE_KEY_REMEMBERED_ACCOUNT, trimmedEmail);
     } catch (e) {
       console.error('LocalStorage write error:', e);
     }
@@ -608,7 +905,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const logout = () => {
     setCurrentUser(null);
     setActiveWorldId(null);
-    localStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+    try {
+      localStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+      localStorage.removeItem(STORAGE_KEY_CURRENT_USER_PROFILE);
+    } catch {}
     soundEngine.playClick();
   };
 
@@ -622,6 +922,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       localStorage.setItem('minetask_1835_backup_users', JSON.stringify(updatedUsers));
       if (currentUser?.id === userId) {
         localStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+        localStorage.removeItem(STORAGE_KEY_CURRENT_USER_PROFILE);
         setCurrentUser(null);
       }
     } catch {}
@@ -1028,15 +1329,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           });
         }
 
-        // Web Notification API (Browser push)
-        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
-          try {
-            new Notification('MineTask 1835s: ĐÃ ĐẾN LƯỢT BẠN!', {
-              body: turnNotif.message,
-              icon: '/icon-192.png',
-            });
-          } catch {}
-        }
+        // Native Device Notification API (Browser / Windows / Android push)
+        sendDeviceNotification('MineTask 1835s: ĐÃ ĐẾN LƯỢT BẠN!', {
+          body: turnNotif.message,
+          icon: './icon-192.png',
+        });
       }, 1200);
     }
 
@@ -1197,6 +1494,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         notifications,
         activePopupNotification,
         unreadNotificationCount,
+
+        // Online Mode & Realtime Presence
+        isOnlineMode,
+        networkOnline,
+        serverConnected,
+        syncStatus,
+        lastSyncTime,
+        serverPing,
+        onlineMembers,
+        toggleOnlineMode,
+        syncNow: fetchServerState,
 
         setActiveWorldId,
         login,

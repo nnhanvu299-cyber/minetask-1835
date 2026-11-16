@@ -1,6 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Bell, CheckCheck, Trash2, X, Sparkles, Zap, Clock } from 'lucide-react';
+import { Bell, CheckCheck, Trash2, X, Sparkles, Zap, Clock, Send } from 'lucide-react';
+import {
+  getNotificationPermission,
+  requestDeviceNotificationPermission,
+  sendTestDeviceNotification,
+} from '../utils/deviceNotification';
 
 interface NotificationDrawerProps {
   isOpen: boolean;
@@ -9,8 +14,26 @@ interface NotificationDrawerProps {
 
 export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, onClose }) => {
   const { notifications, markAllNotificationsRead, dismissNotification } = useApp();
+  const [perm, setPerm] = useState(getNotificationPermission);
+  const [testSent, setTestSent] = useState(false);
 
   if (!isOpen) return null;
+
+  const handleEnablePermission = async () => {
+    const granted = await requestDeviceNotificationPermission();
+    setPerm(getNotificationPermission());
+    if (granted) {
+      await sendTestDeviceNotification();
+      setTestSent(true);
+      setTimeout(() => setTestSent(false), 3000);
+    }
+  };
+
+  const handleTestNotification = async () => {
+    await sendTestDeviceNotification();
+    setTestSent(true);
+    setTimeout(() => setTestSent(false), 3000);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-end p-2 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn" onClick={onClose}>
@@ -46,6 +69,48 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, 
             >
               <X size={14} />
             </button>
+          </div>
+        </div>
+
+        {/* Device Notification Status & Quick Enable / Test Banner */}
+        <div className="p-2.5 sm:p-3 bg-[#FFFDF7] border-b-2 border-[#2D1A11] flex items-center justify-between gap-2 shadow-2xs">
+          <div className="flex items-center gap-2 min-w-0">
+            <span
+              className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                perm === 'granted' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
+              }`}
+            ></span>
+            <div className="min-w-0">
+              <div className="text-[11px] font-bold text-[#2D1A11] truncate">
+                {perm === 'granted' ? 'Thông báo về máy: ĐÃ BẬT ✅' : 'Thông báo về máy: CHƯA BẬT ⚠️'}
+              </div>
+              <div className="text-[10px] text-[#836251] truncate">
+                {perm === 'granted'
+                  ? testSent
+                    ? 'Đã gửi thông báo thử nghiệm về máy của bạn!'
+                    : 'Báo cập nhật mới & lượt đào vào Windows / Điện thoại'
+                  : 'Cấp quyền để nhận thông báo thẳng về máy tính / điện thoại'}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            {perm !== 'granted' ? (
+              <button
+                onClick={handleEnablePermission}
+                className="mc-btn mc-btn-emerald px-2 py-1 text-[10px] font-bold text-white cursor-pointer"
+              >
+                BẬT NGAY 🔔
+              </button>
+            ) : (
+              <button
+                onClick={handleTestNotification}
+                className="mc-btn px-2 py-1 text-[10px] font-bold bg-[#FAF2DC] border border-[#2D1A11] hover:bg-[#F3E6C8] cursor-pointer"
+                title="Gửi 1 thông báo thử nghiệm về máy"
+              >
+                THỬ GỬI 🚀
+              </button>
+            )}
           </div>
         </div>
 
