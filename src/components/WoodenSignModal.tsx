@@ -18,6 +18,7 @@ import {
   Plus,
   Minus,
   Check,
+  Trash2,
 } from 'lucide-react';
 
 interface WoodenSignModalProps {
@@ -40,12 +41,15 @@ export const WoodenSignModal: React.FC<WoodenSignModalProps> = ({
     mineTaskHit,
     setTaskMiningProgress,
     updateTask,
+    deleteTask,
     users,
     currentUser,
   } = useApp();
 
   const [noteText, setNoteText] = useState('');
+  const [startDate, setStartDate] = useState('');
   const [deadline, setDeadline] = useState('');
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [activeTab, setActiveTab] = useState<'write' | 'preview'>('write');
   const [isMiningWobble, setIsMiningWobble] = useState(false);
   const [showMemberPicker, setShowMemberPicker] = useState(false);
@@ -58,7 +62,9 @@ export const WoodenSignModal: React.FC<WoodenSignModalProps> = ({
   useEffect(() => {
     if (task) {
       setNoteText(task.progressNote || '');
+      setStartDate(task.startDate || '');
       setDeadline(task.deadline || '');
+      setShowConfirmDelete(false);
       const req = Math.max(1, task.requiredHits || 3);
       setRequiredHits(req);
       const cur = task.status === 'done' ? req : (task.currentHits || 0);
@@ -127,6 +133,7 @@ export const WoodenSignModal: React.FC<WoodenSignModalProps> = ({
   // Save changes
   const handleSaveOnly = () => {
     updateTask(task.id, {
+      startDate: startDate || undefined,
       deadline: deadline || undefined,
       requiredHits,
       currentHits,
@@ -141,6 +148,7 @@ export const WoodenSignModal: React.FC<WoodenSignModalProps> = ({
   const handleCompleteMining = () => {
     setCurrentHits(requiredHits);
     updateTask(task.id, {
+      startDate: startDate || undefined,
       deadline: deadline || undefined,
       requiredHits,
       currentHits: requiredHits,
@@ -148,6 +156,13 @@ export const WoodenSignModal: React.FC<WoodenSignModalProps> = ({
       assigneeId: selectedAssigneeIds[0] || task.assigneeId,
     });
     completeTaskStation(task.id, noteText);
+    onClose();
+  };
+
+  // Delete task safely (re-order remaining steps)
+  const handleDeleteTask = () => {
+    if (!task) return;
+    deleteTask(task.id);
     onClose();
   };
 
@@ -379,13 +394,24 @@ export const WoodenSignModal: React.FC<WoodenSignModalProps> = ({
                 </button>
               </div>
 
-              {/* Deadline & Priority */}
-              <div className="flex items-center gap-2.5 text-xs">
+              {/* Start Date, Deadline & Priority */}
+              <div className="flex flex-wrap items-center gap-2 text-xs">
                 <span className="text-[11px] text-[#52372A] font-medium hidden sm:inline">
                   Ưu tiên: <strong className="text-[#F37022]">{task.priority.toUpperCase()}</strong>
                 </span>
                 <div className="flex items-center gap-1">
+                  <span className="text-[10px] font-bold text-[#836251]">Bắt đầu:</span>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="text-[11px] font-bold px-1.5 py-0.5 border border-[#2D1A11] bg-[#FAF2DC] text-[#2D1A11]"
+                    title="Chỉnh sửa ngày bắt đầu"
+                  />
+                </div>
+                <div className="flex items-center gap-1">
                   <Calendar size={13} className="text-[#F37022]" />
+                  <span className="text-[10px] font-bold text-[#836251]">Hạn chót:</span>
                   <input
                     type="date"
                     value={deadline}
@@ -523,15 +549,52 @@ export const WoodenSignModal: React.FC<WoodenSignModalProps> = ({
           </div>
         </div>
 
+        {/* Delete Confirmation Alert Banner */}
+        {showConfirmDelete && (
+          <div className="p-3 bg-red-100 border-t-3 border-red-500 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-red-950 font-bold animate-fadeIn">
+            <div className="flex items-center gap-1.5">
+              <Trash2 size={16} className="text-red-700 shrink-0" />
+              <span>Xác nhận xóa Trạm {stationNumber}: "{task.title}"? Thứ tự các trạm sau đó sẽ tự động được dồn lại.</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleDeleteTask}
+                className="mc-btn bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 font-bold cursor-pointer shadow-xs active:scale-95"
+              >
+                ĐỒNG Ý XÓA ✕
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowConfirmDelete(false)}
+                className="mc-btn bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs px-2.5 py-1 font-bold cursor-pointer"
+              >
+                HỦY
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Modal Footer Actions */}
         <div className="bg-[#EFE4CA] border-t-3 border-[#2D1A11] p-3 sm:p-3.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="mc-btn mc-btn-obsidian text-xs px-3 py-2 text-[#FAF2DC] cursor-pointer order-last sm:order-first"
-          >
-            ĐÓNG
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="mc-btn mc-btn-obsidian text-xs px-3 py-2 text-[#FAF2DC] cursor-pointer"
+            >
+              ĐÓNG
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowConfirmDelete(!showConfirmDelete)}
+              className="mc-btn bg-[#991b1b] hover:bg-[#7f1d1d] text-white text-xs px-2.5 py-2 font-bold cursor-pointer border border-[#2D1A11] flex items-center gap-1 shadow-xs active:scale-95"
+              title="Xóa nhiệm vụ này khi tạo sai thứ tự bước"
+            >
+              <Trash2 size={13} />
+              <span>XÓA TRẠM NÀY</span>
+            </button>
+          </div>
 
           <div className="flex items-center gap-2 flex-1 sm:flex-none justify-end">
             <button

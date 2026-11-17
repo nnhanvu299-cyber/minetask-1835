@@ -23,6 +23,7 @@ interface TimelineModalProps {
   isOpen?: boolean;
   initialWorldId?: string | null;
   onClose: () => void;
+  onNavigateToTasks?: (worldId?: string) => void;
 }
 
 // Safely normalize date strings across formats (YYYY-MM-DD, DD/MM/YYYY, timestamp)
@@ -77,13 +78,46 @@ export const TimelineModal: React.FC<TimelineModalProps> = ({
   isOpen = true,
   initialWorldId = null,
   onClose,
+  onNavigateToTasks,
 }) => {
-  const { tasks = [], worlds = [], users = [], updateTask } = useApp();
+  const { tasks = [], worlds = [], users = [], currentUser, updateTask, deleteTask } = useApp();
 
   // Defensive array checks
   const safeTasks: Task[] = useMemo(() => (Array.isArray(tasks) ? tasks.filter(Boolean) : []), [tasks]);
   const safeUsers: UserProfile[] = useMemo(() => (Array.isArray(users) ? users.filter(Boolean) : []), [users]);
   const safeWorlds: World[] = useMemo(() => (Array.isArray(worlds) ? worlds.filter(Boolean) : []), [worlds]);
+
+  // Realtime date calculation: Automatically sync to today's date (e.g. 17/11/2026)
+  const now = new Date();
+  const realCurrentMonth = now.getMonth() + 1; // 11
+  const realCurrentDay = now.getDate(); // 17
+  const realCurrentWeek = Math.min(5, Math.max(1, Math.ceil(realCurrentDay / 7))); // 3
+  const realTodayDateKey = `${now.getFullYear()}-${String(realCurrentMonth).padStart(2, '0')}-${String(realCurrentDay).padStart(2, '0')}`;
+  const realTodayDisplayStr = `${String(realCurrentDay).padStart(2, '0')}/${String(realCurrentMonth).padStart(2, '0')}/${now.getFullYear()}`;
+
+  // Navigation & View Mode: Default to REALTIME current month & week!
+  const [selectedMonthTab, setSelectedMonthTab] = useState<'10' | '11' | 'all'>(() => {
+    return realCurrentMonth === 10 ? '10' : '11';
+  });
+  const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
+  const [selectedWeekNum, setSelectedWeekNum] = useState<number>(realCurrentWeek);
+
+  // User pending task calculations
+  const myTasks = useMemo(() => {
+    if (!currentUser) return safeTasks;
+    return safeTasks.filter((t) => {
+      const assigned = Array.isArray(t.assigneeIds) && t.assigneeIds.length > 0 ? t.assigneeIds : [t.assigneeId];
+      return assigned.includes(currentUser.id);
+    });
+  }, [safeTasks, currentUser]);
+
+  const myPendingTasks = useMemo(() => {
+    return myTasks.filter((t) => t.status !== 'done');
+  }, [myTasks]);
+
+  const allPendingTasks = useMemo(() => {
+    return safeTasks.filter((t) => t.status !== 'done');
+  }, [safeTasks]);
 
   const getWorldBadge = (worldId: string) => {
     const w = safeWorlds.find((item) => item && item.id === worldId);
@@ -105,12 +139,6 @@ export const TimelineModal: React.FC<TimelineModalProps> = ({
     }
     return { name: w.name || 'Thế giới', fullName: w.name, icon: '🌍', color: '#52372A', bg: '#EFE4CA', border: '#bfa084' };
   };
-
-  // Navigation & View Mode
-  // Default to Month 10/2026 first so the user IMMEDIATELY sees Tuần 1, 2, 3 (20/10), 4 (24/10), 5!
-  const [selectedMonthTab, setSelectedMonthTab] = useState<'10' | '11' | 'all'>('10');
-  const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
-  const [selectedWeekNum, setSelectedWeekNum] = useState<number>(3); // Tuần 3 (chứa 20/10)
 
   // Filters
   const [filterMemberId, setFilterMemberId] = useState<string>('all');
@@ -168,9 +196,9 @@ export const TimelineModal: React.FC<TimelineModalProps> = ({
     });
   }, [safeTasks]);
 
-  // Active month number: 10 or 11 (if 'all', default month is 10 for week calculation)
-  const activeMonthNum = selectedMonthTab === '11' ? 11 : 10;
-  const daysInMonth = activeMonthNum === 11 ? 30 : 31;
+  // Active month number: 10, 11, or real current month
+  const activeMonthNum = selectedMonthTab === '11' ? 11 : selectedMonthTab === '10' ? 10 : realCurrentMonth;
+  const daysInMonth = (activeMonthNum === 11 || activeMonthNum === 4 || activeMonthNum === 6 || activeMonthNum === 9) ? 30 : 31;
 
   // Tasks relevant to current Month Tab
   const relevantTasks = useMemo(() => {
@@ -221,6 +249,11 @@ export const TimelineModal: React.FC<TimelineModalProps> = ({
       // Even tasks (index 1, 3...) branch DOWN
       const bottomTasks = weekTasks.filter((_, idx) => idx % 2 === 1);
 
+      const isCurrentWeek =
+        activeMonthNum === realCurrentMonth &&
+        realCurrentDay >= startDay &&
+        realCurrentDay <= endDay;
+
       return {
         weekNum: wk,
         label: `TUẦN ${wk}`,
@@ -230,6 +263,7 @@ export const TimelineModal: React.FC<TimelineModalProps> = ({
         weekTasks,
         topTasks,
         bottomTasks,
+        isCurrentWeek,
       };
     });
 
@@ -245,8 +279,8 @@ export const TimelineModal: React.FC<TimelineModalProps> = ({
     const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 
     for (let d = startDay; d <= endDay; d++) {
-      const dStr = `2026-${String(activeMonthNum).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const dateObj = new Date(2026, activeMonthNum - 1, d);
+      const dStr = `${now.getFullYear()}-${String(activeMonthNum).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const dateObj = new Date(now.getFullYear(), activeMonthNum - 1, d);
       const dayOfWeekText = dayNames[dateObj.getDay()] || '';
 
       const dayTasks = tasksByDate[dStr] || [];
@@ -262,7 +296,7 @@ export const TimelineModal: React.FC<TimelineModalProps> = ({
         dayTasks,
         topTasks,
         bottomTasks,
-        isToday: dStr === '2026-11-10',
+        isToday: dStr === realTodayDateKey,
       });
     }
 
@@ -394,6 +428,55 @@ export const TimelineModal: React.FC<TimelineModalProps> = ({
               <X size={14} />
             </button>
           </div>
+        </div>
+
+        {/* ==================== REALTIME TODAY STATUS BANNER (YÊU CẦU 1) ==================== */}
+        <div className="bg-[#FFFDF7] border-b-2 border-[#2D1A11] px-2.5 py-1.5 sm:px-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 shadow-xs shrink-0 select-none">
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5 bg-[#ED1B24] text-white px-2 py-0.5 border border-[#2D1A11] font-black text-[11px] shadow-xs shrink-0">
+              <Sparkles size={12} className="animate-spin text-yellow-300" />
+              <span>HÔM NAY: {realTodayDisplayStr}</span>
+            </div>
+
+            <div className="text-xs text-[#2D1A11] font-semibold flex items-center gap-1 flex-wrap">
+              {currentUser ? (
+                <span>
+                  Bạn <strong className="text-[#F37022]">({currentUser.name || 'bạn'})</strong> đang có{' '}
+                  <span className="font-black text-[#ED1B24] bg-red-100 px-1.5 py-0.5 border border-red-300">
+                    {myPendingTasks.length}
+                  </span>{' '}
+                  nhiệm vụ cần hoàn thành
+                  {allPendingTasks.length !== myPendingTasks.length && (
+                    <span className="text-[#836251] text-[11px] font-normal ml-1">
+                      (Toàn đội: <strong>{allPendingTasks.length}</strong>)
+                    </span>
+                  )}
+                </span>
+              ) : (
+                <span>
+                  Đang có{' '}
+                  <span className="font-black text-[#ED1B24] bg-red-100 px-1.5 py-0.5 border border-red-300">
+                    {allPendingTasks.length}
+                  </span>{' '}
+                  nhiệm vụ cần hoàn thành
+                </span>
+              )}
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              onClose();
+              if (onNavigateToTasks) {
+                onNavigateToTasks(filterWorldId !== 'all' ? filterWorldId : undefined);
+              }
+            }}
+            className="mc-btn mc-btn-green px-3 py-1 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer text-white shadow-xs active:scale-95 transition-all shrink-0"
+            title="Chuyển thẳng vào danh sách nhiệm vụ"
+          >
+            <span>Xem thêm: Danh sách nhiệm vụ</span>
+            <ArrowRight size={13} className="text-yellow-200" />
+          </button>
         </div>
 
         {/* ==================== COMPACT TOOLBAR: FILTERS & STATS ==================== */}
@@ -668,7 +751,9 @@ export const TimelineModal: React.FC<TimelineModalProps> = ({
                           <div
                             onClick={() => handleZoomIntoWeek(wk.weekNum)}
                             className={`w-10 h-10 border-3 border-[#2D1A11] flex flex-col items-center justify-center cursor-pointer transition-transform hover:scale-120 group relative z-20 ${
-                              hasTasks
+                              wk.isCurrentWeek
+                                ? 'bg-[#ED1B24] ring-4 ring-[#ED1B24]/40 animate-pulse shadow-[3px_3px_0px_#2D1A11]'
+                                : hasTasks
                                 ? 'bg-[#F37022] shadow-[3px_3px_0px_#2D1A11]'
                                 : 'bg-[#FAF2DC] hover:bg-[#EFE4CA]'
                             }`}
@@ -694,12 +779,23 @@ export const TimelineModal: React.FC<TimelineModalProps> = ({
                             className="text-center mt-1.5 cursor-pointer group"
                             title="Bấm vào để xem chi tiết theo Tuần"
                           >
-                            <div className="text-xs px-2.5 py-0.5 border-2 transition-transform group-hover:scale-105 font-black bg-[#2D1A11] text-[#FAF2DC] border-[#2D1A11] shadow-[2px_2px_0px_#836251]">
+                            <div
+                              className={`text-xs px-2.5 py-0.5 border-2 transition-transform group-hover:scale-105 font-black ${
+                                wk.isCurrentWeek
+                                  ? 'bg-[#ED1B24] text-white border-[#2D1A11] shadow-[2px_2px_0px_#2D1A11]'
+                                  : 'bg-[#2D1A11] text-[#FAF2DC] border-[#2D1A11] shadow-[2px_2px_0px_#836251]'
+                              }`}
+                            >
                               {wk.label}
                             </div>
                             <div className="text-[10px] text-[#52372A] font-bold mt-0.5 whitespace-nowrap">
                               {wk.dateRangeText}
                             </div>
+                            {wk.isCurrentWeek && (
+                              <span className="text-[9px] text-[#ED1B24] font-black block uppercase tracking-tight">
+                                ⭐ Hôm nay ({realTodayDisplayStr})
+                              </span>
+                            )}
                           </div>
                         </div>
 

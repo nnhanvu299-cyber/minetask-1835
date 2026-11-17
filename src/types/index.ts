@@ -59,7 +59,9 @@ export interface Task {
   progressNote?: string;
   progressUpdatedAt?: number;
   progressUpdatedBy?: UserId;
-  deadline?: string; // Định dạng YYYY-MM-DD
+  startDate?: string; // Định dạng YYYY-MM-DD (Ngày bắt đầu)
+  deadline?: string; // Định dạng YYYY-MM-DD (Hạn chót)
+  durationDays?: number; // Số lượng ngày thực hiện
   requiredHits?: number; // Tổng số lần cần đào để hoàn thành (mặc định 3 hoặc tự chọn)
   currentHits?: number; // Số lần đã đào hiện tại
 }

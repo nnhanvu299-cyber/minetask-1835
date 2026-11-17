@@ -125,3 +125,81 @@ export async function sendTestDeviceNotification(): Promise<boolean> {
     requireInteraction: false,
   });
 }
+
+// Daily Task Push Notification: Informs user which task they are currently on, its start and end time (Requirement 4)
+export interface DailyTaskNotifResult {
+  triggered: boolean;
+  taskTitle?: string;
+  reason?: string;
+}
+
+export async function checkAndTriggerDailyTaskNotification(
+  currentUser: any,
+  tasks: any[],
+  force: boolean = false
+): Promise<DailyTaskNotifResult> {
+  if (!currentUser || !Array.isArray(tasks) || tasks.length === 0) {
+    return { triggered: false, reason: 'No user or tasks' };
+  }
+
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const todayDisplay = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+  const storageKey = `minetask_daily_notif_date_${currentUser.id}`;
+  const lastNotifiedDate = typeof localStorage !== 'undefined' ? localStorage.getItem(storageKey) : null;
+
+  // If already notified today and not forced, skip
+  if (!force && lastNotifiedDate === todayStr) {
+    return { triggered: false, reason: 'Already notified today' };
+  }
+
+  // Find user's tasks
+  const myTasks = tasks.filter((t) => {
+    if (!t) return false;
+    const assigned = Array.isArray(t.assigneeIds) && t.assigneeIds.length > 0 ? t.assigneeIds : [t.assigneeId];
+    return assigned.includes(currentUser.id);
+  });
+
+  // Prefer in_progress task, then todo task, or first unfinished task in team
+  const activeTask =
+    myTasks.find((t) => t.status === 'in_progress') ||
+    myTasks.find((t) => t.status === 'todo') ||
+    tasks.find((t) => t.status === 'in_progress') ||
+    tasks.find((t) => t.status === 'todo');
+
+  if (!activeTask) {
+    return { triggered: false, reason: 'No active task found' };
+  }
+
+  const title = `⛏️ BẠN ĐANG TRONG NHIỆM VỤ: "${activeTask.title}"`;
+  
+  // Format start - end time
+  const startStr = activeTask.startDate || todayStr;
+  const endStr = activeTask.deadline || 'Chưa định hạn';
+  const req = activeTask.requiredHits || 3;
+  const cur = activeTask.currentHits || 0;
+  
+  const body = `⏰ Thời gian: ${startStr} ➔ ${endStr} | Tiến độ: ${cur}/${req} lần đào. Hôm nay (${todayDisplay}) tiếp tục đào nhé!`;
+
+  soundEngine.playTurnNotification();
+
+  const success = await sendDeviceNotification(title, {
+    body,
+    tag: `minetask-daily-task-${activeTask.id}-${todayStr}`,
+    requireInteraction: true,
+    onClick: () => {
+      try {
+        window.focus();
+      } catch {}
+    },
+  });
+
+  if (success && typeof localStorage !== 'undefined') {
+    try {
+      localStorage.setItem(storageKey, todayStr);
+    } catch {}
+  }
+
+  return { triggered: success, taskTitle: activeTask.title };
+}

@@ -5,6 +5,7 @@ import {
   getNotificationPermission,
   requestDeviceNotificationPermission,
   sendTestDeviceNotification,
+  checkAndTriggerDailyTaskNotification,
 } from '../utils/deviceNotification';
 
 interface NotificationDrawerProps {
@@ -13,7 +14,7 @@ interface NotificationDrawerProps {
 }
 
 export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, onClose }) => {
-  const { notifications, markAllNotificationsRead, dismissNotification } = useApp();
+  const { notifications, markAllNotificationsRead, dismissNotification, currentUser, tasks } = useApp();
   const [perm, setPerm] = useState(getNotificationPermission);
   const [testSent, setTestSent] = useState(false);
 
@@ -41,6 +42,16 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, 
       setPerm(getNotificationPermission());
     }
     window.dispatchEvent(new CustomEvent('1835_TRIGGER_UPDATE_ALERT'));
+    setTestSent(true);
+    setTimeout(() => setTestSent(false), 3000);
+  };
+
+  const handleTriggerDailyTaskAlert = async () => {
+    if (perm !== 'granted') {
+      await requestDeviceNotificationPermission();
+      setPerm(getNotificationPermission());
+    }
+    await checkAndTriggerDailyTaskNotification(currentUser, tasks, true);
     setTestSent(true);
     setTimeout(() => setTestSent(false), 3000);
   };
@@ -131,6 +142,24 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, 
             title="Nhấn để gửi ngay thông báo cập nhật về máy"
           >
             <span>GỬI TB CẬP NHẬT 🔔</span>
+          </button>
+        </div>
+
+        {/* Quick Send Daily Task Alert Banner (Yêu cầu 4) */}
+        <div className="p-2.5 bg-gradient-to-r from-emerald-500/15 to-[#0072CE]/15 border-b-2 border-[#2D1A11] flex items-center justify-between gap-2 shadow-2xs">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-base animate-bounce">⛏️</span>
+            <div className="min-w-0">
+              <div className="text-[11px] font-bold text-[#2D1A11]">THÔNG BÁO TASK HÀNG NGÀY</div>
+              <div className="text-[10px] text-[#52372A]">Nhắc việc: bạn đang trong task nào & thời hạn</div>
+            </div>
+          </div>
+          <button
+            onClick={handleTriggerDailyTaskAlert}
+            className="mc-btn mc-btn-green px-2.5 py-1 text-[11px] font-bold text-white shrink-0 cursor-pointer shadow-xs active:scale-95 flex items-center gap-1"
+            title="Nhấn để gửi ngay thông báo nhắc việc hôm nay về máy"
+          >
+            <span>NHẮC TASK NGAY 🔔</span>
           </button>
         </div>
 

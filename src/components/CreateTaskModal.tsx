@@ -12,6 +12,23 @@ interface CreateTaskModalProps {
   onClose: () => void;
 }
 
+const getTodayDateStr = () => {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+const calculateDurationDays = (start: string, end: string): number => {
+  if (!start || !end) return 1;
+  const s = new Date(start + 'T00:00:00');
+  const e = new Date(end + 'T00:00:00');
+  const diffTime = e.getTime() - s.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  return Math.max(1, diffDays);
+};
+
 export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   worldId,
   isOpen,
@@ -26,6 +43,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
   });
   const [blockType, setBlockType] = useState<BlockRarity>('gold');
   const [priority, setPriority] = useState<'low' | 'normal' | 'high' | 'legendary'>('high');
+  const [startDate, setStartDate] = useState<string>(getTodayDateStr);
   const [deadline, setDeadline] = useState<string>('');
   const [requiredHits, setRequiredHits] = useState<number>(3); // Số lần đào cần thiết
 
@@ -59,6 +77,8 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       ? selectedAssigneeIds
       : [currentUser?.id || users[0]?.id || 'steve'];
 
+    const durationDays = deadline ? calculateDurationDays(startDate, deadline) : 1;
+
     createTask({
       worldId,
       title: title.trim(),
@@ -68,7 +88,9 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
       assigneeId: finalAssignees[0],
       assigneeIds: finalAssignees,
       priority,
+      startDate: startDate || undefined,
       deadline: deadline || undefined,
+      durationDays,
       requiredHits: Math.max(1, requiredHits || 3),
     });
 
@@ -76,6 +98,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     setDescription('');
     setBlockType('diamond');
     setPriority('high');
+    setStartDate(getTodayDateStr());
     setDeadline('');
     setRequiredHits(3);
     onClose();
@@ -124,18 +147,67 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
             />
           </div>
 
-          {/* Hạn chót (Deadline) */}
-          <div>
-            <label className="block text-xs font-bold text-[#2D1A11] mb-1 flex items-center gap-1.5">
-              <Calendar size={13} className="text-[#F37022]" />
-              HẠN CHÓT (DEADLINE)
-            </label>
-            <input
-              type="date"
-              value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
-              className="mc-input text-xs sm:text-sm font-medium"
-            />
+          {/* Thời gian thực hiện: Ngày bắt đầu, Hạn chót & Bộ đếm thời lượng */}
+          <div className="p-3 bg-[#FAF2DC] border-2 border-[#2D1A11] shadow-[2px_2px_0px_#2D1A11] space-y-2.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-[#2D1A11] flex items-center gap-1.5">
+                <Calendar size={13} className="text-[#F37022]" />
+                THỜI GIAN THỰC HIỆN & BỘ ĐẾM THỜI LƯỢNG *
+              </label>
+              <span className="text-[11px] font-bold text-[#F37022] bg-[#FFFDF7] px-2 py-0.5 border border-[#2D1A11]">
+                ⏳ {deadline ? `${calculateDurationDays(startDate, deadline)} ngày` : '1 ngày (Mặc định)'}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <span className="text-[10px] font-bold text-[#52372A] mb-1 block">1. NGÀY BẮT ĐẦU:</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="mc-input text-xs w-full py-1.5 font-bold"
+                />
+              </div>
+
+              <div>
+                <span className="text-[10px] font-bold text-[#52372A] mb-1 block">2. HẠN CHÓT (DEADLINE):</span>
+                <input
+                  type="date"
+                  value={deadline}
+                  onChange={(e) => setDeadline(e.target.value)}
+                  className="mc-input text-xs w-full py-1.5 font-bold"
+                />
+              </div>
+            </div>
+
+            {/* Quick duration presets */}
+            <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-[#2D1A11]/20">
+              <span className="text-[10px] font-bold text-[#52372A]">Chọn nhanh thời lượng:</span>
+              {[
+                { days: 1, label: '+1 ngày' },
+                { days: 3, label: '+3 ngày' },
+                { days: 7, label: '+7 ngày (1 tuần)' },
+                { days: 14, label: '+14 ngày (2 tuần)' },
+                { days: 30, label: '+30 ngày (1 tháng)' },
+              ].map((item) => (
+                <button
+                  type="button"
+                  key={item.days}
+                  onClick={() => {
+                    const base = startDate ? new Date(startDate + 'T00:00:00') : new Date();
+                    const target = new Date(base.getTime() + (item.days - 1) * 24 * 60 * 60 * 1000);
+                    const y = target.getFullYear();
+                    const m = String(target.getMonth() + 1).padStart(2, '0');
+                    const d = String(target.getDate()).padStart(2, '0');
+                    setDeadline(`${y}-${m}-${d}`);
+                  }}
+                  className="px-1.5 py-0.5 bg-[#FFFDF7] hover:bg-[#FAF2DC] border border-[#2D1A11] text-[10px] font-bold text-[#2D1A11] cursor-pointer"
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Người phụ trách (Co-op: Chọn được nhiều người) */}
@@ -305,6 +377,81 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                   {item.label}
                 </button>
               ))}
+            </div>
+          </div>
+
+          {/* 🪵 BẢNG GỖ TIẾN ĐỘ VÀ BÁO CÁO CÔNG VIỆC */}
+          <div className="p-3 sm:p-4 bg-[#C68B59] border-4 border-[#3D2314] shadow-[4px_4px_0px_#2D1A11] relative overflow-hidden text-[#2D1A11]">
+            {/* 4 corner Minecraft bolts */}
+            <div className="absolute top-1 left-1 w-2 h-2 bg-[#2D1A11] border border-[#FAF2DC]/40"></div>
+            <div className="absolute top-1 right-1 w-2 h-2 bg-[#2D1A11] border border-[#FAF2DC]/40"></div>
+            <div className="absolute bottom-1 left-1 w-2 h-2 bg-[#2D1A11] border border-[#FAF2DC]/40"></div>
+            <div className="absolute bottom-1 right-1 w-2 h-2 bg-[#2D1A11] border border-[#FAF2DC]/40"></div>
+
+            <div className="flex items-center justify-between border-b-2 border-[#3D2314]/30 pb-1.5 mb-2.5">
+              <div className="flex items-center gap-1.5 font-bold text-xs text-[#2D1A11] uppercase tracking-wider">
+                <span>🪵</span>
+                <span>BẢNG GỖ TIẾN ĐỘ & BÁO CÁO CÔNG VIỆC</span>
+              </div>
+              <span className="text-[9px] bg-[#3D2314] text-[#FAF2DC] px-1.5 py-0.5 font-bold uppercase">
+                XEM TRƯỚC
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              <div className="bg-[#FAF2DC]/90 p-2 border-2 border-[#3D2314]/40 font-bold text-xs sm:text-sm text-[#2D1A11] flex items-center justify-between gap-2">
+                <span className="truncate">{title.trim() ? title : '(Chưa nhập tên nhiệm vụ)'}</span>
+                <span className="text-[10px] text-[#F37022] shrink-0 font-bold">
+                  +{BLOCK_CONFIGS[blockType]?.xp || 100} XP
+                </span>
+              </div>
+
+              {/* Tiến độ và Số ngày */}
+              <div className="grid grid-cols-2 gap-2 text-[10px] sm:text-[11px] font-bold">
+                <div className="bg-[#FAF2DC]/90 p-2 border-2 border-[#3D2314]/40">
+                  <div className="text-[#836251] text-[9px] uppercase">TIẾN ĐỘ ĐÀO KHỞI ĐIỂM:</div>
+                  <div className="text-[#16a34a] font-bold mt-0.5">
+                    0 / {requiredHits} lần đào (0%)
+                  </div>
+                  <div className="w-full bg-[#E5D6B6] h-1.5 border border-[#2D1A11] mt-1">
+                    <div className="bg-[#16a34a] h-full w-0"></div>
+                  </div>
+                </div>
+
+                <div className="bg-[#FAF2DC]/90 p-2 border-2 border-[#3D2314]/40">
+                  <div className="text-[#836251] text-[9px] uppercase">THỜI LƯỢNG THỰC HIỆN:</div>
+                  <div className="text-[#F37022] font-black text-xs mt-0.5">
+                    ⏳ {deadline ? `${calculateDurationDays(startDate, deadline)} ngày` : '1 ngày (Mặc định)'}
+                  </div>
+                  <div className="text-[9px] text-[#52372A] truncate mt-0.5">
+                    {startDate || 'Hôm nay'} ➔ {deadline || 'Chưa định'}
+                  </div>
+                </div>
+              </div>
+
+              {/* Người phụ trách */}
+              <div className="bg-[#FAF2DC]/90 p-2 border-2 border-[#3D2314]/40 text-[10px]">
+                <div className="font-bold text-[#5A3825] mb-1">NGƯỜI PHỤ TRÁCH ({selectedAssigneeIds.length} người):</div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {users.filter(u => selectedAssigneeIds.includes(u.id)).map(u => (
+                    <span key={u.id} className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-[#FFFDF7] border border-[#2D1A11] text-[#2D1A11] font-bold text-[9px]">
+                      <PixelAvatar userId={u.id} avatarKey={u.avatarKey} size={14} showBorder={false} />
+                      <span>{u.name}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Báo cáo công việc / Mining Log Preview */}
+              <div className="bg-[#FAF2DC]/90 p-2 border-2 border-[#3D2314]/40 text-[10px]">
+                <div className="font-bold text-[#5A3825] mb-1 flex items-center justify-between">
+                  <span>NHẬT KÝ & BÁO CÁO CÔNG VIỆC:</span>
+                  <span className="text-[9px] text-[#836251]">0 cập nhật</span>
+                </div>
+                <div className="text-[#52372A] italic bg-[#FFFDF7] p-1.5 border border-[#3D2314]/20">
+                  {description.trim() ? description : 'Nội dung và nhật ký báo cáo tiến độ (Mining Log) sẽ được lưu lại từng bước trên bảng gỗ này khi thợ mỏ bắt tay vào đào.'}
+                </div>
+              </div>
             </div>
           </div>
 

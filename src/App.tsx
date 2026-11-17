@@ -16,10 +16,22 @@ import { OnlineStatusModal } from './components/OnlineStatusModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Gamepad2, Globe, Calendar, Bell, User, RefreshCw } from 'lucide-react';
 import { soundEngine } from './utils/audio';
-import { sendUpdateAvailableNotification, requestDeviceNotificationPermission } from './utils/deviceNotification';
+import {
+  sendUpdateAvailableNotification,
+  requestDeviceNotificationPermission,
+  checkAndTriggerDailyTaskNotification,
+} from './utils/deviceNotification';
 
 const MainContent: React.FC = () => {
-  const { currentUser, users, activeWorld, setActiveWorldId, unreadNotificationCount } = useApp();
+  const {
+    currentUser,
+    users,
+    activeWorld,
+    setActiveWorldId,
+    unreadNotificationCount,
+    worlds,
+    tasks,
+  } = useApp();
 
   // Instant Auto-Update Detection
   const [hasNewUpdate, setHasNewUpdate] = useState(false);
@@ -101,6 +113,15 @@ const MainContent: React.FC = () => {
       window.removeEventListener('focus', onWindowFocus);
     };
   }, []);
+
+  // Automatic Daily Task Notification (Yêu cầu 4: Nhắc việc hàng ngày - bạn đang trong task nào & hạn chót)
+  useEffect(() => {
+    if (!currentUser || !tasks || tasks.length === 0) return;
+    const timer = setTimeout(() => {
+      checkAndTriggerDailyTaskNotification(currentUser, tasks, false);
+    }, 3500);
+    return () => clearTimeout(timer);
+  }, [currentUser?.id, tasks.length]);
 
   const handleApplyUpdate = () => {
     if (currentAppVersion.current) {
@@ -405,6 +426,15 @@ const MainContent: React.FC = () => {
             onClose={() => {
               setIsTimelineOpen(false);
               setTimelineWorldId(null);
+            }}
+            onNavigateToTasks={(targetWorldId) => {
+              setIsTimelineOpen(false);
+              setTimelineWorldId(null);
+              if (targetWorldId) {
+                setActiveWorldId(targetWorldId);
+              } else if (!activeWorld && worlds && worlds.length > 0) {
+                setActiveWorldId(worlds[0].id);
+              }
             }}
           />
         </ErrorBoundary>
