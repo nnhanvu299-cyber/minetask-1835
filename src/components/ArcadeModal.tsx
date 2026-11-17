@@ -255,7 +255,7 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
 
       // 6. DRAW SCORE BANNER
       ctx.fillStyle = '#2D1A11';
-      ctx.font = 'bold 22px VT323, monospace';
+      ctx.font = 'bold 22px Minecraft, "Minecraft F2D V1", monospace';
       ctx.textAlign = 'center';
       ctx.fillText(`ĐIỂM: ${g.score}`, canvasWidth / 2, 34);
 
@@ -269,7 +269,7 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
         ctx.strokeRect(20, 130, canvasWidth - 40, 150);
 
         ctx.fillStyle = '#FFFFFF';
-        ctx.font = 'bold 18px VT323, monospace';
+        ctx.font = 'bold 18px Minecraft, "Minecraft F2D V1", monospace';
         ctx.fillText('TRẠM GIẢI TRÍ 1835s', canvasWidth / 2, 170);
 
         ctx.font = '13px Montserrat, sans-serif';
@@ -288,7 +288,7 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
         ctx.strokeRect(20, 120, canvasWidth - 40, 170);
 
         ctx.fillStyle = '#ED1B24';
-        ctx.font = 'bold 24px VT323, monospace';
+        ctx.font = 'bold 24px Minecraft, "Minecraft F2D V1", monospace';
         ctx.fillText('GAME OVER!', canvasWidth / 2, 160);
 
         ctx.font = '14px Montserrat, sans-serif';

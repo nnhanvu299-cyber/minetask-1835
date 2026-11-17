@@ -1,4 +1,4 @@
-const CACHE_NAME = 'minetask-1835s-v29-resilient-cloud-sync';
+const CACHE_NAME = 'minetask-1835s-v30-minecraft-font';
 
 const PRECACHE_ASSETS = [
   './',
@@ -9,7 +9,8 @@ const PRECACHE_ASSETS = [
   './favicon.ico',
   './icon-1835-v2-192.png',
   './icon-1835-v2-512.png',
-  './icon-1835-v2.png'
+  './icon-1835-v2.png',
+  './fonts/minecraft-f2d-v1-42.otf'
 ];
 
 // Install: Cache new core shell and immediately skip waiting to take over
