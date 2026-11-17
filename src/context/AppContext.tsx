@@ -514,12 +514,144 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return finalUsers;
   };
 
-  // 0. Realtime server & Cloud synchronization across devices (Phone, PC, etc.)
-  const CLOUD_SYNC_ENDPOINT = 'https://api.restful-api.dev/objects/ff808181a09d98f701a1e3549c593725';
+  // 0. Realtime server & Cloud synchronization across devices (Phone, PC, etc.) via ntfy.sh Realtime SSE Relay
+  const NTFY_SYNC_TOPIC = 'minetask_1835_sync_relay_v22';
+  const NTFY_SYNC_URL = `https://ntfy.sh/${NTFY_SYNC_TOPIC}`;
+
+  // Helper to merge and apply incoming cloud sync payload from any device (phone, laptop, etc.)
+  const handleIncomingCloudSync = useCallback((payload: any) => {
+    if (!payload || typeof payload !== 'object') return;
+    if (payload.senderId && currentUser && payload.senderId === currentUser.id && payload.type !== 'REQUEST_STATE') {
+      return;
+    }
+
+    setNetworkOnline(true);
+    setServerConnected(true);
+    setSyncStatus('synced');
+    setLastSyncTime(Date.now());
+
+    // 1. Sync users
+    if (Array.isArray(payload.users) && payload.users.length > 0) {
+      const serverUsers = payload.users.filter((u: any) => !isDefaultMockUser(u));
+      setUsers((prev) => {
+        const cleanPrev = prev.filter((u) => !isDefaultMockUser(u));
+        const map = new Map<string, UserProfile>();
+        cleanPrev.forEach((u) => {
+          const key = (u.email ? u.email.toLowerCase().trim() : u.id);
+          if (key) map.set(key, u);
+        });
+        let hasNewMember = false;
+        serverUsers.forEach((u: UserProfile) => {
+          if (u && !isDefaultMockUser(u)) {
+            const key = (u.email ? u.email.toLowerCase().trim() : u.id);
+            if (key) {
+              if (!map.has(key)) hasNewMember = true;
+              map.set(key, u);
+            }
+          }
+        });
+        if (hasNewMember) {
+          try { soundEngine.playVictoryFanfare(); } catch {}
+        }
+        const merged = Array.from(map.values());
+        const finalUsers = merged.length > 0 ? merged : DEFAULT_USERS;
+        try {
+          localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(finalUsers));
+        } catch {}
+        return finalUsers;
+      });
+    }
+
+    // 2. Sync worlds
+    if (Array.isArray(payload.worlds) && payload.worlds.length > 0) {
+      setWorlds((prev) => {
+        const map = new Map<string, World>();
+        prev.forEach((w) => map.set(w.id, w));
+        payload.worlds.forEach((w: World) => map.set(w.id, w));
+        return Array.from(map.values());
+      });
+    }
+
+    // 3. Sync tasks
+    if (Array.isArray(payload.tasks) && payload.tasks.length > 0) {
+      setTasks((prev) => {
+        if (prev.length === 0 || (prev.length <= 4 && payload.tasks.length > prev.length)) {
+          return payload.tasks;
+        }
+        const map = new Map<string, Task>();
+        prev.forEach((t) => map.set(t.id, t));
+        payload.tasks.forEach((t: Task) => {
+          if (!map.has(t.id)) {
+            map.set(t.id, t);
+          } else {
+            const existing = map.get(t.id)!;
+            if (t.deadline && !existing.deadline) {
+              map.set(t.id, { ...existing, deadline: t.deadline });
+            }
+          }
+        });
+        return Array.from(map.values());
+      });
+    }
+
+    // 4. Presence
+    if (payload.presence && payload.presence.userId && (!currentUser || payload.presence.userId !== currentUser.id)) {
+      setLocalPresences((prev) => {
+        const next = new Map(prev);
+        next.set(payload.presence.userId, { ...payload.presence, isSelf: false, lastSeen: Date.now() });
+        return next;
+      });
+    }
+  }, [currentUser]);
+
+  // Real-time EventSource (SSE) listener: Zero delay, instant updates!
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    let es: EventSource | null = null;
+    let reconnectTimer: any = null;
+
+    const connectSSE = () => {
+      try {
+        es = new EventSource(`${NTFY_SYNC_URL}/sse`);
+        es.onmessage = (event) => {
+          try {
+            const msgObj = JSON.parse(event.data);
+            if (msgObj.event === 'message' && msgObj.message) {
+              const payload = JSON.parse(msgObj.message);
+              handleIncomingCloudSync(payload);
+            }
+          } catch (e) {
+            console.warn('[1835 SSE] Message parse error:', e);
+          }
+        };
+
+        es.onerror = () => {
+          if (es) {
+            es.close();
+            es = null;
+          }
+          clearTimeout(reconnectTimer);
+          reconnectTimer = setTimeout(connectSSE, 4000);
+        };
+      } catch (err) {
+        console.warn('[1835 SSE] Connect error:', err);
+        clearTimeout(reconnectTimer);
+        reconnectTimer = setTimeout(connectSSE, 5000);
+      }
+    };
+
+    connectSSE();
+
+    return () => {
+      if (es) es.close();
+      clearTimeout(reconnectTimer);
+    };
+  }, [handleIncomingCloudSync]);
 
   const pushToServer = async (usersList?: UserProfile[], worldsList?: World[], tasksList?: Task[], replaceUsers?: boolean) => {
     if (isPushingRef.current) {
-      await new Promise(r => setTimeout(r, 400));
+      await new Promise(r => setTimeout(r, 300));
     }
     isPushingRef.current = true;
 
@@ -531,7 +663,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       if (isLocalhost) {
         try {
-          const res = await fetch('/api/sync', {
+          await fetch('/api/sync', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -548,131 +680,46 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               } : undefined,
             }),
           });
-
-          if (res.ok) {
-            const data = await res.json();
-            if (Array.isArray(data.onlineMembers)) {
-              setLocalPresences((prev) => {
-                const next = new Map(prev);
-                data.onlineMembers.forEach((m: any) => {
-                  if (m && m.userId && (!currentUser || m.userId !== currentUser.id)) {
-                    next.set(m.userId, { ...m, isSelf: false });
-                  }
-                });
-                return next;
-              });
-            }
-          }
-        } catch (localErr) {
-          console.warn('[1835 Localhost Sync] Error:', localErr);
-        }
+        } catch {}
       }
 
-      // ALWAYS execute Global Cloud Store Relay (Cloud endpoint) for both Localhost & Production!
-      const now = Date.now();
-      const currentPresence = currentUser ? {
-        userId: currentUser.id,
-        name: currentUser.name,
-        avatarKey: currentUser.avatarKey,
-        role: currentUser.role,
-        lastSeen: now,
-      } : null;
+      // ALWAYS publish to Global ntfy.sh Realtime Cloud Relay!
+      const payload = {
+        type: 'SYNC_FULL_STATE',
+        senderId: currentUser ? currentUser.id : 'device_' + Date.now(),
+        senderName: currentUser ? currentUser.name : '',
+        users: cleanUsers,
+        worlds: worldsList || worlds,
+        tasks: tasksList || tasks,
+        presence: currentUser ? {
+          userId: currentUser.id,
+          name: currentUser.name,
+          avatarKey: currentUser.avatarKey,
+          role: currentUser.role,
+          timestamp: Date.now(),
+        } : undefined,
+        timestamp: Date.now(),
+      };
 
-      let mergedUsers = cleanUsers;
-      let mergedWorlds = worldsList || worlds;
-      let mergedTasks = tasksList || tasks;
-      let mergedPresences = currentPresence ? [currentPresence] : [];
+      const c = new AbortController();
+      const t = setTimeout(() => c.abort(), 6000);
+      const res = await fetch(NTFY_SYNC_URL, {
+        method: 'POST',
+        headers: {
+          'Title': '1835 Realtime Cloud Sync',
+          'Tags': 'hammer_and_pick,busts_in_silhouette',
+        },
+        body: JSON.stringify(payload),
+        signal: c.signal,
+      });
+      clearTimeout(t);
 
-      // Pre-fetch current cloud data with timeout
-      try {
-          const cPre = new AbortController();
-          const tPre = setTimeout(() => cPre.abort(), 6000);
-          const cloudRes = await fetch(`${CLOUD_SYNC_ENDPOINT}?t=${now}`, { signal: cPre.signal });
-          clearTimeout(tPre);
-
-          if (cloudRes.ok) {
-            const cloudJson = await cloudRes.json();
-            const cloudData = cloudJson.data || {};
-
-            if (Array.isArray(cloudData.users) && !replaceUsers) {
-              const uMap = new Map<string, UserProfile>();
-              cloudData.users.forEach((u: any) => {
-                if (u && !isDefaultMockUser(u)) {
-                  const key = (u.email ? u.email.toLowerCase().trim() : u.id);
-                  if (key) uMap.set(key, u);
-                }
-              });
-              cleanUsers.forEach((u) => {
-                if (u && !isDefaultMockUser(u)) {
-                  const key = (u.email ? u.email.toLowerCase().trim() : u.id);
-                  if (key) uMap.set(key, u);
-                }
-              });
-              mergedUsers = Array.from(uMap.values());
-            }
-
-            if (Array.isArray(cloudData.worlds)) {
-              const wMap = new Map<string, World>();
-              cloudData.worlds.forEach((w: World) => wMap.set(w.id, w));
-              (worldsList || worlds).forEach((w) => wMap.set(w.id, w));
-              mergedWorlds = Array.from(wMap.values());
-            }
-
-            if (Array.isArray(cloudData.tasks)) {
-              const tMap = new Map<string, Task>();
-              cloudData.tasks.forEach((t: Task) => tMap.set(t.id, t));
-              (tasksList || tasks).forEach((t) => tMap.set(t.id, t));
-              mergedTasks = Array.from(tMap.values());
-            }
-
-            if (Array.isArray(cloudData.onlinePresences)) {
-              const pMap = new Map<string, any>();
-              cloudData.onlinePresences.forEach((p: any) => {
-                if (p && p.userId && now - (p.lastSeen || 0) < 60000) {
-                  pMap.set(p.userId, p);
-                }
-              });
-              if (currentPresence) {
-                pMap.set(currentPresence.userId, currentPresence);
-              }
-              mergedPresences = Array.from(pMap.values());
-            }
-          }
-        } catch (err) {
-          console.warn('[1835 Cloud] Pre-fetch merge warning:', err);
-        }
-
-        const cPut = new AbortController();
-        const tPut = setTimeout(() => cPut.abort(), 8000);
-        const res = await fetch(CLOUD_SYNC_ENDPOINT, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: '1835_cloud_store',
-            data: {
-              users: mergedUsers,
-              worlds: mergedWorlds,
-              tasks: mergedTasks,
-              onlinePresences: mergedPresences,
-              updatedAt: now,
-            }
-          }),
-          signal: cPut.signal
-        });
-        clearTimeout(tPut);
-
-        if (res.ok) {
-          setNetworkOnline(true);
-          setServerConnected(true);
-          setSyncStatus('synced');
-          setLastSyncTime(now);
-          if (mergedUsers.length > cleanUsers.length) {
-            setUsers(mergedUsers);
-            try {
-              localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(mergedUsers));
-            } catch {}
-          }
-        }
+      if (res.ok) {
+        setNetworkOnline(true);
+        setServerConnected(true);
+        setSyncStatus('synced');
+        setLastSyncTime(Date.now());
+      }
     } catch (err) {
       console.warn('[1835 Sync] Push error:', err);
     } finally {
@@ -686,7 +733,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
     isFetchingRef.current = true;
 
-    // Always ensure online mode is enabled on sync
     if (!isOnlineMode) {
       setIsOnlineMode(true);
       try {
@@ -701,203 +747,47 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const startPing = performance.now();
 
       if (isLocalhost) {
-        const params = new URLSearchParams({
-          t: Date.now().toString(),
-          ...(currentUser ? {
-            uid: currentUser.id,
-            name: currentUser.name,
-            avatar: currentUser.avatarKey,
-          } : {})
-        });
-
-        const res = await fetch(`/api/sync?${params.toString()}`);
-        const ping = Math.round(performance.now() - startPing);
-        setServerPing(ping);
-
-        if (res.ok) {
-          setNetworkOnline(true);
-          setServerConnected(true);
-          setSyncStatus('synced');
-          setLastSyncTime(Date.now());
-          const data = await res.json();
-
-          if (Array.isArray(data.onlineMembers)) {
-            setLocalPresences((prev) => {
-              const next = new Map(prev);
-              data.onlineMembers.forEach((m: any) => {
-                if (m && m.userId && (!currentUser || m.userId !== currentUser.id)) {
-                  next.set(m.userId, { ...m, isSelf: false });
-                }
-              });
-              return next;
-            });
-          }
-
-          const serverUsers = (Array.isArray(data.users) ? data.users : []).filter((u: any) => !isDefaultMockUser(u));
-          setUsers((prev) => {
-            const cleanPrev = prev.filter((u) => !isDefaultMockUser(u));
-            const map = new Map<string, UserProfile>();
-            cleanPrev.forEach((u) => map.set(u.email.toLowerCase(), u));
-            serverUsers.forEach((u: UserProfile) => {
-              if (u && u.email) map.set(u.email.toLowerCase(), u);
-            });
-            const merged = Array.from(map.values());
-            const finalUsers = merged.length > 0 ? merged : DEFAULT_USERS;
-            try {
-              localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(finalUsers));
-            } catch {}
-            return finalUsers;
+        try {
+          const params = new URLSearchParams({
+            t: Date.now().toString(),
+            ...(currentUser ? { uid: currentUser.id, name: currentUser.name, avatar: currentUser.avatarKey } : {})
           });
-
-          if (Array.isArray(data.worlds) && data.worlds.length > 0) {
-            setWorlds((prev) => {
-              const map = new Map<string, World>();
-              prev.forEach((w) => map.set(w.id, w));
-              data.worlds.forEach((w: World) => map.set(w.id, w));
-              return Array.from(map.values());
-            });
+          const res = await fetch(`/api/sync?${params.toString()}`);
+          if (res.ok) {
+            const data = await res.json();
+            handleIncomingCloudSync(data);
           }
-
-          if (Array.isArray(data.tasks) && data.tasks.length > 0) {
-            setTasks((prev) => {
-              if (prev.length === 0 || (prev.length <= 4 && data.tasks.length > prev.length)) {
-                return data.tasks;
-              }
-              const map = new Map<string, Task>();
-              prev.forEach((t) => map.set(t.id, t));
-              data.tasks.forEach((t: Task) => {
-                if (!map.has(t.id)) {
-                  map.set(t.id, t);
-                } else {
-                  const existing = map.get(t.id)!;
-                  if (t.deadline && !existing.deadline) {
-                    map.set(t.id, { ...existing, deadline: t.deadline });
-                  }
-                }
-              });
-              return Array.from(map.values());
-            });
-          }
-        }
+        } catch {}
       }
 
-      // ALWAYS execute Global Cloud Sync Relay for both Localhost & Production!
-      let res: Response | null = null;
-      try {
-        const c = new AbortController();
-          const t = setTimeout(() => c.abort(), 6500);
-          res = await fetch(`${CLOUD_SYNC_ENDPOINT}?t=${Date.now()}`, { signal: c.signal });
-          clearTimeout(t);
-        } catch {
-          // Retry once after 1s in case of temporary rate-limiting or network glitch
+      // Poll latest messages from ntfy.sh cache (last 12h)
+      const c = new AbortController();
+      const t = setTimeout(() => c.abort(), 6500);
+      const res = await fetch(`${NTFY_SYNC_URL}/json?poll=1&since=all`, { signal: c.signal });
+      clearTimeout(t);
+
+      const ping = Math.round(performance.now() - startPing);
+      setServerPing(ping);
+
+      if (res.ok) {
+        const text = await res.text();
+        const lines = text.trim().split('\n').filter(Boolean);
+        for (const line of lines) {
           try {
-            await new Promise((r) => setTimeout(r, 1000));
-            const cRetry = new AbortController();
-            const tRetry = setTimeout(() => cRetry.abort(), 6500);
-            res = await fetch(`${CLOUD_SYNC_ENDPOINT}?t=${Date.now()}`, { signal: cRetry.signal });
-            clearTimeout(tRetry);
-          } catch {
-            res = null;
-          }
+            const msgObj = JSON.parse(line);
+            if (msgObj.message) {
+              const payload = JSON.parse(msgObj.message);
+              handleIncomingCloudSync(payload);
+            }
+          } catch {}
         }
+        setNetworkOnline(true);
+        setServerConnected(true);
+        setSyncStatus('synced');
+        setLastSyncTime(Date.now());
+        return true;
+      }
 
-        const ping = Math.round(performance.now() - startPing);
-        setServerPing(ping);
-
-        if (res && res.ok) {
-          setNetworkOnline(true);
-          setServerConnected(true);
-          setSyncStatus('synced');
-          setLastSyncTime(Date.now());
-          const json = await res.json();
-          const cloudData = json.data || {};
-
-          // Sync presences
-          if (Array.isArray(cloudData.onlinePresences)) {
-            setLocalPresences((prev) => {
-              const next = new Map(prev);
-              const now = Date.now();
-              cloudData.onlinePresences.forEach((m: any) => {
-                if (m && m.userId && (!currentUser || m.userId !== currentUser.id)) {
-                  if (now - (m.lastSeen || 0) < 60000) {
-                    next.set(m.userId, { ...m, isSelf: false });
-                  }
-                }
-              });
-              return next;
-            });
-          }
-
-          // Sync cloud users
-          if (Array.isArray(cloudData.users) && cloudData.users.length > 0) {
-            const serverUsers = cloudData.users.filter((u: any) => !isDefaultMockUser(u));
-            setUsers((prev) => {
-              const cleanPrev = prev.filter((u) => !isDefaultMockUser(u));
-              const map = new Map<string, UserProfile>();
-              cleanPrev.forEach((u) => {
-                const key = (u.email ? u.email.toLowerCase().trim() : u.id);
-                if (key) map.set(key, u);
-              });
-              let hasNewMember = false;
-              serverUsers.forEach((u: UserProfile) => {
-                if (u) {
-                  const key = (u.email ? u.email.toLowerCase().trim() : u.id);
-                  if (key) {
-                    if (!map.has(key)) {
-                      hasNewMember = true;
-                    }
-                    map.set(key, u);
-                  }
-                }
-              });
-              if (hasNewMember && cleanPrev.length > 0) {
-                try { soundEngine.playLevelUp(); } catch {}
-              }
-              const merged = Array.from(map.values());
-              const finalUsers = merged.length > 0 ? merged : DEFAULT_USERS;
-              try {
-                localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(finalUsers));
-              } catch {}
-              return finalUsers;
-            });
-          }
-
-          // Sync worlds
-          if (Array.isArray(cloudData.worlds) && cloudData.worlds.length > 0) {
-            setWorlds((prev) => {
-              const map = new Map<string, World>();
-              prev.forEach((w) => map.set(w.id, w));
-              cloudData.worlds.forEach((w: World) => map.set(w.id, w));
-              return Array.from(map.values());
-            });
-          }
-
-          // Sync tasks
-          if (Array.isArray(cloudData.tasks) && cloudData.tasks.length > 0) {
-            setTasks((prev) => {
-              if (prev.length === 0 || (prev.length <= 4 && cloudData.tasks.length > prev.length)) {
-                return cloudData.tasks;
-              }
-              const map = new Map<string, Task>();
-              prev.forEach((t) => map.set(t.id, t));
-              cloudData.tasks.forEach((t: Task) => {
-                if (!map.has(t.id)) {
-                  map.set(t.id, t);
-                } else {
-                  const existing = map.get(t.id)!;
-                  if (t.deadline && !existing.deadline) {
-                    map.set(t.id, { ...existing, deadline: t.deadline });
-                  }
-                }
-              });
-              return Array.from(map.values());
-            });
-          }
-
-          return true;
-        }
-
-      setSyncStatus('error');
       return false;
     } catch {
       setSyncStatus('error');
@@ -905,7 +795,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } finally {
       isFetchingRef.current = false;
     }
-  }, [isOnlineMode, currentUser]);
+  }, [isOnlineMode, currentUser, handleIncomingCloudSync]);
 
   // Tự động đồng bộ liên tục thích ứng: 3.5s khi mở app, 15s khi ẩn tab
   useEffect(() => {
