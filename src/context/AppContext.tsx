@@ -543,60 +543,61 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const cleanUsers = (usersList || users).filter(u => !isDefaultMockUser(u));
 
       if (isLocalhost) {
-        const res = await fetch('/api/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            users: cleanUsers,
-            worlds: worldsList || worlds,
-            tasks: tasksList || tasks,
-            replaceUsers: !!replaceUsers,
-            presence: currentUser ? {
-              userId: currentUser.id,
-              name: currentUser.name,
-              avatarKey: currentUser.avatarKey,
-              role: currentUser.role,
-              timestamp: Date.now(),
-            } : undefined,
-          }),
-        });
-
-        if (res.ok) {
-          setNetworkOnline(true);
-          setServerConnected(true);
-          setSyncStatus('synced');
-          setLastSyncTime(Date.now());
-          const data = await res.json();
-          if (Array.isArray(data.onlineMembers)) {
-            setLocalPresences((prev) => {
-              const next = new Map(prev);
-              data.onlineMembers.forEach((m: any) => {
-                if (m && m.userId && (!currentUser || m.userId !== currentUser.id)) {
-                  next.set(m.userId, { ...m, isSelf: false });
-                }
-              });
-              return next;
-            });
-          }
-        }
-      } else {
-        // Production: Global Cloud Store Relay
-        const now = Date.now();
-        const currentPresence = currentUser ? {
-          userId: currentUser.id,
-          name: currentUser.name,
-          avatarKey: currentUser.avatarKey,
-          role: currentUser.role,
-          lastSeen: now,
-        } : null;
-
-        let mergedUsers = cleanUsers;
-        let mergedWorlds = worldsList || worlds;
-        let mergedTasks = tasksList || tasks;
-        let mergedPresences = currentPresence ? [currentPresence] : [];
-
-        // Pre-fetch current cloud data with timeout
         try {
+          const res = await fetch('/api/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              users: cleanUsers,
+              worlds: worldsList || worlds,
+              tasks: tasksList || tasks,
+              replaceUsers: !!replaceUsers,
+              presence: currentUser ? {
+                userId: currentUser.id,
+                name: currentUser.name,
+                avatarKey: currentUser.avatarKey,
+                role: currentUser.role,
+                timestamp: Date.now(),
+              } : undefined,
+            }),
+          });
+
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data.onlineMembers)) {
+              setLocalPresences((prev) => {
+                const next = new Map(prev);
+                data.onlineMembers.forEach((m: any) => {
+                  if (m && m.userId && (!currentUser || m.userId !== currentUser.id)) {
+                    next.set(m.userId, { ...m, isSelf: false });
+                  }
+                });
+                return next;
+              });
+            }
+          }
+        } catch (localErr) {
+          console.warn('[1835 Localhost Sync] Error:', localErr);
+        }
+      }
+
+      // ALWAYS execute Global Cloud Store Relay (Cloud endpoint) for both Localhost & Production!
+      const now = Date.now();
+      const currentPresence = currentUser ? {
+        userId: currentUser.id,
+        name: currentUser.name,
+        avatarKey: currentUser.avatarKey,
+        role: currentUser.role,
+        lastSeen: now,
+      } : null;
+
+      let mergedUsers = cleanUsers;
+      let mergedWorlds = worldsList || worlds;
+      let mergedTasks = tasksList || tasks;
+      let mergedPresences = currentPresence ? [currentPresence] : [];
+
+      // Pre-fetch current cloud data with timeout
+      try {
           const cPre = new AbortController();
           const tPre = setTimeout(() => cPre.abort(), 6000);
           const cloudRes = await fetch(`${CLOUD_SYNC_ENDPOINT}?t=${now}`, { signal: cPre.signal });
@@ -683,7 +684,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             } catch {}
           }
         }
-      }
     } catch (err) {
       console.warn('[1835 Sync] Push error:', err);
     } finally {
@@ -789,13 +789,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
               return Array.from(map.values());
             });
           }
-          return true;
         }
-      } else {
-        // Production Cloud Sync Relay with timeout & 1 retry
-        let res: Response | null = null;
-        try {
-          const c = new AbortController();
+      }
+
+      // ALWAYS execute Global Cloud Sync Relay for both Localhost & Production!
+      let res: Response | null = null;
+      try {
+        const c = new AbortController();
           const t = setTimeout(() => c.abort(), 6500);
           res = await fetch(`${CLOUD_SYNC_ENDPOINT}?t=${Date.now()}`, { signal: c.signal });
           clearTimeout(t);
@@ -892,7 +892,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
           return true;
         }
-      }
 
       setSyncStatus('error');
       return false;
