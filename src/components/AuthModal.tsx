@@ -17,22 +17,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
     users,
     login,
     register,
-    joinTeamWithCode,
     requestPasswordReset,
     resetPassword,
     quickResetPassword,
   } = useApp();
 
-  // Determine initial tab: switch to 'join' if invite code is present in URL, otherwise 'login'
-  const [tab, setTab] = useState<'login' | 'register' | 'join' | 'forgot'>(() => {
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('team') || urlParams.get('code') || urlParams.get('join')) {
-        return 'join';
-      }
-    }
-    return 'login';
-  });
+  // Always start immediately on LOGIN tab as requested
+  const [tab, setTab] = useState<'login' | 'register' | 'forgot'>('login');
 
   const STORAGE_KEY_REMEMBER_LOGIN = 'minetask_1835_remember_login_v22';
   const STORAGE_KEY_REMEMBERED_ACCOUNT = 'minetask_1835_remembered_account_v22';
@@ -57,19 +48,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
   const [regPassword, setRegPassword] = useState('');
   const [selectedAvatarKey, setSelectedAvatarKey] = useState('zodiac_ty');
   const [regCategoryFilter, setRegCategoryFilter] = useState<'all' | 'zodiac' | 'minecraft'>('zodiac');
-
-  // Join with Team Code form
-  const [joinName, setJoinName] = useState('');
-  const [joinCode, setJoinCode] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      return (urlParams.get('team') || urlParams.get('code') || urlParams.get('join') || '1835VN').toUpperCase();
-    }
-    return '1835VN';
-  });
-  const [joinAvatarKey, setJoinAvatarKey] = useState('zodiac_ty');
-  const [joinCategoryFilter, setJoinCategoryFilter] = useState<'all' | 'zodiac' | 'minecraft'>('zodiac');
-  const [isJoining, setIsJoining] = useState(false);
 
   // Forgot password form
   const [forgotEmail, setForgotEmail] = useState('');
@@ -142,30 +120,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
       }, 700);
     } else {
       setFeedback({ type: 'error', message: res.message });
-    }
-  };
-
-  const handleJoinSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFeedback(null);
-    setIsJoining(true);
-
-    try {
-      const res = await joinTeamWithCode(joinName, joinCode, joinAvatarKey);
-      if (res.success) {
-        try {
-          requestDeviceNotificationPermission();
-        } catch {}
-        setFeedback({ type: 'success', message: res.message });
-        setTimeout(() => {
-          if (onClose) onClose();
-          setFeedback(null);
-        }, 800);
-      } else {
-        setFeedback({ type: 'error', message: res.message });
-      }
-    } finally {
-      setIsJoining(false);
     }
   };
 
@@ -279,43 +233,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
         </button>
       )}
 
-      {/* Top 3-Tab Selector: ĐĂNG NHẬP | 🔗 MÃ ĐỘI (1835VN) | ĐĂNG KÝ */}
-      <div className="flex border-b border-gray-200 mb-4 text-xs font-bold">
-        <button
-          type="button"
-          onClick={() => { setTab('login'); setFeedback(null); }}
-          className={`flex-1 pb-2 tracking-wider transition-colors border-b-2 text-center cursor-pointer ${
-            tab === 'login'
-              ? 'text-[#2D1A11] border-[#F37022]'
-              : 'text-gray-400 border-transparent hover:text-gray-600'
-          }`}
-        >
-          ĐĂNG NHẬP
-        </button>
-        <button
-          type="button"
-          onClick={() => { setTab('join'); setFeedback(null); }}
-          className={`flex-1 pb-2 tracking-wider transition-colors border-b-2 text-center cursor-pointer flex items-center justify-center gap-1 ${
-            tab === 'join'
-              ? 'text-[#F37022] border-[#F37022]'
-              : 'text-gray-400 border-transparent hover:text-[#F37022]'
-          }`}
-        >
-          <span>🔗</span>
-          <span>MÃ ĐỘI</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => { setTab('register'); setFeedback(null); }}
-          className={`flex-1 pb-2 tracking-wider transition-colors border-b-2 text-center cursor-pointer ${
-            tab === 'register'
-              ? 'text-[#2D1A11] border-[#F37022]'
-              : 'text-gray-400 border-transparent hover:text-gray-600'
-          }`}
-        >
-          ĐĂNG KÝ
-        </button>
-      </div>
+      {/* ==================== VIEW 1: LOGIN (DEFAULT - IMAGE 2 STYLE) ==================== */}
       {tab === 'login' && (
         <div>
           <div className="flex items-center justify-between mb-5">
@@ -447,19 +365,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
               SIGN IN
             </button>
 
-            {/* Shortcut button: Join with Team Code directly from Login */}
-            <button
-              type="button"
-              onClick={() => {
-                setTab('join');
-                setFeedback(null);
-              }}
-              className="w-full mt-2.5 py-2 px-3 bg-[#FAF2DC] hover:bg-[#F3E6C4] border-2 border-[#2D1A11] text-[#2D1A11] text-xs font-bold rounded flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_#2D1A11] active:translate-y-0.5 cursor-pointer"
-            >
-              <span>🔗</span>
-              <span>BẠN ĐƯỢC MỜI? NHẬP MÃ ĐỘI (1835VN) VÀO ĐÂY</span>
-            </button>
-
             {/* Bottom Links: Forgot Password & Not a Member Yet */}
             <div className="flex items-center justify-between pt-2 text-[11px] sm:text-xs text-[#737373]">
               <button
@@ -484,164 +389,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
                 className="hover:text-[#222] hover:underline transition-colors cursor-pointer"
               >
                 Not a Member Yet?
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* ==================== VIEW: JOIN TEAM WITH CODE (1835VN) ==================== */}
-      {tab === 'join' && (
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base sm:text-lg font-bold text-[#2D1A11] uppercase tracking-wider flex items-center gap-1.5">
-              <span>🔗</span>
-              <span>GIA NHẬP ĐỘI 1835s</span>
-            </h2>
-            <span className="text-[11px] bg-[#fff0f5] text-[#d63384] font-semibold px-2 py-0.5 rounded-full border border-[#fcc2d7]">
-              Co-op Team
-            </span>
-          </div>
-
-          <div className="mb-4 p-2.5 bg-[#FAF2DC] border-2 border-[#2D1A11] rounded text-[11px] text-[#52372A] leading-relaxed shadow-xs">
-            ✨ Nhập Tên của bạn và Mã đội <strong>1835VN</strong> để kết nối ngay vào đội Co-op, cùng đào khối và theo dõi tiến độ nhiệm vụ thời gian thực!
-          </div>
-
-          {feedback && (
-            <div
-              className={`mb-4 p-2.5 rounded text-xs font-medium flex items-start gap-2 ${
-                feedback.type === 'success'
-                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
-                  : 'bg-red-50 text-red-600 border border-red-300'
-              }`}
-            >
-              {feedback.type === 'success' ? <CheckCircle size={15} className="shrink-0 mt-0.5" /> : <AlertCircle size={15} className="shrink-0 mt-0.5" />}
-              <div className="flex-1 leading-snug">
-                <div>{feedback.message}</div>
-              </div>
-            </div>
-          )}
-
-          <form onSubmit={handleJoinSubmit} className="space-y-3">
-            <div>
-              <label className="block text-[11px] font-bold text-[#374151] mb-1">
-                TÊN CỦA BẠN (Hiển thị trong đội) *
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  required
-                  placeholder="Ví dụ: Hoàng Nam, Minh Tuấn, Lan Anh..."
-                  value={joinName}
-                  onChange={(e) => setJoinName(e.target.value)}
-                  className="w-full h-10 pl-10 pr-3 input-login-image2 text-xs sm:text-sm placeholder:text-[#a0a0a0] font-bold text-[#2D1A11]"
-                  autoFocus
-                />
-                <User size={16} className="absolute left-3 top-3 text-[#a0a0a0]" />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-bold text-[#374151] mb-1">
-                MÃ ĐỘI 6 KÝ TỰ *
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  required
-                  maxLength={6}
-                  placeholder="1835VN"
-                  value={joinCode}
-                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                  className="w-full h-10 pl-10 pr-3 input-login-image2 text-center text-sm font-mono font-bold tracking-widest text-[#F37022] uppercase"
-                />
-                <KeyRound size={16} className="absolute left-3 top-3 text-[#a0a0a0]" />
-              </div>
-            </div>
-
-            {/* Avatar Selector */}
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-[11px] font-bold text-[#374151]">CHỌN NHÂN VẬT ĐẠI DIỆN:</span>
-                <div className="flex gap-1">
-                  <button
-                    type="button"
-                    onClick={() => setJoinCategoryFilter('zodiac')}
-                    className={`px-1.5 py-0.5 text-[9px] font-bold rounded transition-all cursor-pointer ${
-                      joinCategoryFilter === 'zodiac'
-                        ? 'bg-[#d63384] text-white shadow-xs'
-                        : 'bg-white text-[#555] border border-gray-200 hover:bg-gray-50'
-                    }`}
-                  >
-                    12 Con Giáp
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setJoinCategoryFilter('minecraft')}
-                    className={`px-1.5 py-0.5 text-[9px] font-bold rounded transition-all cursor-pointer ${
-                      joinCategoryFilter === 'minecraft'
-                        ? 'bg-[#1aa64e] text-white shadow-xs'
-                        : 'bg-white text-[#555] border border-gray-200 hover:bg-gray-50'
-                    }`}
-                  >
-                    Minecraft
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-4 gap-1.5 max-h-[120px] overflow-y-auto p-1.5 bg-gray-50/90 border border-gray-200 rounded-md">
-                {AVATAR_OPTIONS
-                  .filter((opt) => joinCategoryFilter === 'all' || opt.category === joinCategoryFilter)
-                  .map((opt) => {
-                    const isChosen = joinAvatarKey === opt.key;
-                    return (
-                      <button
-                        key={opt.key}
-                        type="button"
-                        onClick={() => setJoinAvatarKey(opt.key)}
-                        className={`p-1 rounded text-center transition-all flex flex-col items-center cursor-pointer ${
-                          isChosen
-                            ? 'border-2 border-[#d63384] bg-[#fff0f5] shadow-xs scale-105'
-                            : 'border border-gray-200 bg-white hover:border-gray-300'
-                        }`}
-                        title={opt.name}
-                      >
-                        <PixelAvatar userId={opt.key} avatarKey={opt.key} size={28} showBorder={false} />
-                        <span className="text-[9px] font-semibold text-[#333] truncate w-full mt-0.5">
-                          {opt.zodiacName ? opt.zodiacName.split(' ')[0] : opt.name.split(' ')[0]}
-                        </span>
-                      </button>
-                    );
-                  })}
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isJoining}
-              className="w-full h-11 btn-signin-image2 text-xs sm:text-sm font-bold tracking-wider uppercase flex items-center justify-center gap-1.5 cursor-pointer shadow mt-4 active:scale-95 disabled:opacity-60"
-            >
-              {isJoining ? (
-                <span>ĐANG KẾT NỐI VÀO ĐỘI...</span>
-              ) : (
-                <>
-                  <span>⛏️</span>
-                  <span>GIA NHẬP ĐỘI 1835 NGAY</span>
-                </>
-              )}
-            </button>
-
-            <div className="text-center pt-2 text-xs text-[#737373]">
-              Đã có tài khoản trước?{' '}
-              <button
-                type="button"
-                onClick={() => {
-                  setTab('login');
-                  setFeedback(null);
-                }}
-                className="font-bold text-[#2b450f] hover:underline ml-1 cursor-pointer"
-              >
-                Đăng nhập
               </button>
             </div>
           </form>
