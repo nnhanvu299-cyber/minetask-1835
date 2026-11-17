@@ -52,6 +52,16 @@
             navigator.serviceWorker.register('./sw.js').then((reg) => {
               reg.update();
               setInterval(() => reg.update(), 30000);
+
+              // Đăng ký Periodic Background Sync để kiểm tra cập nhật kể cả khi đóng app
+              if ('periodicSync' in reg) {
+                try {
+                  reg.periodicSync.register('minetask-check-update', {
+                    minInterval: 12 * 60 * 1000 // Kiểm tra mỗi 12 phút trong nền
+                  }).catch(() => {});
+                } catch (e) {}
+              }
+
               reg.addEventListener('updatefound', () => {
                 const newWorker = reg.installing;
                 if (newWorker) {
