@@ -43,7 +43,8 @@ interface AppContextValue {
   addTeamMember: (name: string, email: string, pass: string, avatarKey: string) => { success: boolean; message: string; user?: UserProfile };
   importTeamMembers: (incomingUsers: UserProfile[]) => { success: boolean; count: number; message: string };
   exportTeamCode: () => string;
-  importTeamCode: (code: string) => { success: boolean; count: number; message: string };
+  importTeamCode: (code: string) => Promise<{ success: boolean; count: number; message: string }> | { success: boolean; count: number; message: string };
+  joinTeamWithCode: (name: string, code: string, avatarKey?: string, email?: string, pass?: string) => Promise<{ success: boolean; message: string }>;
   updateUserAvatar: (userId: string, avatarKey: string) => void;
   logout: () => void;
   deleteAccount: (userId: string) => { success: boolean; message: string };
@@ -1170,21 +1171,114 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return TEAM_CODE_6_CHARS;
   };
 
-  const importTeamCode = (code: string): { success: boolean; count: number; message: string } => {
+  const importTeamCode = async (code: string): Promise<{ success: boolean; count: number; message: string }> => {
     if (!code || !code.trim()) {
       return { success: false, count: 0, message: 'Vui lòng nhập mã đội 6 ký tự.' };
     }
     const cleanCode = code.trim().toUpperCase();
-    if (cleanCode.length !== 6 && !cleanCode.startsWith('EY')) {
-      return { success: false, count: 0, message: 'Mã đội phải gồm đúng 6 ký tự (ví dụ: 1835VN).' };
+    if (cleanCode !== TEAM_CODE_6_CHARS && !cleanCode.startsWith('EY')) {
+      return { success: false, count: 0, message: `Mã đội không chính xác. Mã hợp lệ của Đội là "${TEAM_CODE_6_CHARS}".` };
     }
 
-    fetchServerState();
+    // 1. Tải toàn bộ danh sách thành viên mới nhất từ Đám Mây về
+    await fetchServerState(true);
+
+    // 2. Đồng bộ 2 chiều: Đẩy tài khoản hiện tại lên Đám Mây để Trưởng Đội & đồng đội thấy ngay!
+    if (currentUser && !isDefaultMockUser(currentUser)) {
+      const currentUsers = getStoredUsers().filter((u) => !isDefaultMockUser(u));
+      const uMap = new Map<string, UserProfile>();
+      currentUsers.forEach((u) => { if (u?.email) uMap.set(u.email.toLowerCase().trim(), u); });
+      uMap.set(currentUser.email.toLowerCase().trim(), currentUser);
+      const merged = Array.from(uMap.values());
+
+      setUsers(merged);
+      try {
+        localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(merged));
+        localStorage.setItem('minetask_1835_backup_users', JSON.stringify(merged));
+      } catch {}
+
+      await pushToServer(merged);
+      broadcastStateChange(tasks, worlds, merged);
+    }
+
     soundEngine.playVictoryFanfare();
     return {
       success: true,
       count: users.length,
-      message: `Đã kết nối thành công với Đội ngũ qua mã ${cleanCode}! Dữ liệu thực từ Đám Mây đã được nạp.`,
+      message: `Đã kết nối thành công với Đội ngũ qua mã ${cleanCode}! Thông tin của bạn đã được gửi lên Đám Mây để đồng đội nhìn thấy.`,
+    };
+  };
+
+  const joinTeamWithCode = async (
+    name: string,
+    code: string,
+    avatarKey?: string,
+    email?: string,
+    pass?: string
+  ): Promise<{ success: boolean; message: string }> => {
+    const trimmedName = (name || '').trim();
+    const cleanCode = (code || '').trim().toUpperCase();
+
+    if (!trimmedName) {
+      return { success: false, message: 'Vui lòng nhập Tên của bạn để hiển thị trong đội.' };
+    }
+    if (cleanCode !== TEAM_CODE_6_CHARS && !cleanCode.startsWith('EY')) {
+      return { success: false, message: `Mã đội không chính xác. Vui lòng nhập đúng mã "${TEAM_CODE_6_CHARS}".` };
+    }
+
+    // 1. Tải danh sách thành viên hiện có trên Đám Mây về
+    await fetchServerState(true);
+
+    // 2. Tạo email & mật khẩu tự động nếu chưa có
+    const safeAscii = trimmedName.toLowerCase().replace(/[^a-z0-9]/g, '') || 'member';
+    const finalEmail = (email && email.trim())
+      ? email.trim().toLowerCase()
+      : `${safeAscii}_${Date.now().toString().slice(-4)}@1835.vn`;
+    const finalPass = (pass && pass.trim()) ? pass.trim() : '1835VN';
+
+    const newId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const newUser: UserProfile = {
+      id: newId,
+      name: trimmedName,
+      email: finalEmail,
+      password: finalPass,
+      role: 'Thành viên Co-op 1835',
+      title: 'Thợ Mỏ Co-op',
+      level: 1,
+      avatarKey: avatarKey || 'zodiac_ty',
+      favoriteBiome: 'Rừng Hoa Anh Đào',
+      tasksMined: 0,
+      totalXp: 0,
+      primaryColor: '#F37022',
+    };
+
+    // 3. Hợp nhất danh sách thành viên
+    const currentUsers = getStoredUsers().filter((u) => !isDefaultMockUser(u));
+    const uMap = new Map<string, UserProfile>();
+    currentUsers.forEach((u) => { if (u?.email) uMap.set(u.email.toLowerCase().trim(), u); });
+    uMap.set(finalEmail, newUser);
+    const updatedUsers = Array.from(uMap.values());
+
+    // 4. Lưu cục bộ và đăng nhập ngay
+    setUsers(updatedUsers);
+    setCurrentUser(newUser);
+    try {
+      localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(updatedUsers));
+      localStorage.setItem('minetask_1835_backup_users', JSON.stringify(updatedUsers));
+      localStorage.setItem(STORAGE_KEY_CURRENT_USER, newUser.id);
+      localStorage.setItem(STORAGE_KEY_CURRENT_USER_PROFILE, JSON.stringify(newUser));
+      localStorage.setItem(STORAGE_KEY_REMEMBER_LOGIN, 'true');
+      localStorage.setItem(STORAGE_KEY_REMEMBERED_ACCOUNT, finalEmail);
+    } catch {}
+
+    // 5. ĐẨY LẬP TỨC LÊN ĐÁM MÂY ĐỂ TRƯỞNG ĐỘI NHÌN THẤY NGAY!
+    await pushToServer(updatedUsers);
+    broadcastStateChange(tasks, worlds, updatedUsers);
+    soundEngine.playVictoryFanfare();
+
+    return {
+      success: true,
+      message: `Chào mừng ${trimmedName} đã gia nhập Đội 1835s thành công!`,
     };
   };
 
@@ -1837,6 +1931,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         importTeamMembers,
         exportTeamCode,
         importTeamCode,
+        joinTeamWithCode,
         updateUserAvatar,
         logout,
         deleteAccount,

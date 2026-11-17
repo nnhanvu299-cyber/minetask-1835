@@ -89,10 +89,10 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
     }
   };
 
-  const handleImportCode = (e: React.FormEvent) => {
+  const handleImportCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setFeedback(null);
-    const res = importTeamCode(importCodeInput);
+    const res = await importTeamCode(importCodeInput);
     if (res.success) {
       setFeedback({ type: 'success', message: res.message });
       setImportCodeInput('');
