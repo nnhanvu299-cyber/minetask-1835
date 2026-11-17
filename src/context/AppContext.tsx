@@ -97,26 +97,13 @@ const isDefaultMockUser = (u: any): boolean => {
   if (!u) return true;
   const em = (u.email || '').toLowerCase().trim();
   const id = (u.id || '').toLowerCase().trim();
-  const name = (u.name || '').toLowerCase().trim();
   return (
-    em === 'admin@1835.vn' ||
-    em === 'steve@1835.vn' ||
-    em.endsWith('@1835s.team') ||
-    em.includes('tuanminh') ||
-    em.includes('hoangnam') ||
     id === 'user_steve_default' ||
     id === 'user_tuan_minh_1835' ||
     id === 'user_hoang_nam_1835' ||
-    id === 'steve' ||
-    id === 'alex' ||
-    id === 'devon' ||
-    id === 'luna' ||
-    name === 'steve' ||
-    name === 'alex' ||
-    name === 'devon' ||
-    name === 'tuấn minh' ||
-    name === 'hoàng nam' ||
-    name === 'thợ mỏ 1835'
+    em === 'admin@1835.vn' ||
+    em === 'steve@1835.vn' ||
+    em.endsWith('@1835s.team')
   );
 };
 
@@ -610,13 +597,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             if (Array.isArray(cloudData.users) && !replaceUsers) {
               const uMap = new Map<string, UserProfile>();
               cloudData.users.forEach((u: any) => {
-                if (u && u.email && !isDefaultMockUser(u)) {
-                  uMap.set(u.email.toLowerCase().trim(), u);
+                if (u && !isDefaultMockUser(u)) {
+                  const key = (u.email ? u.email.toLowerCase().trim() : u.id);
+                  if (key) uMap.set(key, u);
                 }
               });
               cleanUsers.forEach((u) => {
-                if (u && u.email && !isDefaultMockUser(u)) {
-                  uMap.set(u.email.toLowerCase().trim(), u);
+                if (u && !isDefaultMockUser(u)) {
+                  const key = (u.email ? u.email.toLowerCase().trim() : u.id);
+                  if (key) uMap.set(key, u);
                 }
               });
               mergedUsers = Array.from(uMap.values());
@@ -845,10 +834,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             setUsers((prev) => {
               const cleanPrev = prev.filter((u) => !isDefaultMockUser(u));
               const map = new Map<string, UserProfile>();
-              cleanPrev.forEach((u) => map.set(u.email.toLowerCase(), u));
-              serverUsers.forEach((u: UserProfile) => {
-                if (u && u.email) map.set(u.email.toLowerCase(), u);
+              cleanPrev.forEach((u) => {
+                const key = (u.email ? u.email.toLowerCase().trim() : u.id);
+                if (key) map.set(key, u);
               });
+              let hasNewMember = false;
+              serverUsers.forEach((u: UserProfile) => {
+                if (u) {
+                  const key = (u.email ? u.email.toLowerCase().trim() : u.id);
+                  if (key) {
+                    if (!map.has(key)) {
+                      hasNewMember = true;
+                    }
+                    map.set(key, u);
+                  }
+                }
+              });
+              if (hasNewMember && cleanPrev.length > 0) {
+                try { soundEngine.playLevelUp(); } catch {}
+              }
               const merged = Array.from(map.values());
               const finalUsers = merged.length > 0 ? merged : DEFAULT_USERS;
               try {
@@ -903,26 +907,47 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [isOnlineMode, currentUser]);
 
+  // Tự động đồng bộ liên tục thích ứng: 3.5s khi mở app, 15s khi ẩn tab
   useEffect(() => {
     fetchServerState();
-    const interval = setInterval(() => {
-      fetchServerState();
-    }, 12000); // 12s interval: smooth & avoids public API rate-limits
-    return () => clearInterval(interval);
-  }, [fetchServerState]);
 
-  // Sync immediately when user switches tabs or focuses the window
-  useEffect(() => {
-    const handleFocus = () => {
-      if (document.visibilityState === 'visible') {
+    let intervalId: any;
+    const updateSyncRate = () => {
+      if (intervalId) clearInterval(intervalId);
+      const isVisible = typeof document !== 'undefined' ? document.visibilityState === 'visible' : true;
+      const delay = isVisible ? 3500 : 15000;
+      intervalId = setInterval(() => {
+        fetchServerState();
+      }, delay);
+    };
+
+    updateSyncRate();
+
+    const handleFocusOrVisible = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
         fetchServerState(true);
       }
+      updateSyncRate();
     };
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleFocus);
+
+    let lastInteraction = 0;
+    const handleUserInteraction = () => {
+      const now = Date.now();
+      if (now - lastInteraction > 4000) {
+        lastInteraction = now;
+        fetchServerState();
+      }
+    };
+
+    window.addEventListener('focus', handleFocusOrVisible);
+    document.addEventListener('visibilitychange', handleFocusOrVisible);
+    window.addEventListener('pointerdown', handleUserInteraction, { passive: true });
+
     return () => {
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleFocus);
+      if (intervalId) clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocusOrVisible);
+      document.removeEventListener('visibilitychange', handleFocusOrVisible);
+      window.removeEventListener('pointerdown', handleUserInteraction);
     };
   }, [fetchServerState]);
 
