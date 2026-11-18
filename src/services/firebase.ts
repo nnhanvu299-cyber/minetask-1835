@@ -23,9 +23,19 @@ export interface FirebaseConfig {
   appId: string;
 }
 
+// Cấu hình Firebase Cloud Firestore chính thức của dự án minitask-1835
+export const DEFAULT_FIREBASE_CONFIG: FirebaseConfig = {
+  apiKey: "AIzaSyAAGM3zd44HboBfjATvxFfRlmTT5TJ-Xfo",
+  authDomain: "minitask-d1a26.firebaseapp.com",
+  projectId: "minitask-d1a26",
+  storageBucket: "minitask-d1a26.firebasestorage.app",
+  messagingSenderId: "468397641530",
+  appId: "1:468397641530:web:ae7bea6075cd63be640a03",
+};
+
 const STORAGE_KEY_FIREBASE_CONFIG = 'minetask_1835_firebase_config_v22';
 
-// 1. Lấy cấu hình Firebase: Ưu tiên từ LocalStorage (được người dùng cấu hình qua giao diện), sau đó tới Vite Env
+// 1. Lấy cấu hình Firebase: Ưu tiên từ LocalStorage, sau đó tới Vite Env, mặc định dùng dự án minitask-1835
 export function getFirebaseConfig(): FirebaseConfig | null {
   if (typeof window !== 'undefined') {
     try {
@@ -57,7 +67,8 @@ export function getFirebaseConfig(): FirebaseConfig | null {
     };
   }
 
-  return null;
+  // Mặc định kết nối tự động tới Firebase Cloud minitask-1835
+  return DEFAULT_FIREBASE_CONFIG;
 }
 
 export function saveFirebaseConfig(cfg: FirebaseConfig): boolean {
