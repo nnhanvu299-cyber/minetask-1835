@@ -357,35 +357,6 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
         {/* ================= TAB 2: TEAM MEMBERS & SEARCH ================= */}
         {activeTab === 'team' && (
           <div className="space-y-3.5">
-            {/* Real-time Cloud Sync Banner - 100% Tự động */}
-            <div className="p-2.5 bg-[#FAF2DC] border-2 border-[#2D1A11] flex items-center justify-between gap-2 shadow-xs">
-              <div className="flex items-center gap-2 min-w-0">
-                <div className="w-8 h-8 rounded bg-emerald-100 border border-emerald-500 flex items-center justify-center text-emerald-800 shrink-0">
-                  <Cloud size={16} className="text-emerald-700 animate-pulse" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs font-bold text-[#2D1A11] flex items-center gap-1.5 truncate">
-                    <span>ĐỒNG BỘ TỰ ĐỘNG REALTIME</span>
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                  </div>
-                  <div className="text-[10px] text-[#52372A] truncate">
-                    Tự động nhận diện thành viên mới tức thì, không cần ấn nút gì cả
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleCloudSyncClick}
-                disabled={isSyncingCloud}
-                className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-800 bg-emerald-100/90 hover:bg-emerald-200/80 px-2.5 py-1 rounded border border-emerald-400 shrink-0 shadow-xs cursor-pointer active:scale-95 transition-all"
-                title="Hệ thống đang tự động quét cập nhật mỗi 2.5s"
-              >
-                <RefreshCw size={11} className={isSyncingCloud ? 'animate-spin text-emerald-600' : 'text-emerald-600'} />
-                <span>{isSyncingCloud ? 'Đang nạp...' : 'TỰ ĐỘNG LIVE'}</span>
-              </button>
-            </div>
-
             {/* Feedback Alert for Tab 2 actions */}
             {feedback && (
               <div

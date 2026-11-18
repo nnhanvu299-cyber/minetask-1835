@@ -17,7 +17,6 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 import { Gamepad2, Globe, Calendar, Bell, User, RefreshCw } from 'lucide-react';
 import { soundEngine } from './utils/audio';
 import {
-  sendUpdateAvailableNotification,
   requestDeviceNotificationPermission,
   checkAndTriggerDailyTaskNotification,
 } from './utils/deviceNotification';
@@ -33,10 +32,6 @@ const MainContent: React.FC = () => {
     tasks,
   } = useApp();
 
-  // Instant Auto-Update Detection
-  const [hasNewUpdate, setHasNewUpdate] = useState(false);
-  const currentAppVersion = useRef<number | null>(null);
-
   // Proactively request device notification permission so update alerts pop up on Windows / Android
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -46,72 +41,6 @@ const MainContent: React.FC = () => {
       }, 2500);
       return () => clearTimeout(timer);
     }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const handleTrigger = () => {
-      setHasNewUpdate(true);
-      sendUpdateAvailableNotification(Date.now(), handleApplyUpdate);
-      soundEngine.playTurnNotification();
-    };
-
-    window.addEventListener('1835_TRIGGER_UPDATE_ALERT', handleTrigger);
-    return () => window.removeEventListener('1835_TRIGGER_UPDATE_ALERT', handleTrigger);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const checkVersion = async () => {
-      try {
-        const res = await fetch(`./version.json?t=${Date.now()}`, { cache: 'no-store' });
-        if (res.ok) {
-          const data = await res.json();
-          if (data && data.version) {
-            if (currentAppVersion.current === null) {
-              const lastKnown = localStorage.getItem('minetask_1835_installed_version');
-              if (lastKnown && Number(data.version) > Number(lastKnown)) {
-                setHasNewUpdate(true);
-                sendUpdateAvailableNotification(data.version, handleApplyUpdate);
-              } else if (!lastKnown) {
-                try {
-                  localStorage.setItem('minetask_1835_installed_version', String(data.version));
-                } catch {}
-              }
-              currentAppVersion.current = data.version;
-            } else if (data.version > currentAppVersion.current) {
-              setHasNewUpdate(true);
-              currentAppVersion.current = data.version;
-              // Gửi thông báo cập nhật về máy tính / điện thoại
-              sendUpdateAvailableNotification(data.version, handleApplyUpdate);
-            }
-          }
-        }
-      } catch {}
-    };
-
-    checkVersion();
-    const interval = setInterval(checkVersion, 10000); // Check every 10s for fast detection
-
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        checkVersion();
-      }
-    };
-    const onWindowFocus = () => {
-      checkVersion();
-    };
-
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    window.addEventListener('focus', onWindowFocus);
-
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-      window.removeEventListener('focus', onWindowFocus);
-    };
   }, []);
 
   // Automatic Daily Task Notification (Yêu cầu 4: Nhắc việc hàng ngày - bạn đang trong task nào & hạn chót)
@@ -135,26 +64,7 @@ const MainContent: React.FC = () => {
     return () => window.removeEventListener('1835_NAVIGATE_TO_TASK', handleNavToTask);
   }, [setActiveWorldId]);
 
-  const handleApplyUpdate = () => {
-    if (currentAppVersion.current) {
-      try {
-        localStorage.setItem('minetask_1835_installed_version', String(currentAppVersion.current));
-      } catch {}
-    }
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then((regs) => {
-        for (const reg of regs) {
-          reg.unregister();
-        }
-      });
-      if ('caches' in window) {
-        caches.keys().then((names) => {
-          names.forEach((name) => caches.delete(name));
-        });
-      }
-    }
-    window.location.reload();
-  };
+
 
   // Modals state
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -176,27 +86,6 @@ const MainContent: React.FC = () => {
   if (!currentUser) {
     return (
       <div className="min-h-screen min-h-[100dvh] flex items-center justify-center p-3 sm:p-4 login-cherry-bg relative overflow-hidden">
-        {/* Floating Instant Update Notification Banner */}
-        {hasNewUpdate && (
-          <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[99999] w-[92%] max-w-md animate-bounce">
-            <div className="mc-panel p-3 bg-gradient-to-r from-[#F37022] to-[#ED1B24] text-white border-4 border-[#2D1A11] shadow-[0_4px_20px_rgba(0,0,0,0.6),4px_4px_0px_#2D1A11] flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl animate-pulse">🚀</span>
-                <div>
-                  <div className="text-xs font-bold uppercase tracking-wider text-white">CÓ BẢN CẬP NHẬT MỚI!</div>
-                  <div className="text-[10px] text-white/90">Chạm để tải lại tính năng mới ngay</div>
-                </div>
-              </div>
-              <button
-                onClick={handleApplyUpdate}
-                className="mc-btn bg-[#2D1A11] hover:bg-[#3D251A] text-[#FAF2DC] text-xs font-bold px-3 py-1.5 border-2 border-white cursor-pointer shrink-0 shadow-sm active:scale-95"
-              >
-                CẬP NHẬT 🔄
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Gentle falling cherry petals in background */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
           {[...Array(12)].map((_, i) => (
@@ -228,27 +117,6 @@ const MainContent: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col text-[#2D1A11] relative overflow-x-hidden mc-minecraft-landscape">
-      {/* Floating Instant Update Notification Banner */}
-      {hasNewUpdate && (
-        <div className="fixed top-3 left-1/2 -translate-x-1/2 z-[99999] w-[92%] max-w-md animate-bounce">
-          <div className="mc-panel p-3 bg-gradient-to-r from-[#F37022] to-[#ED1B24] text-white border-4 border-[#2D1A11] shadow-[0_4px_20px_rgba(0,0,0,0.6),4px_4px_0px_#2D1A11] flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl animate-pulse">🚀</span>
-              <div>
-                <div className="text-xs font-bold uppercase tracking-wider text-white">CÓ BẢN CẬP NHẬT MỚI!</div>
-                <div className="text-[10px] text-white/90">Chạm để tải lại tính năng mới ngay</div>
-              </div>
-            </div>
-            <button
-              onClick={handleApplyUpdate}
-              className="mc-btn bg-[#2D1A11] hover:bg-[#3D251A] text-[#FAF2DC] text-xs font-bold px-3 py-1.5 border-2 border-white cursor-pointer shrink-0 shadow-sm active:scale-95"
-            >
-              CẬP NHẬT 🔄
-            </button>
-          </div>
-        </div>
-      )}
-
       <div className="relative z-10 flex flex-col min-h-screen">
         {/* Top Header */}
         <Header
