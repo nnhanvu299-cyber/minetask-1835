@@ -3,6 +3,21 @@ import { UserProfile, UserId, World, Task, TaskStatus, NotificationItem } from '
 import { soundEngine } from '../utils/audio';
 import { sendOtpEmail } from '../utils/emailService';
 import { sendDeviceNotification } from '../utils/deviceNotification';
+import {
+  isFirebaseReady,
+  subscribeToFirebaseUsers,
+  saveUserToFirestore,
+  updateUserInFirestore,
+  deleteUserFromFirestore,
+  fetchUsersFromFirestore,
+  syncBatchUsersToFirestore,
+  syncTasksAndWorldsToFirestore,
+  subscribeToFirebaseAppState,
+  getFirebaseConfig,
+  saveFirebaseConfig,
+  clearFirebaseConfig,
+  FirebaseConfig,
+} from '../services/firebase';
 
 import { DEFAULT_USERS, INITIAL_WORLDS, INITIAL_TASKS } from '../data/initialData';
 
@@ -35,6 +50,13 @@ interface AppContextValue {
   }>;
   toggleOnlineMode: (enabled?: boolean) => void;
   syncNow: () => Promise<boolean>;
+
+  // Firebase Cloud Integration
+  isFirebaseConnected: boolean;
+  firebaseConfig: FirebaseConfig | null;
+  updateFirebaseConfig: (config: FirebaseConfig) => boolean;
+  clearFirebaseConfig: () => void;
+  syncToFirebaseNow: () => Promise<boolean>;
 
   // Actions
   setActiveWorldId: (id: string | null) => void;
@@ -292,6 +314,98 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     lastSeen: number;
     isSelf?: boolean;
   }>>(new Map());
+
+  // Firebase State & Configuration
+  const [isFirebaseConnected, setIsFirebaseConnected] = useState<boolean>(() => isFirebaseReady());
+  const [firebaseConfigState, setFirebaseConfigState] = useState<FirebaseConfig | null>(() => getFirebaseConfig());
+
+  const updateFirebaseConfigHandler = (cfg: FirebaseConfig): boolean => {
+    const ok = saveFirebaseConfig(cfg);
+    if (ok) {
+      setFirebaseConfigState(cfg);
+      setIsFirebaseConnected(true);
+    }
+    return ok;
+  };
+
+  const clearFirebaseConfigHandler = () => {
+    clearFirebaseConfig();
+    setFirebaseConfigState(null);
+    setIsFirebaseConnected(false);
+  };
+
+  const syncToFirebaseNow = async (): Promise<boolean> => {
+    if (!isFirebaseReady()) return false;
+    try {
+      const cleanUsers = getStoredUsers().filter((u) => !isDefaultMockUser(u));
+      const resUsers = await syncBatchUsersToFirestore(cleanUsers);
+      const resData = await syncTasksAndWorldsToFirestore(worlds, tasks);
+      return resUsers || resData;
+    } catch (e) {
+      console.error('[Firebase Sync Now] Error:', e);
+      return false;
+    }
+  };
+
+  // Lắng nghe dữ liệu người dùng và Tasks/Worlds thời gian thực từ Cloud Firestore
+  useEffect(() => {
+    if (!isFirebaseConnected) return;
+
+    // Tự động tải backup local users lên Firebase nếu Firestore đang trống
+    fetchUsersFromFirestore().then((cloudUsers) => {
+      if (cloudUsers && cloudUsers.length === 0) {
+        const localClean = getStoredUsers().filter((u) => !isDefaultMockUser(u));
+        if (localClean.length > 0) {
+          syncBatchUsersToFirestore(localClean).catch(() => {});
+        }
+      }
+    }).catch(() => {});
+
+    const unsubscribeUsers = subscribeToFirebaseUsers(
+      (cloudUsers) => {
+        if (!cloudUsers || !Array.isArray(cloudUsers)) return;
+        const validCloudUsers = cloudUsers.filter((u) => !isDefaultMockUser(u));
+        if (validCloudUsers.length === 0) return;
+
+        setUsers((prevUsers) => {
+          const map = new Map<string, UserProfile>();
+          prevUsers.forEach((u) => {
+            if (u && u.email && !isDefaultMockUser(u)) {
+              map.set(u.email.trim().toLowerCase(), u);
+            }
+          });
+          validCloudUsers.forEach((u) => {
+            if (u && u.email) {
+              const key = u.email.trim().toLowerCase();
+              map.set(key, { ...map.get(key), ...u });
+            }
+          });
+          const merged = Array.from(map.values());
+          try {
+            localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(merged));
+          } catch {}
+          return merged;
+        });
+      },
+      (err) => {
+        console.warn('[Firebase Users Sync] Error:', err);
+      }
+    );
+
+    const unsubApp = subscribeToFirebaseAppState(({ worlds: cWorlds, tasks: cTasks }) => {
+      if (Array.isArray(cWorlds) && cWorlds.length > 0) {
+        setWorlds(cWorlds);
+      }
+      if (Array.isArray(cTasks) && cTasks.length > 0) {
+        setTasks(cTasks);
+      }
+    });
+
+    return () => {
+      if (unsubscribeUsers) unsubscribeUsers();
+      if (unsubApp) unsubApp();
+    };
+  }, [isFirebaseConnected]);
 
   // Realtime Broadcast Channel across browser tabs
   const [broadcastChannel, setBroadcastChannel] = useState<BroadcastChannel | null>(null);
@@ -743,6 +857,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         } catch {}
       }
 
+      // Sync to Firebase Cloud if configured
+      if (isFirebaseReady()) {
+        syncTasksAndWorldsToFirestore(worldsList || worlds, tasksList || tasks).catch(() => {});
+        if (usersList && usersList.length > 0) {
+          syncBatchUsersToFirestore(cleanUsers).catch(() => {});
+        }
+      }
+
       // ALWAYS publish to Global ntfy.sh Realtime Cloud Relay!
       // BẢO MẬT: Loại bỏ toàn bộ password khỏi payload đồng bộ công khai
       const sanitizedUsers = cleanUsers.map(u => {
@@ -945,6 +1067,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     } catch {}
 
+    // Query latest accounts from Firebase Cloud Firestore to ensure real-time validity
+    if (isFirebaseReady()) {
+      try {
+        const cloudUsers = await fetchUsersFromFirestore();
+        if (cloudUsers && cloudUsers.length > 0) {
+          const cleanCloud = cloudUsers.filter((u) => !isDefaultMockUser(u));
+          const map = new Map<string, UserProfile>();
+          liveUsers.forEach((u) => { if (u?.email) map.set(u.email.toLowerCase(), u); });
+          cleanCloud.forEach((u) => { if (u?.email) map.set(u.email.toLowerCase(), { ...map.get(u.email.toLowerCase()), ...u }); });
+          liveUsers = Array.from(map.values());
+          setUsers(liveUsers);
+          try {
+            localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(liveUsers));
+          } catch {}
+        }
+      } catch (err) {
+        console.warn('[Firebase] Query error during login:', err);
+      }
+    }
+
     const isMatch = (u: UserProfile) => {
       const uEmail = (u.email || '').trim().toLowerCase();
       const uName = (u.name || '').trim().toLowerCase();
@@ -1046,6 +1188,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     setUsers(updatedUsers);
     setCurrentUser(newUser);
+
+    // Lưu vĩnh viễn lên Firebase Firestore nếu đã kết nối
+    if (isFirebaseReady()) {
+      saveUserToFirestore(newUser).catch((err) => {
+        console.warn('[Firebase] Ghi user lên Firestore thất bại:', err);
+      });
+    }
+
     await pushToServer(updatedUsers);
     broadcastStateChange(tasks, worlds, updatedUsers);
     soundEngine.playVictoryFanfare();
@@ -1094,6 +1244,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch {}
 
     setUsers(updatedUsers);
+    if (isFirebaseReady()) {
+      saveUserToFirestore(newUser).catch(() => {});
+    }
     pushToServer(updatedUsers);
     broadcastStateChange(tasks, worlds, updatedUsers);
     soundEngine.playUnlock();
@@ -1136,6 +1289,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch {}
 
     setUsers(updatedUsers);
+    if (isFirebaseReady()) {
+      syncBatchUsersToFirestore(updatedUsers).catch(() => {});
+    }
     pushToServer(updatedUsers);
     broadcastStateChange(tasks, worlds, updatedUsers);
     soundEngine.playVictoryFanfare();
@@ -1292,6 +1448,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(updatedUsers));
       localStorage.setItem('minetask_1835_backup_users', JSON.stringify(updatedUsers));
     } catch {}
+    if (isFirebaseReady()) {
+      updateUserInFirestore(userId, { avatarKey }).catch(() => {});
+    }
     pushToServer(updatedUsers);
     broadcastStateChange(tasks, worlds, updatedUsers);
     soundEngine.playLevelUp();
@@ -1328,6 +1487,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch {}
 
     setUsers(updatedUsers);
+    if (isFirebaseReady()) {
+      deleteUserFromFirestore(userId).catch(() => {});
+    }
     pushToServer(updatedUsers, undefined, undefined, true);
     broadcastStateChange(tasks, worlds, updatedUsers);
     soundEngine.playClick();
@@ -1433,6 +1595,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } catch {}
 
     setUsers(updated);
+    if (isFirebaseReady()) {
+      const targetReset = updated.find(u => {
+        const uEmail = (u.email || '').trim().toLowerCase();
+        const uName = (u.name || '').trim().toLowerCase();
+        return uEmail === normalized || uName === normalized;
+      });
+      if (targetReset) {
+        updateUserInFirestore(targetReset.id, { password: cleanPass }).catch(() => {});
+      }
+    }
     await pushToServer(updated, undefined, undefined, true);
     broadcastStateChange(tasks, worlds, updated);
     soundEngine.playUnlock();
@@ -1878,6 +2050,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         onlineMembers,
         toggleOnlineMode,
         syncNow: () => fetchServerState(true),
+
+        // Firebase Cloud Integration
+        isFirebaseConnected,
+        firebaseConfig: firebaseConfigState,
+        updateFirebaseConfig: updateFirebaseConfigHandler,
+        clearFirebaseConfig: clearFirebaseConfigHandler,
+        syncToFirebaseNow,
 
         setActiveWorldId,
         login,

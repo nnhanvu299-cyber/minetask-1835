@@ -13,11 +13,13 @@ import {
   Globe,
   Radio,
   Bell,
+  Flame,
 } from 'lucide-react';
 import {
   requestDeviceNotificationPermission,
   sendTestDeviceNotification,
 } from '../utils/deviceNotification';
+import { FirebaseConfigModal } from './FirebaseConfigModal';
 
 interface OnlineStatusModalProps {
   isOpen: boolean;
@@ -36,10 +38,13 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
     serverPing,
     onlineMembers,
     syncNow,
+    isFirebaseConnected,
+    firebaseConfig,
   } = useApp();
 
   const [isManualSyncing, setIsManualSyncing] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
+  const [isFirebaseModalOpen, setIsFirebaseModalOpen] = useState(false);
 
   if (!isOpen) return null;
 
@@ -196,6 +201,45 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
           </div>
         )}
 
+        {/* Firebase Cloud Firestore Card */}
+        <div className={`p-3 border-2 rounded mb-3 flex items-center justify-between gap-3 ${
+          isFirebaseConnected
+            ? 'bg-gradient-to-r from-amber-50 to-orange-50 border-orange-500 text-orange-950'
+            : 'bg-amber-50/70 border-dashed border-amber-600 text-amber-950'
+        }`}>
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 border ${
+              isFirebaseConnected ? 'bg-orange-500 text-white border-orange-700' : 'bg-amber-200 text-amber-800 border-amber-400'
+            }`}>
+              <Flame size={18} className={isFirebaseConnected ? 'animate-pulse' : ''} />
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs font-bold uppercase tracking-wide flex items-center gap-1.5 flex-wrap">
+                <span>FIREBASE FIRESTORE CLOUD</span>
+                <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${
+                  isFirebaseConnected
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-400'
+                    : 'bg-amber-100 text-amber-800 border-amber-400'
+                }`}>
+                  {isFirebaseConnected ? '🟢 ĐÃ KẾT NỐI' : '⚠️ CHƯA CẤU HÌNH'}
+                </span>
+              </div>
+              <div className="text-[10px] text-[#7A6B5D] truncate">
+                {isFirebaseConnected
+                  ? `Project: ${firebaseConfig?.projectId || 'Connected'} • Đồng bộ tài khoản vĩnh viễn`
+                  : 'Kết nối để tài khoản của bạn bè tự động lưu vĩnh viễn trên Cloud'}
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setIsFirebaseModalOpen(true)}
+            className="mc-btn mc-btn-primary px-2.5 py-1 text-[11px] font-bold text-white shrink-0 cursor-pointer"
+          >
+            {isFirebaseConnected ? 'Cài đặt' : 'Kết nối ngay'}
+          </button>
+        </div>
+
         {/* Manual Sync Button */}
         <div className="mb-4">
           <button
@@ -306,6 +350,11 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
           </button>
         </div>
       </div>
+
+      <FirebaseConfigModal
+        isOpen={isFirebaseModalOpen}
+        onClose={() => setIsFirebaseModalOpen(false)}
+      />
     </div>
   );
 };

@@ -4,7 +4,8 @@ import { UserProfile } from '../types';
 import { AVATAR_OPTIONS, PixelAvatar } from '../utils/pixelAvatars';
 import { maskEmail } from '../utils/maskEmail';
 import { requestDeviceNotificationPermission } from '../utils/deviceNotification';
-import { Mail, KeyRound, User, CheckCircle, AlertCircle, X, ShieldCheck, Eye, EyeOff, Send, Sparkles } from 'lucide-react';
+import { Mail, KeyRound, User, CheckCircle, AlertCircle, X, ShieldCheck, Eye, EyeOff, Send, Sparkles, Flame } from 'lucide-react';
+import { FirebaseConfigModal } from './FirebaseConfigModal';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -19,7 +20,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
     register,
     requestPasswordReset,
     resetPassword,
+    isFirebaseConnected,
+    firebaseConfig,
   } = useApp();
+
+  const [isFirebaseModalOpen, setIsFirebaseModalOpen] = useState(false);
 
   // Always start immediately on LOGIN tab as requested
   const [tab, setTab] = useState<'login' | 'register' | 'forgot'>('login');
@@ -250,6 +255,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
             </div>
           </div>
 
+          {/* Firebase Cloud Connection Pill */}
+          <div
+            onClick={() => setIsFirebaseModalOpen(true)}
+            className={`mb-4 px-2.5 py-1.5 rounded text-[11px] font-semibold flex items-center justify-between cursor-pointer transition-all border ${
+              isFirebaseConnected
+                ? 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100'
+                : 'bg-orange-50 text-orange-800 border-orange-300 hover:bg-orange-100'
+            }`}
+            title="Bấm để cấu hình Firebase Cloud Database"
+          >
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Flame size={13} className={isFirebaseConnected ? 'text-orange-600' : 'text-amber-500'} />
+              <span className="truncate">
+                {isFirebaseConnected
+                  ? `Firebase: Đã kết nối (${firebaseConfig?.projectId || 'Active'})`
+                  : 'Chưa kết nối Firebase (Lưu cục bộ)'}
+              </span>
+            </div>
+            <span className="text-[10px] font-bold text-[#F37022] hover:underline shrink-0 ml-1">
+              {isFirebaseConnected ? '⚙️ Cài đặt' : '🔥 Kết nối ngay'}
+            </span>
+          </div>
+
           {feedback && (
             <div
               className={`mb-4 p-2.5 rounded text-xs font-medium flex items-start gap-2 ${
@@ -397,9 +425,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
       {/* ==================== VIEW 2: REGISTER ==================== */}
       {tab === 'register' && (
         <div>
-          <h2 className="text-base sm:text-lg font-bold text-[#444] uppercase tracking-wider mb-5">
+          <h2 className="text-base sm:text-lg font-bold text-[#444] uppercase tracking-wider mb-3">
             REGISTER
           </h2>
+
+          {/* Firebase Cloud Connection Pill */}
+          <div
+            onClick={() => setIsFirebaseModalOpen(true)}
+            className={`mb-4 px-2.5 py-1.5 rounded text-[11px] font-semibold flex items-center justify-between cursor-pointer transition-all border ${
+              isFirebaseConnected
+                ? 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100'
+                : 'bg-orange-50 text-orange-800 border-orange-300 hover:bg-orange-100'
+            }`}
+            title="Bấm để cấu hình Firebase Cloud Database"
+          >
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Flame size={13} className={isFirebaseConnected ? 'text-orange-600' : 'text-amber-500'} />
+              <span className="truncate">
+                {isFirebaseConnected
+                  ? `Firebase: Tài khoản sẽ lưu vĩnh viễn trên Cloud`
+                  : 'Chưa kết nối Firebase (Tài khoản chỉ lưu máy này)'}
+              </span>
+            </div>
+            <span className="text-[10px] font-bold text-[#F37022] hover:underline shrink-0 ml-1">
+              {isFirebaseConnected ? '⚙️ Cài đặt' : '🔥 Kết nối ngay'}
+            </span>
+          </div>
 
           {feedback && (
             <div
@@ -745,6 +796,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
         <div className="mt-4 text-center text-xs text-white/95 font-medium tracking-wide font-sans drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">
           Powered by <span className="font-bold text-white">1835s</span> Control Panel
         </div>
+        <FirebaseConfigModal
+          isOpen={isFirebaseModalOpen}
+          onClose={() => setIsFirebaseModalOpen(false)}
+        />
       </div>
     );
   }
@@ -763,6 +818,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
           Powered by <span className="font-semibold text-white">1835s</span> Control Panel
         </div>
       </div>
+      <FirebaseConfigModal
+        isOpen={isFirebaseModalOpen}
+        onClose={() => setIsFirebaseModalOpen(false)}
+      />
     </div>
   );
 };
