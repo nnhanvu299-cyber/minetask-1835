@@ -128,7 +128,7 @@ const isDefaultMockUser = (u: any): boolean => {
   );
 };
 
-const CURRENT_VERSION_TAG = 'v22';
+const CURRENT_VERSION_TAG = 'v23';
 
 function purgeLegacyAppData() {
   if (typeof window === 'undefined' || !window.localStorage) return;
@@ -138,9 +138,7 @@ function purgeLegacyAppData() {
       const key = localStorage.key(i);
       if (key && (key.startsWith('minetask_') || key.startsWith('1835_'))) {
         if (!key.includes(CURRENT_VERSION_TAG)) {
-          if (!key.includes('remember') && !key.includes('credentials')) {
-            keysToRemove.push(key);
-          }
+          keysToRemove.push(key);
         }
       }
     }
@@ -150,7 +148,7 @@ function purgeLegacyAppData() {
     if ('caches' in window) {
       caches.keys().then((names) => {
         names.forEach((name) => {
-          if (!name.includes('v22')) {
+          if (!name.includes('v23')) {
             caches.delete(name);
           }
         });
@@ -161,18 +159,18 @@ function purgeLegacyAppData() {
   }
 }
 
-const STORAGE_KEY_USERS = 'minetask_1835_flat_users_v22';
-const STORAGE_KEY_CURRENT_USER = 'minetask_1835_flat_session_v22';
-const STORAGE_KEY_CURRENT_USER_PROFILE = 'minetask_1835_flat_session_profile_v22';
-const STORAGE_KEY_REMEMBER_LOGIN = 'minetask_1835_remember_login_v22';
-const STORAGE_KEY_REMEMBERED_ACCOUNT = 'minetask_1835_remembered_account_v22';
-const STORAGE_KEY_ONLINE_MODE = 'minetask_1835_online_mode_v22';
-const STORAGE_KEY_WORLDS = 'minetask_1835_flat_worlds_v22';
-const STORAGE_KEY_TASKS = 'minetask_1835_flat_tasks_v22';
-const STORAGE_KEY_SOUND = 'minetask_1835_flat_sound_v22';
-const STORAGE_KEY_NOTIFS = 'minetask_1835_flat_notifs_v22';
-const STORAGE_KEY_DELETED_TASKS = 'minetask_1835_deleted_tasks_v22';
-const STORAGE_KEY_DELETED_WORLDS = 'minetask_1835_deleted_worlds_v22';
+const STORAGE_KEY_USERS = 'minetask_1835_flat_users_v23';
+const STORAGE_KEY_CURRENT_USER = 'minetask_1835_flat_session_v23';
+const STORAGE_KEY_CURRENT_USER_PROFILE = 'minetask_1835_flat_session_profile_v23';
+const STORAGE_KEY_REMEMBER_LOGIN = 'minetask_1835_remember_login_v23';
+const STORAGE_KEY_REMEMBERED_ACCOUNT = 'minetask_1835_remembered_account_v23';
+const STORAGE_KEY_ONLINE_MODE = 'minetask_1835_online_mode_v23';
+const STORAGE_KEY_WORLDS = 'minetask_1835_flat_worlds_v23';
+const STORAGE_KEY_TASKS = 'minetask_1835_flat_tasks_v23';
+const STORAGE_KEY_SOUND = 'minetask_1835_flat_sound_v23';
+const STORAGE_KEY_NOTIFS = 'minetask_1835_flat_notifs_v23';
+const STORAGE_KEY_DELETED_TASKS = 'minetask_1835_deleted_tasks_v23';
+const STORAGE_KEY_DELETED_WORLDS = 'minetask_1835_deleted_worlds_v23';
 
 // Real-time synchronization channel across browser tabs
 const SYNC_CHANNEL_NAME = 'minetask_1835_realtime_bus';
@@ -649,7 +647,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   // 0. Realtime server & Cloud synchronization across devices (Phone, PC, etc.) via ntfy.sh Realtime SSE Relay
-  const NTFY_SYNC_TOPIC = 'minetask_1835_sync_relay_v22';
+  const NTFY_SYNC_TOPIC = 'minetask_1835_sync_relay_v23';
   const NTFY_SYNC_URL = `https://ntfy.sh/${NTFY_SYNC_TOPIC}`;
 
   // Helper to merge and apply incoming cloud sync payload from any device (phone, laptop, etc.)

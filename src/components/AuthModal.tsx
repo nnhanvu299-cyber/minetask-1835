@@ -24,8 +24,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
   // Always start immediately on LOGIN tab as requested
   const [tab, setTab] = useState<'login' | 'register' | 'forgot'>('login');
 
-  const STORAGE_KEY_REMEMBER_LOGIN = 'minetask_1835_remember_login_v22';
-  const STORAGE_KEY_REMEMBERED_ACCOUNT = 'minetask_1835_remembered_account_v22';
+  const STORAGE_KEY_REMEMBER_LOGIN = 'minetask_1835_remember_login_v23';
+  const STORAGE_KEY_REMEMBERED_ACCOUNT = 'minetask_1835_remembered_account_v23';
 
   const [rememberOnMachine, setRememberOnMachine] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
