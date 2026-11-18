@@ -64,6 +64,7 @@ export interface Task {
   durationDays?: number; // Số lượng ngày thực hiện
   requiredHits?: number; // Tổng số lần cần đào để hoàn thành (mặc định 3 hoặc tự chọn)
   currentHits?: number; // Số lần đã đào hiện tại
+  updatedAt?: number; // Timestamp chỉnh sửa gần nhất để đồng bộ cloud chính xác
 }
 
 export interface World {
@@ -76,6 +77,7 @@ export interface World {
   targetDeadline?: string;
   icon?: string;
   createdBy: UserId;
+  updatedAt?: number;
 }
 
 export interface NotificationItem {

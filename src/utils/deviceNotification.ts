@@ -177,10 +177,11 @@ export async function checkAndTriggerDailyTaskNotification(
   // Format start - end time
   const startStr = activeTask.startDate || todayStr;
   const endStr = activeTask.deadline || 'Chưa định hạn';
+  const durationText = activeTask.durationDays ? ` (${activeTask.durationDays} ngày)` : '';
   const req = activeTask.requiredHits || 3;
   const cur = activeTask.currentHits || 0;
   
-  const body = `⏰ Thời gian: ${startStr} ➔ ${endStr} | Tiến độ: ${cur}/${req} lần đào. Hôm nay (${todayDisplay}) tiếp tục đào nhé!`;
+  const body = `⏰ Thời gian: ${startStr} ➔ ${endStr}${durationText} | Tiến độ: ${cur}/${req} lần đào. Hôm nay (${todayDisplay}) tiếp tục đào nhé!`;
 
   soundEngine.playTurnNotification();
 
@@ -188,9 +189,16 @@ export async function checkAndTriggerDailyTaskNotification(
     body,
     tag: `minetask-daily-task-${activeTask.id}-${todayStr}`,
     requireInteraction: true,
+    data: {
+      worldId: activeTask.worldId,
+      taskId: activeTask.id,
+    },
     onClick: () => {
       try {
         window.focus();
+        window.dispatchEvent(new CustomEvent('1835_NAVIGATE_TO_TASK', {
+          detail: { worldId: activeTask.worldId, taskId: activeTask.id }
+        }));
       } catch {}
     },
   });

@@ -5,6 +5,9 @@ echo   DONG BO & CAP NHAT MINETASK 1835s LEN GITHUB
 echo ===================================================
 cd /d "%~dp0"
 
+echo 0. Cap nhat ma phien ban tu dong vao version.json...
+node -e "const fs=require('fs'); fs.writeFileSync('./public/version.json', JSON.stringify({version: Date.now(), buildTime: new Date().toISOString()}, null, 2));"
+
 echo 1. Build ban cap nhat web moi nhat...
 call npm run build
 

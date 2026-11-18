@@ -123,6 +123,18 @@ const MainContent: React.FC = () => {
     return () => clearTimeout(timer);
   }, [currentUser?.id, tasks.length]);
 
+  // Listen to navigation events from Daily Task Notification clicks
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleNavToTask = (e: any) => {
+      if (e?.detail?.worldId) {
+        setActiveWorldId(e.detail.worldId);
+      }
+    };
+    window.addEventListener('1835_NAVIGATE_TO_TASK', handleNavToTask);
+    return () => window.removeEventListener('1835_NAVIGATE_TO_TASK', handleNavToTask);
+  }, [setActiveWorldId]);
+
   const handleApplyUpdate = () => {
     if (currentAppVersion.current) {
       try {

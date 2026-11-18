@@ -19,7 +19,7 @@ execSync('git config user.email "minetask@agent.local"', { cwd: distDir, stdio: 
 execSync('git remote add origin https://github.com/nnhanvu299-cyber/minetask-1835.git', { cwd: distDir, stdio: 'inherit' });
 execSync('git checkout -B gh-pages', { cwd: distDir, stdio: 'inherit' });
 execSync('git add -A', { cwd: distDir, stdio: 'inherit' });
-execSync('git commit -m "🚀 Updates: persistent login, online mode & system notifications"', { cwd: distDir, stdio: 'inherit' });
+execSync(`git commit -m "🚀 Updates: auto-deploy ${new Date().toISOString()}"`, { cwd: distDir, stdio: 'inherit' });
 execSync('git push -f origin gh-pages', { cwd: distDir, stdio: 'inherit' });
 fs.rmSync(gitDir, { recursive: true, force: true });
 

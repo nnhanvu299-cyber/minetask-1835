@@ -19,7 +19,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
     register,
     requestPasswordReset,
     resetPassword,
-    quickResetPassword,
   } = useApp();
 
   // Always start immediately on LOGIN tab as requested

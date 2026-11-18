@@ -72,6 +72,11 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
     e.preventDefault();
     if (!title.trim()) return;
 
+    if (deadline && startDate && deadline < startDate) {
+      alert('Hạn chót (Deadline) không được trước ngày bắt đầu!');
+      return;
+    }
+
     const selectedCfg = BLOCK_CONFIGS[blockType];
     const finalAssignees = selectedAssigneeIds.length > 0
       ? selectedAssigneeIds
@@ -180,6 +185,14 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
                 />
               </div>
             </div>
+
+            {/* Cảnh báo nếu hạn chót nhỏ hơn ngày bắt đầu */}
+            {deadline && startDate && deadline < startDate && (
+              <div className="p-2 bg-red-100 border-2 border-[#ED1B24] text-[#ED1B24] text-xs font-bold flex items-center gap-1.5 animate-pulse">
+                <span>⚠️</span>
+                <span>Hạn chót đang nhỏ hơn ngày bắt đầu! Vui lòng chọn lại hạn chót.</span>
+              </div>
+            )}
 
             {/* Quick duration presets */}
             <div className="flex items-center gap-1.5 flex-wrap pt-1 border-t border-[#2D1A11]/20">

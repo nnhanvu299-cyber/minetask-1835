@@ -50,7 +50,6 @@ interface AppContextValue {
   deleteAccount: (userId: string) => { success: boolean; message: string };
   requestPasswordReset: (email: string) => Promise<{ success: boolean; code: string; message: string }>;
   resetPassword: (email: string, code: string, newPass: string) => Promise<{ success: boolean; message: string }>;
-  quickResetPassword: (emailOrName: string, newPass: string) => Promise<{ success: boolean; message: string }>;
 
   createWorld: (data: Omit<World, 'id' | 'createdAt' | 'createdBy'>) => World;
   updateWorld: (id: string, updates: Partial<World>) => void;
@@ -150,6 +149,8 @@ const STORAGE_KEY_WORLDS = 'minetask_1835_flat_worlds_v22';
 const STORAGE_KEY_TASKS = 'minetask_1835_flat_tasks_v22';
 const STORAGE_KEY_SOUND = 'minetask_1835_flat_sound_v22';
 const STORAGE_KEY_NOTIFS = 'minetask_1835_flat_notifs_v22';
+const STORAGE_KEY_DELETED_TASKS = 'minetask_1835_deleted_tasks_v22';
+const STORAGE_KEY_DELETED_WORLDS = 'minetask_1835_deleted_worlds_v22';
 
 // Real-time synchronization channel across browser tabs
 const SYNC_CHANNEL_NAME = 'minetask_1835_realtime_bus';
@@ -258,6 +259,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [networkOnline, setNetworkOnline] = useState<boolean>(true);
   const isFetchingRef = useRef(false);
   const isPushingRef = useRef(false);
+
+  // Deleted entities tracking to prevent resurrection during cloud sync
+  const deletedTaskIdsRef = useRef<Set<string>>(new Set());
+  const deletedWorldIdsRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    try {
+      const savedTasks = localStorage.getItem(STORAGE_KEY_DELETED_TASKS);
+      if (savedTasks) {
+        const arr = JSON.parse(savedTasks);
+        if (Array.isArray(arr)) deletedTaskIdsRef.current = new Set(arr);
+      }
+      const savedWorlds = localStorage.getItem(STORAGE_KEY_DELETED_WORLDS);
+      if (savedWorlds) {
+        const arr = JSON.parse(savedWorlds);
+        if (Array.isArray(arr)) deletedWorldIdsRef.current = new Set(arr);
+      }
+    } catch {}
+  }, []);
 
   const [serverConnected, setServerConnected] = useState<boolean>(true);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'offline' | 'error'>('synced');
@@ -530,7 +550,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setSyncStatus('synced');
     setLastSyncTime(Date.now());
 
-    // 1. Sync users
+    // 0. Update deleted entities from remote
+    if (Array.isArray(payload.deletedTaskIds)) {
+      payload.deletedTaskIds.forEach((id: string) => {
+        if (id) deletedTaskIdsRef.current.add(id);
+      });
+      try {
+        localStorage.setItem(STORAGE_KEY_DELETED_TASKS, JSON.stringify(Array.from(deletedTaskIdsRef.current)));
+      } catch {}
+    }
+    if (Array.isArray(payload.deletedWorldIds)) {
+      payload.deletedWorldIds.forEach((id: string) => {
+        if (id) deletedWorldIdsRef.current.add(id);
+      });
+      try {
+        localStorage.setItem(STORAGE_KEY_DELETED_WORLDS, JSON.stringify(Array.from(deletedWorldIdsRef.current)));
+      } catch {}
+    }
+
+    // 1. Sync users (Preserve local credentials if incoming payload is sanitized)
     if (Array.isArray(payload.users) && payload.users.length > 0) {
       const serverUsers = payload.users.filter((u: any) => !isDefaultMockUser(u));
       setUsers((prev) => {
@@ -546,7 +584,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             const key = (u.email ? u.email.toLowerCase().trim() : u.id);
             if (key) {
               if (!map.has(key)) hasNewMember = true;
-              map.set(key, u);
+              const existing = map.get(key);
+              // Bảo toàn mật khẩu đăng nhập trên máy cục bộ
+              map.set(key, { ...u, password: existing?.password || u.password });
             }
           }
         });
@@ -562,31 +602,51 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       });
     }
 
-    // 2. Sync worlds
+    // 2. Sync worlds (Filter out deleted & merge newer updates)
     if (Array.isArray(payload.worlds) && payload.worlds.length > 0) {
       setWorlds((prev) => {
         const map = new Map<string, World>();
-        prev.forEach((w) => map.set(w.id, w));
-        payload.worlds.forEach((w: World) => map.set(w.id, w));
+        prev.forEach((w) => {
+          if (!deletedWorldIdsRef.current.has(w.id)) {
+            map.set(w.id, w);
+          }
+        });
+        payload.worlds.forEach((w: World) => {
+          if (deletedWorldIdsRef.current.has(w.id)) return;
+          if (!map.has(w.id)) {
+            map.set(w.id, w);
+          } else {
+            const existing = map.get(w.id)!;
+            const inTime = w.updatedAt || w.createdAt || 0;
+            const exTime = existing.updatedAt || existing.createdAt || 0;
+            if (inTime >= exTime) {
+              map.set(w.id, { ...existing, ...w });
+            }
+          }
+        });
         return Array.from(map.values());
       });
     }
 
-    // 3. Sync tasks
-    if (Array.isArray(payload.tasks) && payload.tasks.length > 0) {
+    // 3. Sync tasks - ĐỒNG BỘ ĐẦY ĐỦ TIẾN ĐỘ ĐÀO QUẶNG, NHẬT KÝ, TRẠNG THÁI & XÓA TASK
+    if (Array.isArray(payload.tasks)) {
       setTasks((prev) => {
-        if (prev.length === 0 || (prev.length <= 4 && payload.tasks.length > prev.length)) {
-          return payload.tasks;
-        }
         const map = new Map<string, Task>();
-        prev.forEach((t) => map.set(t.id, t));
+        prev.forEach((t) => {
+          if (!deletedTaskIdsRef.current.has(t.id)) {
+            map.set(t.id, t);
+          }
+        });
         payload.tasks.forEach((t: Task) => {
+          if (deletedTaskIdsRef.current.has(t.id)) return;
           if (!map.has(t.id)) {
             map.set(t.id, t);
           } else {
             const existing = map.get(t.id)!;
-            if (t.deadline && !existing.deadline) {
-              map.set(t.id, { ...existing, deadline: t.deadline });
+            const inTime = t.updatedAt || t.completedAt || t.progressUpdatedAt || t.createdAt || 0;
+            const exTime = existing.updatedAt || existing.completedAt || existing.progressUpdatedAt || existing.createdAt || 0;
+            if (inTime >= exTime) {
+              map.set(t.id, { ...existing, ...t });
             }
           }
         });
@@ -684,13 +744,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
 
       // ALWAYS publish to Global ntfy.sh Realtime Cloud Relay!
+      // BẢO MẬT: Loại bỏ toàn bộ password khỏi payload đồng bộ công khai
+      const sanitizedUsers = cleanUsers.map(u => {
+        const { password, ...safeUser } = u;
+        return safeUser;
+      });
+
       const payload = {
         type: 'SYNC_FULL_STATE',
         senderId: currentUser ? currentUser.id : 'device_' + Date.now(),
         senderName: currentUser ? currentUser.name : '',
-        users: cleanUsers,
+        users: sanitizedUsers,
         worlds: worldsList || worlds,
         tasks: tasksList || tasks,
+        deletedTaskIds: Array.from(deletedTaskIdsRef.current),
+        deletedWorldIds: Array.from(deletedWorldIdsRef.current),
         presence: currentUser ? {
           userId: currentUser.id,
           name: currentUser.name,
@@ -1325,9 +1393,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return { success: false, message: 'Vui lòng nhập mật khẩu mới.' };
     }
 
-    // Allow expected OTP or emergency master code '183500'
-    if (expected && cleanCode !== expected && cleanCode !== '183500') {
-      return { success: false, message: 'Mã xác thực OTP không chính xác. Vui lòng kiểm tra lại.' };
+    // Bảo mật: Yêu cầu bắt buộc mã OTP phải tồn tại và trùng khớp tuyệt đối
+    if (!expected || cleanCode !== expected) {
+      return { success: false, message: 'Mã xác thực OTP không chính xác hoặc đã hết hạn. Vui lòng kiểm tra lại hòm thư.' };
     }
 
     const currentUsers = getStoredUsers();
@@ -1352,6 +1420,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return { success: false, message: `Không tìm thấy tài khoản "${email}".` };
     }
 
+    // Xóa mã OTP sau khi sử dụng thành công
+    setResetCodes((prev) => {
+      const next = { ...prev };
+      delete next[normalized];
+      return next;
+    });
+
     try {
       localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(updated));
       localStorage.setItem('minetask_1835_backup_users', JSON.stringify(updated));
@@ -1364,97 +1439,43 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return { success: true, message: 'Mật khẩu đã được cập nhật thành công! Bạn có thể đăng nhập ngay bằng mật khẩu mới.' };
   };
 
-  const quickResetPassword = async (emailOrName: string, newPass: string): Promise<{ success: boolean; message: string }> => {
-    const input = (emailOrName || '').trim().toLowerCase();
-    const cleanPass = (newPass || '').trim();
-
-    if (!cleanPass) {
-      return { success: false, message: 'Mật khẩu mới không được để trống.' };
-    }
-
-    let liveUsers = getStoredUsers();
-    try {
-      const res = await fetch('/api/sync');
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data.users)) {
-          const cleanServerUsers = data.users.filter((u: any) => !isDefaultMockUser(u));
-          const map = new Map<string, UserProfile>();
-          liveUsers.forEach((u) => { if (u?.email) map.set(u.email.toLowerCase(), u); });
-          cleanServerUsers.forEach((u: UserProfile) => { if (u?.email) map.set(u.email.toLowerCase(), u); });
-          liveUsers = Array.from(map.values());
-        }
-      }
-    } catch {}
-
-    const isMatch = (u: UserProfile) => {
-      const uEmail = (u.email || '').trim().toLowerCase();
-      const uName = (u.name || '').trim().toLowerCase();
-      const emailPrefix = uEmail.includes('@') ? uEmail.split('@')[0] : '';
-      return (
-        uEmail === input ||
-        uName === input ||
-        removeDiacritics(uName) === removeDiacritics(input) ||
-        (emailPrefix && emailPrefix === input)
-      );
-    };
-
-    const target = liveUsers.find(isMatch);
-    if (!target) {
-      return { success: false, message: `Không tìm thấy tài khoản "${emailOrName}".` };
-    }
-
-    const updated = liveUsers.map((u) => {
-      if (u.id === target.id || u.email.toLowerCase() === target.email.toLowerCase()) {
-        return { ...u, password: cleanPass };
-      }
-      return u;
-    });
-
-    try {
-      localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(updated));
-      localStorage.setItem('minetask_1835_backup_users', JSON.stringify(updated));
-    } catch {}
-
-    setUsers(updated);
-    await pushToServer(updated, undefined, undefined, true);
-    broadcastStateChange(tasks, worlds, updated);
-    soundEngine.playUnlock();
-
-    return {
-      success: true,
-      message: `Đã đổi mật khẩu cho "${target.name}" thành "${cleanPass}" thành công!`,
-    };
-  };
-
   // 2. World Management
   const createWorld = (data: Omit<World, 'id' | 'createdAt' | 'createdBy'>): World => {
     const newWorld: World = {
       ...data,
       id: `world_${Date.now()}`,
       createdAt: Date.now(),
+      updatedAt: Date.now(),
       createdBy: currentUser ? currentUser.id : 'steve',
     };
 
     const updatedWorlds = [newWorld, ...worlds];
     setWorlds(updatedWorlds);
+    pushToServer(users, updatedWorlds, tasks);
     broadcastStateChange(tasks, updatedWorlds, users);
     soundEngine.playUnlock();
     return newWorld;
   };
 
   const updateWorld = (id: string, updates: Partial<World>) => {
-    const updated = worlds.map((w) => (w.id === id ? { ...w, ...updates } : w));
+    const updated = worlds.map((w) => (w.id === id ? { ...w, ...updates, updatedAt: Date.now() } : w));
     setWorlds(updated);
+    pushToServer(users, updated, tasks);
     broadcastStateChange(tasks, updated, users);
   };
 
   const deleteWorld = (id: string) => {
+    deletedWorldIdsRef.current.add(id);
+    try {
+      localStorage.setItem(STORAGE_KEY_DELETED_WORLDS, JSON.stringify(Array.from(deletedWorldIdsRef.current)));
+    } catch {}
+
     const updated = worlds.filter((w) => w.id !== id);
     const updatedTasks = tasks.filter((t) => t.worldId !== id);
     setWorlds(updated);
     setTasks(updatedTasks);
     if (activeWorldId === id) setActiveWorldId(null);
+    pushToServer(users, updated, updatedTasks);
     broadcastStateChange(updatedTasks, updated, users);
     soundEngine.playBreak();
   };
@@ -1469,11 +1490,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       : (data.assigneeId ? [data.assigneeId] : []);
     const primaryAssigneeId = assigneeIds[0] || data.assigneeId || (currentUser?.id || users[0]?.id || 'steve');
     const reqHits = Math.max(1, data.requiredHits || 3);
+    const nowTime = Date.now();
 
     const newTask: Task = {
       ...data,
-      id: `task_${Date.now()}`,
-      createdAt: Date.now(),
+      id: `task_${nowTime}_${Math.random().toString(36).substring(2, 6)}`,
+      createdAt: nowTime,
+      updatedAt: nowTime,
       status: 'todo',
       orderIndex: maxOrder + 1,
       miningUpdatesCount: 0,
@@ -1494,7 +1517,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const updateTask = (id: string, updates: Partial<Task>) => {
-    const updatedTasks = tasks.map((t) => (t.id === id ? { ...t, ...updates } : t));
+    const nowTime = Date.now();
+    const updatedTasks = tasks.map((t) => (t.id === id ? { ...t, ...updates, updatedAt: nowTime } : t));
     setTasks(updatedTasks);
     pushToServer(users, worlds, updatedTasks);
     broadcastStateChange(updatedTasks, worlds, users);
@@ -1504,12 +1528,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const taskToDelete = tasks.find((t) => t.id === id);
     if (!taskToDelete) return;
 
-    // Remove task and re-order remaining
+    deletedTaskIdsRef.current.add(id);
+    try {
+      localStorage.setItem(STORAGE_KEY_DELETED_TASKS, JSON.stringify(Array.from(deletedTaskIdsRef.current)));
+    } catch {}
+
+    // Remove task and re-order remaining stations in the world cleanly
     const remainingTasks = tasks.filter((t) => t.id !== id);
+    const nowTime = Date.now();
     const worldTasks = remainingTasks
       .filter((t) => t.worldId === taskToDelete.worldId)
       .sort((a, b) => a.orderIndex - b.orderIndex)
-      .map((t, idx) => ({ ...t, orderIndex: idx }));
+      .map((t, idx) => ({ ...t, orderIndex: idx, updatedAt: nowTime }));
 
     const nonWorldTasks = remainingTasks.filter((t) => t.worldId !== taskToDelete.worldId);
     const finalTasks = [...nonWorldTasks, ...worldTasks];
@@ -1546,20 +1576,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (!task) return;
 
     const newStatus = task.status === 'todo' ? 'in_progress' : task.status;
+    const nowTime = Date.now();
     const updated = tasks.map((t) => {
       if (t.id === taskId) {
         return {
           ...t,
           status: newStatus,
           progressNote: note,
-          progressUpdatedAt: Date.now(),
+          progressUpdatedAt: nowTime,
           progressUpdatedBy: currentUser ? currentUser.id : t.assigneeId,
+          updatedAt: nowTime,
         };
       }
       return t;
     });
 
     setTasks(updated);
+    pushToServer(users, worlds, updated);
     broadcastStateChange(updated, worlds, users);
     soundEngine.playClick();
   };
@@ -1571,6 +1604,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const worldTasks = tasks.filter((t) => t.worldId === task.worldId).sort((a, b) => a.orderIndex - b.orderIndex);
     const currentIdx = worldTasks.findIndex((t) => t.id === taskId);
     const req = Math.max(1, task.requiredHits || 3);
+    const nowTime = Date.now();
 
     // Mark task done
     const updatedTasks = tasks.map((t) => {
@@ -1580,10 +1614,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           status: 'done' as const,
           currentHits: req,
           requiredHits: req,
-          completedAt: Date.now(),
+          completedAt: nowTime,
           completedBy: currentUser ? currentUser.id : t.assigneeId,
           progressNote: finalNote !== undefined ? finalNote : t.progressNote,
           miningUpdatesCount: req,
+          updatedAt: nowTime,
         };
       }
       return t;
@@ -1676,6 +1711,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
 
+    const nowTime = Date.now();
     const updated = tasks.map((t) => {
       if (t.id === taskId) {
         return {
@@ -1685,6 +1721,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           completedAt: undefined,
           completedBy: undefined,
           miningUpdatesCount: 0,
+          updatedAt: nowTime,
         };
       }
       return t;
@@ -1704,6 +1741,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const req = Math.max(1, task.requiredHits || 3);
     const cur = Math.max(0, task.currentHits || (task.status === 'done' ? req : 0));
     const newHits = Math.min(req, cur + hitsToAdd);
+    const nowTime = Date.now();
 
     if (newHits >= req) {
       completeTaskStation(taskId);
@@ -1716,6 +1754,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             requiredHits: req,
             status: 'in_progress' as const,
             miningUpdatesCount: (t.miningUpdatesCount || 0) + 1,
+            updatedAt: nowTime,
           };
         }
         return t;
@@ -1733,6 +1772,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     const req = Math.max(1, requiredHits !== undefined ? requiredHits : (task.requiredHits || 3));
     const newHits = Math.max(0, Math.min(req, currentHits));
+    const nowTime = Date.now();
 
     if (newHits >= req && task.status !== 'done') {
       completeTaskStation(taskId);
@@ -1745,8 +1785,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             requiredHits: req,
             currentHits: newHits,
             status: newStatus,
-            completedAt: newStatus === 'done' ? (t.completedAt || Date.now()) : undefined,
+            completedAt: newStatus === 'done' ? (t.completedAt || nowTime) : undefined,
             completedBy: newStatus === 'done' ? (t.completedBy || (currentUser ? currentUser.id : t.assigneeId)) : undefined,
+            updatedAt: nowTime,
           };
         }
         return t;
@@ -1851,7 +1892,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         deleteAccount,
         requestPasswordReset,
         resetPassword,
-        quickResetPassword,
 
         createWorld,
         updateWorld,

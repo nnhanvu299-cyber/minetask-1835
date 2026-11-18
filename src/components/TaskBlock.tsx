@@ -77,7 +77,7 @@ export const TaskBlock: React.FC<TaskBlockProps> = ({ task }) => {
   };
 
   const handleDelete = () => {
-    if (window.confirm(`Xác nhận xóa khối nhiệm vụ "${task.title}"?`)) {
+    if (window.confirm(`Xác nhận xóa khối nhiệm vụ "${task.title}"? (Trường hợp tạo sai thứ tự bước, các trạm phía sau sẽ tự động được dồn thứ tự lên)`)) {
       deleteTask(task.id);
     }
   };

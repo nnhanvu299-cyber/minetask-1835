@@ -87,18 +87,31 @@ export const TimelineModal: React.FC<TimelineModalProps> = ({
   const safeUsers: UserProfile[] = useMemo(() => (Array.isArray(users) ? users.filter(Boolean) : []), [users]);
   const safeWorlds: World[] = useMemo(() => (Array.isArray(worlds) ? worlds.filter(Boolean) : []), [worlds]);
 
-  // Realtime date calculation: Automatically sync to today's date (e.g. 17/11/2026)
+  // Realtime date calculation: Automatically sync to today's date (e.g. 17/11/2026 or 18/11/2026)
   const now = new Date();
-  const realCurrentMonth = now.getMonth() + 1; // 11
-  const realCurrentDay = now.getDate(); // 17
-  const realCurrentWeek = Math.min(5, Math.max(1, Math.ceil(realCurrentDay / 7))); // 3
-  const realTodayDateKey = `${now.getFullYear()}-${String(realCurrentMonth).padStart(2, '0')}-${String(realCurrentDay).padStart(2, '0')}`;
-  const realTodayDisplayStr = `${String(realCurrentDay).padStart(2, '0')}/${String(realCurrentMonth).padStart(2, '0')}/${now.getFullYear()}`;
+  const realCurrentYear = now.getFullYear();
+  const realCurrentMonth = now.getMonth() + 1; // 1-12
+  const realCurrentDay = now.getDate(); // 1-31
+  const realCurrentWeek = Math.min(5, Math.max(1, Math.ceil(realCurrentDay / 7)));
+  const realTodayDateKey = `${realCurrentYear}-${String(realCurrentMonth).padStart(2, '0')}-${String(realCurrentDay).padStart(2, '0')}`;
+  const realTodayDisplayStr = `${String(realCurrentDay).padStart(2, '0')}/${String(realCurrentMonth).padStart(2, '0')}/${realCurrentYear}`;
+  const defaultMonthKey = `${realCurrentYear}-${String(realCurrentMonth).padStart(2, '0')}`;
+
+  // Dynamic available months list based on real date and existing tasks
+  const availableMonths = useMemo(() => {
+    const set = new Set<string>();
+    set.add(defaultMonthKey);
+    safeTasks.forEach((t) => {
+      const d = getSafeDateString(t?.deadline);
+      if (d && d.length >= 7) {
+        set.add(d.substring(0, 7));
+      }
+    });
+    return Array.from(set).sort();
+  }, [safeTasks, defaultMonthKey]);
 
   // Navigation & View Mode: Default to REALTIME current month & week!
-  const [selectedMonthTab, setSelectedMonthTab] = useState<'10' | '11' | 'all'>(() => {
-    return realCurrentMonth === 10 ? '10' : '11';
-  });
+  const [selectedMonthTab, setSelectedMonthTab] = useState<string>(() => defaultMonthKey);
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
   const [selectedWeekNum, setSelectedWeekNum] = useState<number>(realCurrentWeek);
 
@@ -196,19 +209,31 @@ export const TimelineModal: React.FC<TimelineModalProps> = ({
     });
   }, [safeTasks]);
 
-  // Active month number: 10, 11, or real current month
-  const activeMonthNum = selectedMonthTab === '11' ? 11 : selectedMonthTab === '10' ? 10 : realCurrentMonth;
-  const daysInMonth = (activeMonthNum === 11 || activeMonthNum === 4 || activeMonthNum === 6 || activeMonthNum === 9) ? 30 : 31;
+  // Active month number & year
+  const activeMonthNum = useMemo(() => {
+    if (selectedMonthTab === 'all') return realCurrentMonth;
+    const parts = selectedMonthTab.split('-');
+    return parseInt(parts[1], 10) || realCurrentMonth;
+  }, [selectedMonthTab, realCurrentMonth]);
+
+  const activeYearNum = useMemo(() => {
+    if (selectedMonthTab === 'all') return realCurrentYear;
+    const parts = selectedMonthTab.split('-');
+    return parseInt(parts[0], 10) || realCurrentYear;
+  }, [selectedMonthTab, realCurrentYear]);
+
+  const daysInMonth = useMemo(() => {
+    return new Date(activeYearNum, activeMonthNum, 0).getDate();
+  }, [activeYearNum, activeMonthNum]);
 
   // Tasks relevant to current Month Tab
   const relevantTasks = useMemo(() => {
     if (selectedMonthTab === 'all') {
       return tasksWithDeadline;
     }
-    const prefix = `2026-${String(selectedMonthTab).padStart(2, '0')}`;
     return tasksWithDeadline.filter((t) => {
       const d = getSafeDateString(t?.deadline);
-      return d.startsWith(prefix);
+      return d.startsWith(selectedMonthTab);
     });
   }, [tasksWithDeadline, selectedMonthTab]);
 
@@ -250,6 +275,7 @@ export const TimelineModal: React.FC<TimelineModalProps> = ({
       const bottomTasks = weekTasks.filter((_, idx) => idx % 2 === 1);
 
       const isCurrentWeek =
+        activeYearNum === realCurrentYear &&
         activeMonthNum === realCurrentMonth &&
         realCurrentDay >= startDay &&
         realCurrentDay <= endDay;
@@ -279,8 +305,8 @@ export const TimelineModal: React.FC<TimelineModalProps> = ({
     const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 
     for (let d = startDay; d <= endDay; d++) {
-      const dStr = `${now.getFullYear()}-${String(activeMonthNum).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-      const dateObj = new Date(now.getFullYear(), activeMonthNum - 1, d);
+      const dStr = `${activeYearNum}-${String(activeMonthNum).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const dateObj = new Date(activeYearNum, activeMonthNum - 1, d);
       const dayOfWeekText = dayNames[dateObj.getDay()] || '';
 
       const dayTasks = tasksByDate[dStr] || [];
@@ -382,33 +408,34 @@ export const TimelineModal: React.FC<TimelineModalProps> = ({
               </button>
             </div>
 
-            {/* Month Switcher Tabs */}
-            <div className="flex items-center bg-[#FFFDF7] p-0.5 border border-[#2D1A11] shadow-xs shrink-0">
-              <button
-                onClick={() => setSelectedMonthTab('10')}
-                className={`px-2 py-0.5 text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer ${
-                  selectedMonthTab === '10'
-                    ? 'bg-[#F37022] text-white'
-                    : 'text-[#2D1A11] hover:bg-[#FAF2DC]'
-                }`}
-                title="Xem Tháng 10 mẫu (có mốc 20/10, 24/10)"
-              >
-                T10
-              </button>
-              <button
-                onClick={() => setSelectedMonthTab('11')}
-                className={`px-2 py-0.5 text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer ${
-                  selectedMonthTab === '11'
-                    ? 'bg-[#F37022] text-white'
-                    : 'text-[#2D1A11] hover:bg-[#FAF2DC]'
-                }`}
-                title="Xem Tháng 11 hiện tại"
-              >
-                T11
-              </button>
+            {/* Dynamic Month Switcher Tabs */}
+            <div className="flex items-center bg-[#FFFDF7] p-0.5 border border-[#2D1A11] shadow-xs shrink-0 overflow-x-auto no-scrollbar max-w-[260px]">
+              {availableMonths.map((ym) => {
+                const parts = ym.split('-');
+                const mNum = parseInt(parts[1], 10);
+                const yNum = parseInt(parts[0], 10);
+                const label = `T${mNum}${yNum !== realCurrentYear ? `/'${String(yNum).slice(2)}` : ''}`;
+                const isSelected = selectedMonthTab === ym;
+                const isCurrent = ym === defaultMonthKey;
+
+                return (
+                  <button
+                    key={ym}
+                    onClick={() => setSelectedMonthTab(ym)}
+                    className={`px-2 py-0.5 text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer shrink-0 ${
+                      isSelected
+                        ? 'bg-[#F37022] text-white'
+                        : 'text-[#2D1A11] hover:bg-[#FAF2DC]'
+                    }`}
+                    title={`Xem Tháng ${mNum}/${yNum}${isCurrent ? ' (Tháng này - Thời gian thực)' : ''}`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
               <button
                 onClick={() => setSelectedMonthTab('all')}
-                className={`px-2 py-0.5 text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer ${
+                className={`px-2 py-0.5 text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer shrink-0 ${
                   selectedMonthTab === 'all'
                     ? 'bg-[#2D1A11] text-[#FAF2DC]'
                     : 'text-[#2D1A11] hover:bg-[#FAF2DC]'
@@ -431,52 +458,85 @@ export const TimelineModal: React.FC<TimelineModalProps> = ({
         </div>
 
         {/* ==================== REALTIME TODAY STATUS BANNER (YÊU CẦU 1) ==================== */}
-        <div className="bg-[#FFFDF7] border-b-2 border-[#2D1A11] px-2.5 py-1.5 sm:px-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 shadow-xs shrink-0 select-none">
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1.5 bg-[#ED1B24] text-white px-2 py-0.5 border border-[#2D1A11] font-black text-[11px] shadow-xs shrink-0">
-              <Sparkles size={12} className="animate-spin text-yellow-300" />
-              <span>HÔM NAY: {realTodayDisplayStr}</span>
+        <div className="bg-[#FFFDF7] border-b-2 border-[#2D1A11] px-2.5 py-2 sm:px-4 flex flex-col gap-2 shadow-xs shrink-0 select-none">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 bg-[#ED1B24] text-white px-2.5 py-1 border border-[#2D1A11] font-black text-xs shadow-xs shrink-0">
+                <Sparkles size={13} className="animate-spin text-yellow-300" />
+                <span>HÔM NAY: {realTodayDisplayStr}</span>
+              </div>
+
+              <div className="text-xs text-[#2D1A11] font-semibold flex items-center gap-1 flex-wrap">
+                {currentUser ? (
+                  <span>
+                    Bạn <strong className="text-[#F37022]">({currentUser.name || 'bạn'})</strong> đang có{' '}
+                    <span className="font-black text-[#ED1B24] bg-red-100 px-1.5 py-0.5 border border-red-300">
+                      {myPendingTasks.length}
+                    </span>{' '}
+                    nhiệm vụ cần hoàn thành
+                    {allPendingTasks.length !== myPendingTasks.length && (
+                      <span className="text-[#836251] text-[11px] font-normal ml-1">
+                        (Toàn đội: <strong>{allPendingTasks.length}</strong>)
+                      </span>
+                    )}
+                  </span>
+                ) : (
+                  <span>
+                    Đang có{' '}
+                    <span className="font-black text-[#ED1B24] bg-red-100 px-1.5 py-0.5 border border-red-300">
+                      {allPendingTasks.length}
+                    </span>{' '}
+                    nhiệm vụ cần hoàn thành
+                  </span>
+                )}
+              </div>
             </div>
 
-            <div className="text-xs text-[#2D1A11] font-semibold flex items-center gap-1 flex-wrap">
-              {currentUser ? (
-                <span>
-                  Bạn <strong className="text-[#F37022]">({currentUser.name || 'bạn'})</strong> đang có{' '}
-                  <span className="font-black text-[#ED1B24] bg-red-100 px-1.5 py-0.5 border border-red-300">
-                    {myPendingTasks.length}
-                  </span>{' '}
-                  nhiệm vụ cần hoàn thành
-                  {allPendingTasks.length !== myPendingTasks.length && (
-                    <span className="text-[#836251] text-[11px] font-normal ml-1">
-                      (Toàn đội: <strong>{allPendingTasks.length}</strong>)
-                    </span>
-                  )}
-                </span>
-              ) : (
-                <span>
-                  Đang có{' '}
-                  <span className="font-black text-[#ED1B24] bg-red-100 px-1.5 py-0.5 border border-red-300">
-                    {allPendingTasks.length}
-                  </span>{' '}
-                  nhiệm vụ cần hoàn thành
+            <button
+              onClick={() => {
+                onClose();
+                if (onNavigateToTasks) {
+                  onNavigateToTasks(filterWorldId !== 'all' ? filterWorldId : undefined);
+                }
+              }}
+              className="mc-btn mc-btn-green px-3.5 py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer text-white shadow-xs active:scale-95 transition-all shrink-0"
+              title="Chuyển thẳng vào danh sách nhiệm vụ"
+            >
+              <span>Xem thêm: Danh sách nhiệm vụ</span>
+              <ArrowRight size={14} className="text-yellow-200" />
+            </button>
+          </div>
+
+          {/* Quick task list for current user */}
+          {myPendingTasks.length > 0 && (
+            <div className="pt-1.5 border-t border-[#2D1A11]/10 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+              <span className="text-[10px] font-bold text-[#836251] shrink-0 uppercase">Nhiệm vụ của bạn:</span>
+              {myPendingTasks.slice(0, 5).map((t) => {
+                const b = getWorldBadge(t.worldId);
+                return (
+                  <button
+                    key={t.id}
+                    onClick={() => setSelectedTaskForModal(t)}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#FAF2DC] hover:bg-[#F3E6C8] border border-[#2D1A11] text-[10px] font-bold text-[#2D1A11] truncate max-w-[200px] cursor-pointer shadow-2xs shrink-0 active:scale-95 transition-transform"
+                    title={`Chạm để mở bảng gỗ: "${t.title}" (${b.fullName})`}
+                  >
+                    <span>{b.icon}</span>
+                    <span className="truncate">{t.title}</span>
+                    {t.deadline && (
+                      <span className="text-[#ED1B24] text-[9px] shrink-0 font-mono">
+                        ({t.deadline.substring(5)})
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+              {myPendingTasks.length > 5 && (
+                <span className="text-[10px] text-[#836251] font-bold shrink-0">
+                  +{myPendingTasks.length - 5} nữa
                 </span>
               )}
             </div>
-          </div>
-
-          <button
-            onClick={() => {
-              onClose();
-              if (onNavigateToTasks) {
-                onNavigateToTasks(filterWorldId !== 'all' ? filterWorldId : undefined);
-              }
-            }}
-            className="mc-btn mc-btn-green px-3 py-1 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer text-white shadow-xs active:scale-95 transition-all shrink-0"
-            title="Chuyển thẳng vào danh sách nhiệm vụ"
-          >
-            <span>Xem thêm: Danh sách nhiệm vụ</span>
-            <ArrowRight size={13} className="text-yellow-200" />
-          </button>
+          )}
         </div>
 
         {/* ==================== COMPACT TOOLBAR: FILTERS & STATS ==================== */}
@@ -607,20 +667,34 @@ export const TimelineModal: React.FC<TimelineModalProps> = ({
                   Không có nhiệm vụ nào cho bộ lọc này
                 </h3>
                 <p className="text-xs text-[#836251] max-w-sm mb-3">
-                  Hãy thử chọn "Tất cả" hoặc "Tháng 10" để xem các nhiệm vụ mẫu đầy đủ từ Tuần 1 đến Tuần 5.
+                  Hãy thử chọn "Tất cả" hoặc chuyển mốc tháng để xem các nhiệm vụ theo tuần và ngày.
                 </p>
-                <button
-                  onClick={() => {
-                    setSelectedMonthTab('10');
-                    setFilterMemberId('all');
-                    setFilterWorldId('all');
-                    setFilterStatus('all');
-                    setViewMode('month');
-                  }}
-                  className="mc-btn mc-btn-1835 text-xs px-3 py-1.5 font-bold cursor-pointer"
-                >
-                  Đặt lại về Tháng 10 mẫu
-                </button>
+                <div className="flex items-center gap-2 justify-center flex-wrap">
+                  <button
+                    onClick={() => {
+                      setSelectedMonthTab(defaultMonthKey);
+                      setFilterMemberId('all');
+                      setFilterWorldId('all');
+                      setFilterStatus('all');
+                      setViewMode('month');
+                    }}
+                    className="mc-btn mc-btn-1835 text-xs px-3 py-1.5 font-bold cursor-pointer"
+                  >
+                    Xem tháng hiện tại ({realTodayDisplayStr})
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedMonthTab('all');
+                      setFilterMemberId('all');
+                      setFilterWorldId('all');
+                      setFilterStatus('all');
+                      setViewMode('month');
+                    }}
+                    className="mc-btn bg-[#2D1A11] text-[#FAF2DC] text-xs px-3 py-1.5 font-bold cursor-pointer border border-white"
+                  >
+                    Xem tất cả mốc
+                  </button>
+                </div>
               </div>
             )}
 
