@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Header } from './components/Header';
 import { WorldsView } from './views/WorldsView';
@@ -21,7 +21,9 @@ import { soundEngine } from './utils/audio';
 import {
   requestDeviceNotificationPermission,
   checkAndTriggerDailyTaskNotification,
+  sendUpdateAvailableNotification,
 } from './utils/deviceNotification';
+import { subscribeToAppVersion, broadcastAppVersionToFirestore } from './services/firebase';
 
 const MainContent: React.FC = () => {
   const {
@@ -39,6 +41,51 @@ const MainContent: React.FC = () => {
     closeConfirmDelete,
   } = useApp();
 
+  // Instant Auto-Update Detection & Device Notification
+  const [hasNewUpdate, setHasNewUpdate] = useState(false);
+  const [updateVersion, setUpdateVersion] = useState<number | null>(null);
+  const [updateNote, setUpdateNote] = useState<string>('');
+  const currentAppVersion = useRef<number | null>(null);
+  const hasNotifiedRef = useRef<boolean>(false);
+
+  const handleApplyUpdate = useCallback(() => {
+    if (updateVersion) {
+      try {
+        localStorage.setItem('minetask_1835_installed_version', String(updateVersion));
+      } catch {}
+    }
+    // Clean caches and reload
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then((regs) => {
+        for (const reg of regs) {
+          reg.unregister();
+        }
+      });
+      if ('caches' in window) {
+        caches.keys().then((names) => {
+          names.forEach((name) => caches.delete(name));
+        });
+      }
+    }
+    window.location.reload();
+  }, [updateVersion]);
+
+  // Trigger notification to device and UI
+  const triggerUpdateAlert = useCallback(
+    (version: number, note?: string) => {
+      setHasNewUpdate(true);
+      setUpdateVersion(version);
+      if (note) setUpdateNote(note);
+
+      if (!hasNotifiedRef.current) {
+        hasNotifiedRef.current = true;
+        soundEngine.playTurnNotification();
+        sendUpdateAvailableNotification(version, handleApplyUpdate);
+      }
+    },
+    [handleApplyUpdate]
+  );
+
   // Proactively request device notification permission so update alerts pop up on Windows / Android
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -46,9 +93,98 @@ const MainContent: React.FC = () => {
       const timer = setTimeout(() => {
         requestDeviceNotificationPermission();
       }, 2500);
-      return () => clearTimeout(timer);
+
+      const handleFirstGesture = () => {
+        if ('Notification' in window && Notification.permission === 'default') {
+          Notification.requestPermission().catch(() => {});
+        }
+      };
+      window.addEventListener('pointerdown', handleFirstGesture, { once: true });
+
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('pointerdown', handleFirstGesture);
+      };
     }
   }, []);
+
+  // Real-time Firebase Cloud Version Listener (Sub-second cross-device push)
+  useEffect(() => {
+    const unsub = subscribeToAppVersion((data) => {
+      if (data && data.version) {
+        const cloudVersion = Number(data.version);
+        const lastKnown = localStorage.getItem('minetask_1835_installed_version');
+        const currentLocal = currentAppVersion.current || (lastKnown ? Number(lastKnown) : null);
+
+        if (currentLocal !== null && cloudVersion > currentLocal) {
+          triggerUpdateAlert(cloudVersion, data.note);
+        }
+      }
+    });
+
+    return () => {
+      if (unsub) unsub();
+    };
+  }, [triggerUpdateAlert]);
+
+  // Polling version.json as automatic background checker
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    let isChecking = false;
+    const checkVersion = async () => {
+      if (isChecking) return;
+      isChecking = true;
+      try {
+        const res = await fetch(`./version.json?t=${Date.now()}`, { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.version) {
+            const serverVersion = Number(data.version);
+            if (currentAppVersion.current === null) {
+              const lastKnown = localStorage.getItem('minetask_1835_installed_version');
+              if (lastKnown && serverVersion > Number(lastKnown)) {
+                triggerUpdateAlert(serverVersion, data.note);
+              } else if (!lastKnown) {
+                try {
+                  localStorage.setItem('minetask_1835_installed_version', String(serverVersion));
+                } catch {}
+              }
+              currentAppVersion.current = serverVersion;
+            } else if (serverVersion > currentAppVersion.current) {
+              triggerUpdateAlert(serverVersion, data.note);
+              currentAppVersion.current = serverVersion;
+              // Broadcast this latest version to Firestore so all team devices get notified
+              broadcastAppVersionToFirestore(serverVersion, data.note).catch(() => {});
+            }
+          }
+        }
+      } catch {} finally {
+        isChecking = false;
+      }
+    };
+
+    checkVersion();
+    const interval = setInterval(checkVersion, 15000); // Quét cập nhật mỗi 15 giây
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkVersion();
+      }
+    };
+    const onWindowFocus = () => {
+      checkVersion();
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('focus', onWindowFocus);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('focus', onWindowFocus);
+    };
+  }, [triggerUpdateAlert]);
 
   // Automatic Daily Task Notification (Yêu cầu 4: Nhắc việc hàng ngày - bạn đang trong task nào & hạn chót)
   useEffect(() => {
@@ -111,10 +247,41 @@ const MainContent: React.FC = () => {
     setIsTimelineOpen(true);
   };
 
+  const UpdateNotificationBanner = hasNewUpdate ? (
+    <aside
+      role="alert"
+      aria-label="Thông báo bản cập nhật mới"
+      className="fixed top-3 left-1/2 -translate-x-1/2 z-[99999] w-[94%] max-w-md animate-bounce"
+    >
+      <div className="mc-panel p-2.5 sm:p-3 bg-gradient-to-r from-[#F37022] to-[#ED1B24] text-white border-3 border-[#2D1A11] shadow-[0_6px_24px_rgba(0,0,0,0.6),4px_4px_0px_#2D1A11] flex items-center justify-between gap-2.5 rounded">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-2xl animate-pulse shrink-0">🚀</span>
+          <div className="min-w-0">
+            <div className="text-xs font-bold uppercase tracking-wider text-white truncate flex items-center gap-1.5">
+              <span>CÓ BẢN CẬP NHẬT MỚI!</span>
+              <span className="w-2 h-2 rounded-full bg-yellow-300 animate-ping"></span>
+            </div>
+            <div className="text-[10px] text-white/95 truncate">
+              {updateNote || 'Chạm để tải lại và nạp tính năng mới ngay'}
+            </div>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={handleApplyUpdate}
+          className="mc-btn bg-[#2D1A11] hover:bg-[#3D251A] text-[#FAF2DC] text-xs font-bold px-3 py-1.5 border-2 border-white cursor-pointer shrink-0 shadow-sm active:scale-95 transition-transform"
+        >
+          CẬP NHẬT 🔄
+        </button>
+      </div>
+    </aside>
+  ) : null;
+
   // If not logged in, ALWAYS display login screen directly!
   if (!currentUser) {
     return (
       <div className="min-h-screen min-h-[100dvh] flex items-center justify-center p-3 sm:p-4 login-cherry-bg relative overflow-hidden">
+        {UpdateNotificationBanner}
         {/* Gentle falling cherry petals in background */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
           {[...Array(12)].map((_, i) => (
@@ -146,6 +313,7 @@ const MainContent: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col text-[#2D1A11] relative overflow-x-hidden mc-minecraft-landscape">
+      {UpdateNotificationBanner}
       <div className="relative z-10 flex flex-col min-h-screen">
         {/* Top Header */}
         <Header

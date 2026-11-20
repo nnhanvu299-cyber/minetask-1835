@@ -312,23 +312,46 @@ export function subscribeToFirebaseAppState(
 }
 
 // 5. Quản lý Tin nhắn Trò chuyện Đội (Team Chat) trên Cloud Firestore
-export async function sendChatMessageToFirestore(msg: Omit<ChatMessage, 'id'>): Promise<string | null> {
+export async function sendChatMessageToFirestore(msg: ChatMessage | Omit<ChatMessage, 'id'>): Promise<string | null> {
   const { db, isReady } = initFirebase();
   if (!isReady || !db) return null;
 
   try {
     const chatCol = collection(db, 'chat_messages');
-    const msgDoc = doc(chatCol);
+    const msgId = (msg as ChatMessage).id;
+    const msgDoc = msgId ? doc(chatCol, msgId) : doc(chatCol);
     const id = msgDoc.id;
     const payload: ChatMessage = {
       ...msg,
       id,
     };
-    await setDoc(msgDoc, payload);
+    await setDoc(msgDoc, payload, { merge: true });
     return id;
   } catch (err) {
     console.error('[Firebase] Lỗi gửi tin nhắn chat:', err);
     return null;
+  }
+}
+
+export async function fetchChatMessagesFromFirestore(): Promise<ChatMessage[]> {
+  const { db, isReady } = initFirebase();
+  if (!isReady || !db) return [];
+
+  try {
+    const chatCol = collection(db, 'chat_messages');
+    const q = query(chatCol, orderBy('createdAt', 'asc'), limit(150));
+    const snapshot = await getDocs(q);
+    const msgs: ChatMessage[] = [];
+    snapshot.forEach((d) => {
+      const item = d.data() as ChatMessage;
+      if (item && item.id && item.senderId && item.text) {
+        msgs.push(item);
+      }
+    });
+    return msgs;
+  } catch (err) {
+    console.warn('[Firebase] Lỗi nạp tin nhắn chat:', err);
+    return [];
   }
 }
 
@@ -437,6 +460,58 @@ export async function deleteChatMessageFromFirestore(messageId: string): Promise
     return true;
   } catch (err) {
     console.error('[Firebase] Lỗi xóa tin nhắn chat:', err);
+    return false;
+  }
+}
+
+export function subscribeToAppVersion(
+  callback: (data: { version: number; note?: string; buildTime?: string }) => void
+): Unsubscribe | null {
+  const { db, isReady } = initFirebase();
+  if (!isReady || !db) return null;
+
+  try {
+    const versionDoc = doc(db, 'app_meta', 'latest_version');
+    return onSnapshot(
+      versionDoc,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          if (data && data.version) {
+            callback({
+              version: Number(data.version),
+              note: data.note,
+              buildTime: data.buildTime,
+            });
+          }
+        }
+      },
+      (err) => {
+        console.warn('[Firebase] Lỗi lắng nghe phiên bản ứng dụng:', err);
+      }
+    );
+  } catch (err) {
+    return null;
+  }
+}
+
+export async function broadcastAppVersionToFirestore(version: number, note?: string): Promise<boolean> {
+  const { db, isReady } = initFirebase();
+  if (!isReady || !db) return false;
+
+  try {
+    await setDoc(
+      doc(db, 'app_meta', 'latest_version'),
+      {
+        version,
+        note: note || 'Bản cập nhật mới 1835',
+        updatedAt: Date.now(),
+      },
+      { merge: true }
+    );
+    return true;
+  } catch (err) {
+    console.warn('[Firebase] Lỗi gửi thông báo phiên bản mới lên Cloud:', err);
     return false;
   }
 }

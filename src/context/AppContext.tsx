@@ -22,6 +22,7 @@ import {
   reactToChatMessageInFirestore,
   deleteChatMessageFromFirestore,
   markChatMessageReadInFirestore,
+  fetchChatMessagesFromFirestore,
 } from '../services/firebase';
 
 import { DEFAULT_USERS, INITIAL_WORLDS, INITIAL_TASKS } from '../data/initialData';
@@ -160,23 +161,26 @@ const CURRENT_VERSION_TAG = 'v23';
 
 function purgeLegacyAppData() {
   if (typeof window === 'undefined' || !window.localStorage) return;
+  if (localStorage.getItem('minetask_1835_purged_legacy_done')) return;
   try {
+    const legacyOldTags = ['_v1', '_v2', '_v3', '_v4', '_v5', '_v6', '_v7', '_v8', '_v9', '_v10', '_v11', '_v12', '_v13', '_v14', '_v15', '_v16', '_v17', '_v18', '_v19', '_v20', '_v21', '_v22'];
     const keysToRemove: string[] = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && (key.startsWith('minetask_') || key.startsWith('1835_'))) {
-        if (!key.includes(CURRENT_VERSION_TAG)) {
+        if (legacyOldTags.some((tag) => key.includes(tag))) {
           keysToRemove.push(key);
         }
       }
     }
     keysToRemove.forEach((k) => localStorage.removeItem(k));
+    localStorage.setItem('minetask_1835_purged_legacy_done', 'true');
 
     // Also purge outdated Service Worker caches
     if ('caches' in window) {
       caches.keys().then((names) => {
         names.forEach((name) => {
-          if (!name.includes('v23')) {
+          if (legacyOldTags.some((tag) => name.includes(tag))) {
             caches.delete(name);
           }
         });
@@ -298,11 +302,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   });
 
   // Team Co-op Chat State
-  const STORAGE_KEY_CHAT = 'minetask_1835_chat_messages_v24';
+  const STORAGE_KEY_CHAT = 'minetask_1835_chat_messages_v23';
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
     if (typeof window === 'undefined') return [];
     try {
-      const saved = localStorage.getItem(STORAGE_KEY_CHAT);
+      const saved =
+        localStorage.getItem(STORAGE_KEY_CHAT) ||
+        localStorage.getItem('minetask_1835_chat_messages_v24');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -322,6 +328,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       },
     ];
   });
+
+  // Tự động lưu trữ tin nhắn vào localStorage mỗi khi thay đổi
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (chatMessages && chatMessages.length > 0) {
+      try {
+        localStorage.setItem(STORAGE_KEY_CHAT, JSON.stringify(chatMessages.slice(-150)));
+      } catch {}
+    }
+  }, [chatMessages]);
   const [unreadChatCount, setUnreadChatCount] = useState<number>(0);
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const lastKnownChatIdRef = useRef<string | null>(null);
@@ -453,6 +469,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
       if (Array.isArray(cTasks) && cTasks.length > 0) {
         setTasks(cTasks);
+      }
+    });
+
+    // Nạp tin nhắn từ Cloud Firestore ngay khi khởi động
+    fetchChatMessagesFromFirestore().then((cloudMsgs) => {
+      if (Array.isArray(cloudMsgs) && cloudMsgs.length > 0) {
+        setChatMessages((prev) => {
+          const map = new Map<string, ChatMessage>();
+          prev.forEach((m) => map.set(m.id, m));
+          cloudMsgs.forEach((m) => map.set(m.id, m));
+          const merged = Array.from(map.values()).sort((a, b) => a.createdAt - b.createdAt);
+          try {
+            localStorage.setItem(STORAGE_KEY_CHAT, JSON.stringify(merged.slice(-150)));
+          } catch {}
+          return merged;
+        });
       }
     });
 
