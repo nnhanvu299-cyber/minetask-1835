@@ -44,6 +44,7 @@ export const WoodenSignModal: React.FC<WoodenSignModalProps> = ({
     deleteTask,
     users,
     currentUser,
+    requestConfirmDelete,
   } = useApp();
 
   const [noteText, setNoteText] = useState('');
@@ -162,8 +163,16 @@ export const WoodenSignModal: React.FC<WoodenSignModalProps> = ({
   // Delete task safely (re-order remaining steps)
   const handleDeleteTask = () => {
     if (!task) return;
-    deleteTask(task.id);
-    onClose();
+    requestConfirmDelete({
+      title: 'XÓA TRẠM NHIỆM VỤ',
+      message: `Bạn có chắc chắn muốn xóa Trạm #${stationNumber} không? Các trạm phía sau sẽ tự động dồn thứ tự lại.`,
+      itemName: task.title,
+      confirmText: 'XÓA TRẠM ✕',
+      onConfirm: () => {
+        deleteTask(task.id);
+        onClose();
+      },
+    });
   };
 
   // Reset to 0 hits
@@ -549,34 +558,10 @@ export const WoodenSignModal: React.FC<WoodenSignModalProps> = ({
           </div>
         </div>
 
-        {/* Delete Confirmation Alert Banner */}
-        {showConfirmDelete && (
-          <div className="p-3 bg-red-100 border-t-3 border-red-500 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-red-950 font-bold animate-fadeIn">
-            <div className="flex items-center gap-1.5">
-              <Trash2 size={16} className="text-red-700 shrink-0" />
-              <span>Xác nhận xóa Trạm {stationNumber}: "{task.title}"? Thứ tự các trạm sau đó sẽ tự động được dồn lại.</span>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={handleDeleteTask}
-                className="mc-btn bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 font-bold cursor-pointer shadow-xs active:scale-95"
-              >
-                ĐỒNG Ý XÓA ✕
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowConfirmDelete(false)}
-                className="mc-btn bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs px-2.5 py-1 font-bold cursor-pointer"
-              >
-                HỦY
-              </button>
-            </div>
-          </div>
-        )}
+
 
         {/* Modal Footer Actions */}
-        <div className="bg-[#EFE4CA] border-t-3 border-[#2D1A11] p-3 sm:p-3.5 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+        <div className="bg-[#EFE4CA] border-t-3 border-[#2D1A11] p-2.5 sm:p-3.5 pb-[max(0.75rem,env(safe-area-inset-bottom,0.5rem))] flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -587,7 +572,7 @@ export const WoodenSignModal: React.FC<WoodenSignModalProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => setShowConfirmDelete(!showConfirmDelete)}
+              onClick={handleDeleteTask}
               className="mc-btn bg-[#991b1b] hover:bg-[#7f1d1d] text-white text-xs px-2.5 py-2 font-bold cursor-pointer border border-[#2D1A11] flex items-center gap-1 shadow-xs active:scale-95"
               title="Xóa nhiệm vụ này khi tạo sai thứ tự bước"
             >

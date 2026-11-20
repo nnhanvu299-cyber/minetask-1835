@@ -94,6 +94,22 @@ export interface NotificationItem {
   xpEarned?: number;
 }
 
+export interface ChatMessage {
+  id: string;
+  senderId: UserId;
+  senderName: string;
+  senderAvatar?: string;
+  senderRole?: string;
+  senderColor?: string;
+  text: string;
+  createdAt: number;
+  type?: 'text' | 'shout' | 'system' | 'task_share';
+  attachedTaskId?: string;
+  attachedTaskTitle?: string;
+  reactions?: Record<string, string[]>; // emoji key -> array of userIds
+  readBy?: string[]; // array of userIds who have read this message
+}
+
 export interface AppState {
   users: UserProfile[];
   currentUser: UserProfile;
@@ -102,4 +118,5 @@ export interface AppState {
   activeWorldId: string | null;
   soundEnabled: boolean;
   notifications: NotificationItem[];
+  chatMessages?: ChatMessage[];
 }

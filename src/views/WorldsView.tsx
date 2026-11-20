@@ -55,13 +55,13 @@ export const WorldsView: React.FC<WorldsViewProps> = ({
           </div>
 
           {/* Action Buttons: Timeline Tổng + Tạo Thế Giới Mới */}
-          <div className="flex-shrink-0 flex items-center gap-2.5 flex-wrap">
+          <div className="flex-shrink-0 flex items-center gap-2 sm:gap-2.5 flex-wrap w-full md:w-auto">
             <button
               onClick={() => {
                 soundEngine.playClick();
                 onOpenTimeline();
               }}
-              className="mc-btn bg-[#2D1A11] hover:bg-[#3D251A] text-[#FAF2DC] text-xs md:text-sm px-4 py-3 font-bold tracking-wider flex items-center gap-2 shadow-[2px_2px_0px_#836251] border-2 border-[#FFFFFF] cursor-pointer"
+              className="mc-btn bg-[#2D1A11] hover:bg-[#3D251A] text-[#FAF2DC] text-xs md:text-sm px-4 py-2.5 sm:py-3 font-bold tracking-wider flex items-center justify-center gap-2 shadow-[2px_2px_0px_#836251] border-2 border-[#FFFFFF] cursor-pointer flex-1 sm:flex-none"
               title="Xem bản đồ timeline tổng theo tháng & tuần"
             >
               <Calendar size={16} className="text-[#F37022]" />
@@ -69,7 +69,7 @@ export const WorldsView: React.FC<WorldsViewProps> = ({
             </button>
             <button
               onClick={onOpenCreateWorld}
-              className="mc-btn mc-btn-1835 text-xs md:text-sm px-5 py-3 w-full sm:w-auto font-bold tracking-wider"
+              className="mc-btn mc-btn-1835 text-xs md:text-sm px-5 py-2.5 sm:py-3 font-bold tracking-wider flex items-center justify-center flex-1 sm:flex-none"
             >
               <Plus size={16} className="inline mr-1 stroke-[3]" />
               TẠO THẾ GIỚI MỚI

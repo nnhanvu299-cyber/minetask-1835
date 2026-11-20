@@ -1,5 +1,133 @@
 {
-  "users": [],
-  "worlds": [],
-  "tasks": []
+  "users": [
+    {
+      "email": "nhanvu299@gmail.com",
+      "avatarKey": "zodiac_than",
+      "primaryColor": "#F37022",
+      "totalXp": 220,
+      "updatedAt": 1795100874226,
+      "id": "user_1794989235478",
+      "level": 1,
+      "tasksMined": 1,
+      "favoriteBiome": "Rừng Hoa Anh Đào",
+      "name": "Nhàn",
+      "role": "Thành viên Co-op 1835",
+      "title": "Thợ Mỏ Co-op",
+      "password": "vuthinhan"
+    },
+    {
+      "updatedAt": 1795100874227,
+      "totalXp": 220,
+      "level": 1,
+      "tasksMined": 1,
+      "email": "quynhtrang25904@gmail.com",
+      "name": "Đỗ Ngọc Quỳnh Trang",
+      "avatarKey": "axolotl",
+      "id": "user_1794993237493",
+      "role": "Thành viên Co-op 1835",
+      "password": "meo250904",
+      "primaryColor": "#F37022",
+      "title": "Thợ Mỏ Co-op",
+      "favoriteBiome": "Rừng Hoa Anh Đào"
+    },
+    {
+      "level": 1,
+      "favoriteBiome": "Rừng Hoa Anh Đào",
+      "id": "user_1794997211032",
+      "updatedAt": 1795100874227,
+      "avatarKey": "zodiac_dau",
+      "role": "Thành viên Co-op 1835",
+      "email": "dungnguyen.chota@gmail.com",
+      "totalXp": 220,
+      "name": "Dũng",
+      "tasksMined": 1,
+      "title": "Thợ Mỏ Co-op",
+      "password": "Dung861982....",
+      "primaryColor": "#F37022"
+    },
+    {
+      "level": 2,
+      "avatarKey": "zodiac_mui",
+      "tasksMined": 2,
+      "password": "Thaihoa@2003",
+      "name": "Thaihoanubi",
+      "primaryColor": "#F37022",
+      "totalXp": 520,
+      "updatedAt": 1795100874227,
+      "email": "thaihoa2503zzz@gmail.com",
+      "role": "Thành viên Co-op 1835",
+      "title": "Thợ Mỏ Co-op",
+      "favoriteBiome": "Rừng Hoa Anh Đào",
+      "id": "user_1795100060412"
+    }
+  ],
+  "worlds": [
+    {
+      "difficulty": "Normal",
+      "updatedAt": 1795100383268,
+      "id": "world_1795100383268",
+      "description": "edit",
+      "biome": "diamond_cavern",
+      "createdBy": "user_1795100060412",
+      "createdAt": 1795100383268,
+      "targetDeadline": "2026-12-19",
+      "name": "Nhà táo"
+    }
+  ],
+  "tasks": [
+    {
+      "status": "todo",
+      "orderIndex": 0,
+      "miningLogs": [],
+      "assigneeIds": [
+        "user_1795100060412"
+      ],
+      "blockType": "emerald",
+      "title": "Trạm 4: Kiểm thử toàn diện và bàn giao",
+      "progressNote": "",
+      "description": "Đánh giá chất lượng và chuẩn bị bàn giao sản phẩm.",
+      "requiredHits": 3,
+      "xpValue": 300,
+      "createdAt": 1795100394497,
+      "miningUpdatesCount": 0,
+      "assigneeId": "user_1795100060412",
+      "updatedAt": 1795100394497,
+      "priority": "legendary",
+      "worldId": "world_1795100394492",
+      "currentHits": 0,
+      "id": "task_1795100394497_qqs5"
+    },
+    {
+      "description": "edit",
+      "blockType": "diamond",
+      "currentHits": 5,
+      "orderIndex": 0,
+      "completedAt": 1795100873925,
+      "miningUpdatesCount": 5,
+      "progressNote": "",
+      "worldId": "world_1795100383268",
+      "durationDays": 30,
+      "completedBy": "user_1795100060412",
+      "updatedAt": 1795163529759,
+      "xpValue": 220,
+      "miningLogs": [],
+      "startDate": "2026-11-19",
+      "progressUpdatedBy": "user_1795100060412",
+      "title": "Nhà Táo",
+      "status": "done",
+      "deadline": "2026-12-18",
+      "createdAt": 1795100792852,
+      "assigneeId": "user_1795100060412",
+      "requiredHits": 5,
+      "assigneeIds": [
+        "user_1795100060412",
+        "user_1794989235478",
+        "user_1794993237493",
+        "user_1794997211032"
+      ],
+      "id": "task_1795100792852_hx2v",
+      "priority": "normal",
+      "progressUpdatedAt": 1795100845964
+    }
+  ]
 }

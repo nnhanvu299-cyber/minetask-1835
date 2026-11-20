@@ -19,6 +19,7 @@ export const TaskBlock: React.FC<TaskBlockProps> = ({ task }) => {
     mineTaskHit,
     deleteTask,
     updateTaskProgressNote,
+    requestConfirmDelete,
   } = useApp();
 
   const isDone = task.status === 'done';
@@ -77,9 +78,12 @@ export const TaskBlock: React.FC<TaskBlockProps> = ({ task }) => {
   };
 
   const handleDelete = () => {
-    if (window.confirm(`Xác nhận xóa khối nhiệm vụ "${task.title}"? (Trường hợp tạo sai thứ tự bước, các trạm phía sau sẽ tự động được dồn thứ tự lên)`)) {
-      deleteTask(task.id);
-    }
+    requestConfirmDelete({
+      title: 'XÓA NHIỆM VỤ',
+      message: 'Bạn có chắc chắn muốn xóa khối nhiệm vụ này không? Các trạm phía sau sẽ tự động dồn thứ tự lên.',
+      itemName: task.title,
+      onConfirm: () => deleteTask(task.id),
+    });
   };
 
   return (

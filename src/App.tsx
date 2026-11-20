@@ -13,8 +13,10 @@ import { TimelineModal } from './components/TimelineModal';
 import { NotificationToast } from './components/NotificationToast';
 import { NotificationDrawer } from './components/NotificationDrawer';
 import { OnlineStatusModal } from './components/OnlineStatusModal';
+import { TeamChatModal } from './components/TeamChatModal';
+import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { Gamepad2, Globe, Calendar, Bell, User, RefreshCw } from 'lucide-react';
+import { Gamepad2, Globe, Calendar, Bell, User, RefreshCw, MessageSquare } from 'lucide-react';
 import { soundEngine } from './utils/audio';
 import {
   requestDeviceNotificationPermission,
@@ -28,8 +30,13 @@ const MainContent: React.FC = () => {
     activeWorld,
     setActiveWorldId,
     unreadNotificationCount,
+    unreadChatCount,
+    isChatOpen,
+    setIsChatOpen,
     worlds,
     tasks,
+    confirmDeleteState,
+    closeConfirmDelete,
   } = useApp();
 
   // Proactively request device notification permission so update alerts pop up on Windows / Android
@@ -63,6 +70,28 @@ const MainContent: React.FC = () => {
     window.addEventListener('1835_NAVIGATE_TO_TASK', handleNavToTask);
     return () => window.removeEventListener('1835_NAVIGATE_TO_TASK', handleNavToTask);
   }, [setActiveWorldId]);
+
+  // Minecraft Shortcut: Press 'T' to open Team Chat
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const activeTag = document.activeElement?.tagName?.toLowerCase();
+      const isInput =
+        activeTag === 'input' ||
+        activeTag === 'textarea' ||
+        (document.activeElement as HTMLElement)?.isContentEditable;
+      if (isInput) return;
+
+      if ((e.key === 't' || e.key === 'T') && !isChatOpen) {
+        e.preventDefault();
+        soundEngine.playClick();
+        setIsChatOpen(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isChatOpen, setIsChatOpen]);
 
 
 
@@ -125,13 +154,14 @@ const MainContent: React.FC = () => {
           onOpenNotifications={() => setIsNotificationsOpen(true)}
           onOpenTimeline={() => handleOpenTimeline(null)}
           onOpenOnlineModal={() => setIsOnlineModalOpen(true)}
+          onOpenChat={() => setIsChatOpen(true)}
         />
 
         {/* Real-time 8-bit Notification Toast */}
         <NotificationToast />
 
         {/* Main App Body */}
-        <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 md:p-6 pb-24 md:pb-6">
+        <main className="flex-1 max-w-7xl w-full mx-auto p-2.5 sm:p-5 md:p-6 pb-28 sm:pb-24 md:pb-6">
           {activeWorld ? (
             <WorldDetailView
               world={activeWorld}
@@ -149,14 +179,18 @@ const MainContent: React.FC = () => {
           )}
         </main>
 
-        {/* Floating Arcade Button in bottom corner (Desktop Only) */}
-        <div className="hidden md:block fixed bottom-5 right-5 z-40">
+        {/* Floating Arcade Button in bottom corner (Desktop Only - Left side, away from Chat) */}
+        <div className="hidden md:block fixed bottom-6 left-6 z-40">
           <button
-            onClick={() => setIsArcadeOpen(true)}
-            className="mc-btn mc-btn-1835 !w-12 !h-12 !p-0 flex items-center justify-center shadow-[4px_4px_0px_#2D1A11] group animate-bounce cursor-pointer text-white"
+            onClick={() => {
+              soundEngine.playClick();
+              setIsArcadeOpen(true);
+            }}
+            className="mc-btn mc-btn-1835 !h-11 px-3.5 flex items-center gap-2 shadow-[4px_4px_0px_#2D1A11] group cursor-pointer text-white font-bold text-xs hover:brightness-110 active:translate-x-0.5 active:translate-y-0.5 transition-all"
             title="Mở Trạm Giải Trí Arcade Pixel"
           >
-            <Gamepad2 size={24} className="group-hover:rotate-12 transition-transform text-white drop-shadow shrink-0" />
+            <Gamepad2 size={20} className="group-hover:rotate-12 transition-transform text-white drop-shadow shrink-0" />
+            <span className="tracking-wide uppercase font-bold">ARCADE</span>
           </button>
         </div>
 
@@ -168,7 +202,7 @@ const MainContent: React.FC = () => {
         </footer>
 
         {/* Mobile Bottom Navigation Bar (Thumb-Friendly on Android & iOS) */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#FAF2DC]/98 border-t-3 border-[#2D1A11] pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] pt-1.5 px-2 shadow-[0_-4px_12px_rgba(45,26,17,0.15)] backdrop-blur-md">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#FAF2DC]/98 border-t-3 border-[#2D1A11] pb-[max(0.5rem,env(safe-area-inset-bottom,0.5rem))] pt-1 px-1 sm:px-2 shadow-[0_-4px_12px_rgba(45,26,17,0.15)] backdrop-blur-md">
           <div className="flex items-center justify-around max-w-lg mx-auto">
             {/* Tab 1: Thế Giới (Worlds) */}
             <button
@@ -176,12 +210,12 @@ const MainContent: React.FC = () => {
                 soundEngine.playClick();
                 setActiveWorldId(null);
               }}
-              className={`flex-1 flex flex-col items-center py-1 px-1 transition-transform active:scale-95 ${
+              className={`flex-1 flex flex-col items-center py-1 px-0.5 sm:px-1 transition-transform active:scale-95 ${
                 !activeWorld ? 'text-[#F37022] font-bold' : 'text-[#836251]'
               }`}
             >
-              <Globe size={18} className={!activeWorld ? 'stroke-[2.5]' : ''} />
-              <span className="text-[10px] mt-0.5 font-bold tracking-tight">Thế giới</span>
+              <Globe size={17} className={!activeWorld ? 'stroke-[2.5]' : ''} />
+              <span className="text-[9px] sm:text-[10px] mt-0.5 font-bold tracking-tight">Thế giới</span>
             </button>
 
             {/* Tab 2: Timeline */}
@@ -190,24 +224,30 @@ const MainContent: React.FC = () => {
                 soundEngine.playClick();
                 handleOpenTimeline(activeWorld ? activeWorld.id : null);
               }}
-              className="flex-1 flex flex-col items-center py-1 px-1 text-[#52372A] transition-transform active:scale-95"
+              className="flex-1 flex flex-col items-center py-1 px-0.5 sm:px-1 text-[#52372A] transition-transform active:scale-95"
             >
-              <Calendar size={18} className="text-[#0072CE]" />
-              <span className="text-[10px] mt-0.5 font-bold tracking-tight">Timeline</span>
+              <Calendar size={17} className="text-[#0072CE]" />
+              <span className="text-[9px] sm:text-[10px] mt-0.5 font-bold tracking-tight">Timeline</span>
             </button>
 
-            {/* Tab 3: Arcade Pixel Game (Center Highlighted Tab) */}
+            {/* Tab 3: Kênh Chat Đội 1835 (Center Highlighted Tab on Mobile) */}
             <button
               onClick={() => {
                 soundEngine.playClick();
-                setIsArcadeOpen(true);
+                setIsChatOpen(true);
               }}
-              className="flex-1 flex flex-col items-center py-1 px-1 text-[#2D1A11] transition-transform active:scale-95 relative"
+              className="flex-1 flex flex-col items-center py-1 px-0.5 sm:px-1 text-[#2D1A11] transition-transform active:scale-95 relative"
+              title="Kênh Chat Đội 1835"
             >
-              <div className="w-8 h-8 -mt-3 bg-gradient-to-r from-[#F37022] to-[#ED1B24] border-2 border-[#2D1A11] flex items-center justify-center shadow-md">
-                <Gamepad2 size={18} className="text-white drop-shadow" />
+              <div className="w-9 h-9 sm:w-10 sm:h-10 -mt-3 sm:-mt-3.5 bg-gradient-to-r from-[#1aa64e] to-[#13803c] border-2 border-[#2D1A11] flex items-center justify-center shadow-[2px_2px_0px_#2D1A11] relative">
+                <MessageSquare size={17} className="text-white drop-shadow" />
+                {unreadChatCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-[#ED1B24] text-white text-[8px] sm:text-[9px] font-bold px-1.5 py-0.2 rounded-full border border-[#2D1A11] animate-bounce">
+                    {unreadChatCount}
+                  </span>
+                )}
               </div>
-              <span className="text-[10px] mt-0.5 font-bold tracking-tight">Arcade</span>
+              <span className="text-[9px] sm:text-[10px] mt-0.5 font-bold tracking-tight text-[#13803c]">Chat đội</span>
             </button>
 
             {/* Tab 4: Thông Báo (Notifications with Badge) */}
@@ -216,17 +256,17 @@ const MainContent: React.FC = () => {
                 soundEngine.playClick();
                 setIsNotificationsOpen(true);
               }}
-              className="flex-1 flex flex-col items-center py-1 px-1 text-[#52372A] transition-transform active:scale-95 relative"
+              className="flex-1 flex flex-col items-center py-1 px-0.5 sm:px-1 text-[#52372A] transition-transform active:scale-95 relative"
             >
               <div className="relative">
-                <Bell size={18} />
+                <Bell size={17} />
                 {unreadNotificationCount > 0 && (
                   <span className="absolute -top-1.5 -right-2 bg-[#ED1B24] text-white text-[8px] font-bold px-1 rounded-full border border-[#2D1A11] animate-bounce">
                     {unreadNotificationCount}
                   </span>
                 )}
               </div>
-              <span className="text-[10px] mt-0.5 font-bold tracking-tight">Thông báo</span>
+              <span className="text-[9px] sm:text-[10px] mt-0.5 font-bold tracking-tight">Thông báo</span>
             </button>
 
             {/* Tab 5: Hồ Sơ (Profile) */}
@@ -235,16 +275,49 @@ const MainContent: React.FC = () => {
                 soundEngine.playClick();
                 setIsProfileOpen(true);
               }}
-              className="flex-1 flex flex-col items-center py-1 px-1 text-[#52372A] transition-transform active:scale-95"
+              className="flex-1 flex flex-col items-center py-1 px-0.5 sm:px-1 text-[#52372A] transition-transform active:scale-95"
             >
-              <User size={18} className="text-[#753B94]" />
-              <span className="text-[10px] mt-0.5 font-bold tracking-tight">Cá nhân</span>
+              <User size={17} className="text-[#753B94]" />
+              <span className="text-[9px] sm:text-[10px] mt-0.5 font-bold tracking-tight">Cá nhân</span>
             </button>
           </div>
         </nav>
       </div>
 
+      {/* Floating Team Chat Widget Trigger (Desktop bottom-right Only, clean & never blocked) */}
+      <div className="hidden md:block fixed bottom-6 right-6 z-40">
+        <button
+          onClick={() => {
+            soundEngine.playClick();
+            setIsChatOpen(!isChatOpen);
+          }}
+          className="mc-btn flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#1aa64e] to-[#13803c] text-white border-3 border-[#2D1A11] shadow-[4px_4px_0px_#2D1A11] active:translate-x-0.5 active:translate-y-0.5 transition-all cursor-pointer font-bold text-xs hover:brightness-110"
+          title="Mở Kênh Trò Chuyện Đội 1835 (Phím tắt: T)"
+        >
+          <div className="relative flex items-center justify-center">
+            <MessageSquare size={18} className="text-white drop-shadow" />
+            {unreadChatCount > 0 && (
+              <span className="absolute -top-2.5 -right-2.5 bg-[#ED1B24] text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full border border-[#2D1A11] animate-bounce">
+                {unreadChatCount}
+              </span>
+            )}
+          </div>
+          <span className="tracking-wide uppercase font-bold">
+            CHAT ĐỘI {unreadChatCount > 0 ? `(${unreadChatCount})` : ''}
+          </span>
+        </button>
+      </div>
+
       {/* Modals */}
+      <TeamChatModal
+        isOpen={isChatOpen}
+        onClose={() => setIsChatOpen(false)}
+        onNavigateToTask={(worldId, taskId) => {
+          setIsChatOpen(false);
+          setActiveWorldId(worldId);
+        }}
+      />
+
       <OnlineStatusModal
         isOpen={isOnlineModalOpen}
         onClose={() => setIsOnlineModalOpen(false)}
@@ -253,6 +326,11 @@ const MainContent: React.FC = () => {
       <NotificationDrawer
         isOpen={isNotificationsOpen}
         onClose={() => setIsNotificationsOpen(false)}
+      />
+
+      <ConfirmDeleteModal
+        state={confirmDeleteState}
+        onClose={closeConfirmDelete}
       />
 
       <ArcadeModal

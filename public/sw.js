@@ -1,4 +1,4 @@
-const CACHE_NAME = 'minetask-1835s-v31-bg-push';
+const CACHE_NAME = 'minetask-1835s-v32-seen-confirm';
 
 const PRECACHE_ASSETS = [
   './',

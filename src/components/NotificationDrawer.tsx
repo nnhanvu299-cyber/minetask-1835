@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { Bell, CheckCheck, Trash2, X, Sparkles, Zap, Clock, Send } from 'lucide-react';
+import { Bell, CheckCheck, Trash2, X, Clock } from 'lucide-react';
 import {
   getNotificationPermission,
   requestDeviceNotificationPermission,
-  sendTestDeviceNotification,
-  checkAndTriggerDailyTaskNotification,
 } from '../utils/deviceNotification';
 
 interface NotificationDrawerProps {
@@ -14,46 +12,14 @@ interface NotificationDrawerProps {
 }
 
 export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, onClose }) => {
-  const { notifications, markAllNotificationsRead, dismissNotification, currentUser, tasks } = useApp();
+  const { notifications, markAllNotificationsRead, dismissNotification, requestConfirmDelete } = useApp();
   const [perm, setPerm] = useState(getNotificationPermission);
-  const [testSent, setTestSent] = useState(false);
 
   if (!isOpen) return null;
 
   const handleEnablePermission = async () => {
-    const granted = await requestDeviceNotificationPermission();
+    await requestDeviceNotificationPermission();
     setPerm(getNotificationPermission());
-    if (granted) {
-      await sendTestDeviceNotification();
-      setTestSent(true);
-      setTimeout(() => setTestSent(false), 3000);
-    }
-  };
-
-  const handleTestNotification = async () => {
-    await sendTestDeviceNotification();
-    setTestSent(true);
-    setTimeout(() => setTestSent(false), 3000);
-  };
-
-  const handleTriggerUpdateAlert = async () => {
-    if (perm !== 'granted') {
-      await requestDeviceNotificationPermission();
-      setPerm(getNotificationPermission());
-    }
-    window.dispatchEvent(new CustomEvent('1835_TRIGGER_UPDATE_ALERT'));
-    setTestSent(true);
-    setTimeout(() => setTestSent(false), 3000);
-  };
-
-  const handleTriggerDailyTaskAlert = async () => {
-    if (perm !== 'granted') {
-      await requestDeviceNotificationPermission();
-      setPerm(getNotificationPermission());
-    }
-    await checkAndTriggerDailyTaskNotification(currentUser, tasks, true);
-    setTestSent(true);
-    setTimeout(() => setTestSent(false), 3000);
   };
 
   return (
@@ -68,20 +34,22 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, 
             <Bell size={18} className="text-[#F37022]" />
             <div>
               <h3 className="text-sm font-bold text-[#2D1A11] tracking-wider leading-none">
-                HỘP THƯ THÔNG BÁO CO-OP
+                HỘP THƯ THÔNG BÁO
               </h3>
             </div>
           </div>
 
           <div className="flex items-center gap-1.5">
-            <button
-              onClick={markAllNotificationsRead}
-              className="mc-btn px-2 py-1 text-[10px] font-bold bg-[#FAF2DC] border border-[#2D1A11]"
-              title="Đánh dấu tất cả đã đọc"
-            >
-              <CheckCheck size={12} className="inline mr-0.5" />
-              ĐÃ ĐỌC HẾT
-            </button>
+            {notifications.some((n) => !n.read) && (
+              <button
+                onClick={markAllNotificationsRead}
+                className="mc-btn px-2 py-1 text-[10px] font-bold bg-[#FAF2DC] border border-[#2D1A11]"
+                title="Đánh dấu tất cả đã đọc"
+              >
+                <CheckCheck size={12} className="inline mr-0.5" />
+                ĐÃ ĐỌC HẾT
+              </button>
+            )}
             <button
               onClick={onClose}
               className="mc-btn mc-btn-obsidian px-2 py-1 text-xs text-[#FAF2DC]"
@@ -92,76 +60,23 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, 
           </div>
         </div>
 
-        {/* Device Notification Status & Quick Enable / Test Banner */}
-        <div className="p-2.5 sm:p-3 bg-[#FFFDF7] border-b-2 border-[#2D1A11] flex items-center justify-between gap-2 shadow-2xs">
-          <div className="flex items-center gap-2 min-w-0">
-            <span
-              className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                perm === 'granted' ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
-              }`}
-            ></span>
-            <div className="min-w-0">
-              <div className="text-xs font-bold text-[#2D1A11] truncate">
-                {perm === 'granted' ? 'Thông báo thiết bị: BẬT ✅' : 'Thông báo thiết bị: TẮT ⚠️'}
-              </div>
+        {/* Device Notification Permission Prompt (Only shows if disabled) */}
+        {perm !== 'granted' && (
+          <div className="p-2.5 bg-amber-50/90 border-b-2 border-[#2D1A11] flex items-center justify-between gap-2 shadow-2xs">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
+              <span className="text-xs font-semibold text-[#52372A] truncate">
+                Bật thông báo thiết bị để nhận tin khi có việc mới
+              </span>
             </div>
+            <button
+              onClick={handleEnablePermission}
+              className="mc-btn mc-btn-emerald px-2 py-1 text-[10px] font-bold text-white shrink-0 cursor-pointer"
+            >
+              BẬT NGAY 🔔
+            </button>
           </div>
-
-          <div className="flex items-center gap-1.5 shrink-0">
-            {perm !== 'granted' ? (
-              <button
-                onClick={handleEnablePermission}
-                className="mc-btn mc-btn-emerald px-2 py-1 text-[10px] font-bold text-white cursor-pointer"
-              >
-                BẬT NGAY 🔔
-              </button>
-            ) : (
-              <button
-                onClick={handleTestNotification}
-                className="mc-btn px-2 py-1 text-[10px] font-bold bg-[#FAF2DC] border border-[#2D1A11] hover:bg-[#F3E6C8] cursor-pointer"
-                title="Gửi 1 thông báo thử nghiệm về máy"
-              >
-                THỬ GỬI 🚀
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Quick Send Update Alert Banner */}
-        <div className="p-2.5 bg-gradient-to-r from-[#F37022]/15 to-[#ED1B24]/15 border-b-2 border-[#2D1A11] flex items-center justify-between gap-2 shadow-2xs">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-base animate-pulse">🚀</span>
-            <div className="min-w-0">
-              <div className="text-[11px] font-bold text-[#2D1A11]">THÔNG BÁO BẢN CẬP NHẬT</div>
-              <div className="text-[10px] text-[#52372A]">Bắn thông báo bản mới & chuông về máy</div>
-            </div>
-          </div>
-          <button
-            onClick={handleTriggerUpdateAlert}
-            className="mc-btn mc-btn-1835 px-2.5 py-1 text-[11px] font-bold text-white shrink-0 cursor-pointer shadow-xs active:scale-95 flex items-center gap-1"
-            title="Nhấn để gửi ngay thông báo cập nhật về máy"
-          >
-            <span>GỬI TB CẬP NHẬT 🔔</span>
-          </button>
-        </div>
-
-        {/* Quick Send Daily Task Alert Banner (Yêu cầu 4) */}
-        <div className="p-2.5 bg-gradient-to-r from-emerald-500/15 to-[#0072CE]/15 border-b-2 border-[#2D1A11] flex items-center justify-between gap-2 shadow-2xs">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-base animate-bounce">⛏️</span>
-            <div className="min-w-0">
-              <div className="text-[11px] font-bold text-[#2D1A11]">THÔNG BÁO TASK HÀNG NGÀY</div>
-              <div className="text-[10px] text-[#52372A]">Nhắc việc: bạn đang trong task nào & thời hạn</div>
-            </div>
-          </div>
-          <button
-            onClick={handleTriggerDailyTaskAlert}
-            className="mc-btn mc-btn-green px-2.5 py-1 text-[11px] font-bold text-white shrink-0 cursor-pointer shadow-xs active:scale-95 flex items-center gap-1"
-            title="Nhấn để gửi ngay thông báo nhắc việc hôm nay về máy"
-          >
-            <span>NHẮC TASK NGAY 🔔</span>
-          </button>
-        </div>
+        )}
 
         {/* List of Notifications */}
         <div className="p-3 overflow-y-auto space-y-2.5 flex-1">
@@ -198,11 +113,18 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, 
                     </div>
 
                     <button
-                      onClick={() => dismissNotification(n.id)}
-                      className="text-[#836251] hover:text-[#ED1B24] p-0.5"
+                      onClick={() => {
+                        requestConfirmDelete({
+                          title: 'XÓA THÔNG BÁO',
+                          message: 'Bạn có chắc chắn muốn xóa thông báo này không?',
+                          itemName: n.title,
+                          onConfirm: () => dismissNotification(n.id),
+                        });
+                      }}
+                      className="text-[#836251] hover:text-[#ED1B24] p-1 cursor-pointer transition-colors"
                       title="Xóa thông báo"
                     >
-                      <Trash2 size={12} />
+                      <Trash2 size={13} />
                     </button>
                   </div>
 

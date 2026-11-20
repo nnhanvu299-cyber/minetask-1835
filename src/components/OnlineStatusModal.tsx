@@ -7,7 +7,6 @@ import {
   WifiOff,
   RefreshCw,
   X,
-  CheckCircle,
   Users,
   Zap,
   Globe,
@@ -37,36 +36,13 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
     lastSyncTime,
     serverPing,
     onlineMembers,
-    syncNow,
     isFirebaseConnected,
     firebaseConfig,
   } = useApp();
 
-  const [isManualSyncing, setIsManualSyncing] = useState(false);
-  const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
   const [isFirebaseModalOpen, setIsFirebaseModalOpen] = useState(false);
 
   if (!isOpen) return null;
-
-  const handleManualSync = async () => {
-    setIsManualSyncing(true);
-    soundEngine.playClick();
-    setSyncFeedback(null);
-    try {
-      const ok = await syncNow();
-      if (ok) {
-        soundEngine.playUnlock();
-        setSyncFeedback('Đã đồng bộ thành công dữ liệu mới nhất!');
-      } else {
-        setSyncFeedback('Đã lưu dữ liệu cục bộ an toàn trên máy.');
-      }
-    } catch {
-      setSyncFeedback('Lỗi đồng bộ. Đang sử dụng dữ liệu trên máy.');
-    } finally {
-      setIsManualSyncing(false);
-      setTimeout(() => setSyncFeedback(null), 3500);
-    }
-  };
 
   const isConnected = isOnlineMode && networkOnline && serverConnected;
 
@@ -193,13 +169,7 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
           </div>
         </div>
 
-        {/* Sync Feedback Message */}
-        {syncFeedback && (
-          <div className="mb-4 p-2.5 bg-emerald-50 border border-emerald-300 rounded text-xs text-emerald-800 font-medium flex items-center gap-2 animate-fadeIn">
-            <CheckCircle size={15} className="text-emerald-600 shrink-0" />
-            <span>{syncFeedback}</span>
-          </div>
-        )}
+
 
         {/* Firebase Cloud Firestore Card */}
         <div className={`p-3 border-2 rounded mb-3 flex items-center justify-between gap-3 ${
@@ -240,17 +210,7 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
           </button>
         </div>
 
-        {/* Manual Sync Button */}
-        <div className="mb-4">
-          <button
-            onClick={handleManualSync}
-            disabled={isManualSyncing}
-            className="w-full py-2 px-3 mc-btn-1835 text-white text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.99] disabled:opacity-60"
-          >
-            <RefreshCw size={14} className={isManualSyncing ? 'animate-spin' : ''} />
-            <span>{isManualSyncing ? 'ĐANG ĐỒNG BỘ DỮ LIỆU...' : 'ĐỒNG BỘ NGAY BÂY GIỜ (SYNC NOW)'}</span>
-          </button>
-        </div>
+
 
         {/* Section: Live Online Members Roster */}
         <div className="p-3 bg-[#FAF2DC] border-2 border-[#2D1A11] rounded mb-4">

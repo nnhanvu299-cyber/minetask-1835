@@ -5,14 +5,18 @@ import {
   doc,
   setDoc,
   getDocs,
+  getDoc,
   deleteDoc,
   updateDoc,
   onSnapshot,
+  query,
+  orderBy,
+  limit,
   Firestore,
   Unsubscribe,
   writeBatch
 } from 'firebase/firestore';
-import { UserProfile, Task, World } from '../types';
+import { UserProfile, Task, World, ChatMessage } from '../types';
 
 export interface FirebaseConfig {
   apiKey: string;
@@ -304,5 +308,135 @@ export function subscribeToFirebaseAppState(
     });
   } catch {
     return null;
+  }
+}
+
+// 5. Quản lý Tin nhắn Trò chuyện Đội (Team Chat) trên Cloud Firestore
+export async function sendChatMessageToFirestore(msg: Omit<ChatMessage, 'id'>): Promise<string | null> {
+  const { db, isReady } = initFirebase();
+  if (!isReady || !db) return null;
+
+  try {
+    const chatCol = collection(db, 'chat_messages');
+    const msgDoc = doc(chatCol);
+    const id = msgDoc.id;
+    const payload: ChatMessage = {
+      ...msg,
+      id,
+    };
+    await setDoc(msgDoc, payload);
+    return id;
+  } catch (err) {
+    console.error('[Firebase] Lỗi gửi tin nhắn chat:', err);
+    return null;
+  }
+}
+
+export function subscribeToChatMessages(
+  onMessages: (messages: ChatMessage[]) => void
+): Unsubscribe | null {
+  const { db, isReady } = initFirebase();
+  if (!isReady || !db) return null;
+
+  try {
+    const chatCol = collection(db, 'chat_messages');
+    const q = query(chatCol, orderBy('createdAt', 'asc'), limit(150));
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const msgs: ChatMessage[] = [];
+        snapshot.forEach((d) => {
+          const item = d.data() as ChatMessage;
+          if (item && item.id && item.senderId && item.text) {
+            msgs.push(item);
+          }
+        });
+        onMessages(msgs);
+      },
+      (err) => {
+        console.warn('[Firebase] Lỗi lắng nghe chat:', err);
+      }
+    );
+  } catch (err) {
+    console.warn('[Firebase] Không thể thiết lập listener chat:', err);
+    return null;
+  }
+}
+
+export async function reactToChatMessageInFirestore(
+  messageId: string,
+  emoji: string,
+  userId: string
+): Promise<boolean> {
+  const { db, isReady } = initFirebase();
+  if (!isReady || !db) return false;
+
+  try {
+    const msgRef = doc(db, 'chat_messages', messageId);
+    const snap = await getDoc(msgRef);
+    if (!snap.exists()) return false;
+    const data = snap.data() as ChatMessage;
+    const reactions = { ...(data.reactions || {}) };
+    const currentUsers = Array.isArray(reactions[emoji]) ? [...reactions[emoji]] : [];
+
+    if (currentUsers.includes(userId)) {
+      // Toggle off
+      reactions[emoji] = currentUsers.filter((id) => id !== userId);
+      if (reactions[emoji].length === 0) {
+        delete reactions[emoji];
+      }
+    } else {
+      // Add reaction
+      reactions[emoji] = [...currentUsers, userId];
+    }
+
+    await updateDoc(msgRef, { reactions });
+    return true;
+  } catch (err) {
+    console.error('[Firebase] Lỗi thả reaction tin nhắn:', err);
+    return false;
+  }
+}
+
+export async function markChatMessageReadInFirestore(
+  messageIds: string[],
+  userId: string
+): Promise<boolean> {
+  const { db, isReady } = initFirebase();
+  if (!isReady || !db || !messageIds || messageIds.length === 0) return false;
+
+  try {
+    const promises = messageIds.map(async (msgId) => {
+      try {
+        const msgRef = doc(db, 'chat_messages', msgId);
+        const snap = await getDoc(msgRef);
+        if (!snap.exists()) return;
+        const data = snap.data() as ChatMessage;
+        const current = Array.isArray(data.readBy) ? data.readBy : [];
+        if (!current.includes(userId)) {
+          await updateDoc(msgRef, {
+            readBy: [...current, userId],
+          });
+        }
+      } catch {}
+    });
+    await Promise.all(promises);
+    return true;
+  } catch (err) {
+    console.warn('[Firebase] Lỗi cập nhật trạng thái đã xem:', err);
+    return false;
+  }
+}
+
+export async function deleteChatMessageFromFirestore(messageId: string): Promise<boolean> {
+  const { db, isReady } = initFirebase();
+  if (!isReady || !db) return false;
+
+  try {
+    await deleteDoc(doc(db, 'chat_messages', messageId));
+    return true;
+  } catch (err) {
+    console.error('[Firebase] Lỗi xóa tin nhắn chat:', err);
+    return false;
   }
 }

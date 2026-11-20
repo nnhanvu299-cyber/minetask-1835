@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { PixelAvatar } from '../utils/pixelAvatars';
 import { soundEngine } from '../utils/audio';
-import { Volume2, VolumeX, Smartphone, Users, Bell, Gamepad2, LogOut, Calendar } from 'lucide-react';
+import { Volume2, VolumeX, Smartphone, Users, Bell, Gamepad2, LogOut, Calendar, MessageSquare } from 'lucide-react';
 
 interface HeaderProps {
   onOpenProfileModal: () => void;
@@ -10,6 +10,7 @@ interface HeaderProps {
   onOpenNotifications: () => void;
   onOpenTimeline?: () => void;
   onOpenOnlineModal?: () => void;
+  onOpenChat?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -18,6 +19,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenNotifications,
   onOpenTimeline,
   onOpenOnlineModal,
+  onOpenChat,
 }) => {
   const {
     currentUser,
@@ -27,6 +29,9 @@ export const Header: React.FC<HeaderProps> = ({
     toggleSound,
     setActiveWorldId,
     unreadNotificationCount,
+    unreadChatCount,
+    isChatOpen,
+    setIsChatOpen,
     isOnlineMode,
     networkOnline,
     serverConnected,
@@ -145,6 +150,24 @@ export const Header: React.FC<HeaderProps> = ({
             )}
           </button>
 
+          {/* Team Chat Trigger Button (Desktop) */}
+          <button
+            onClick={() => {
+              soundEngine.playClick();
+              if (onOpenChat) onOpenChat();
+              else setIsChatOpen(true);
+            }}
+            className="mc-icon-btn bg-[#2D1A11] text-[#FAF2DC] relative hover:bg-[#3D1A1A] cursor-pointer"
+            title="Mở Kênh Trò Chuyện Đội 1835 (Phím tắt: T hoặc Enter)"
+          >
+            <MessageSquare size={18} className="text-[#1aa64e] shrink-0" />
+            {unreadChatCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 bg-[#ED1B24] text-white text-[9px] font-bold px-1 py-0.2 border border-[#2D1A11] animate-bounce">
+                {unreadChatCount}
+              </span>
+            )}
+          </button>
+
           {/* User Profile & Logout */}
           <div className="flex items-center gap-1.5 pl-1.5 border-l-2 border-[#2D1A11]">
             <button
@@ -166,28 +189,28 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Mobile Header Quick Actions (Compact & Never Overflows) */}
-        <div className="flex md:hidden items-center gap-1.5">
+        {/* Mobile Header Quick Actions (Responsive across all phone sizes) */}
+        <div className="flex md:hidden items-center gap-1 sm:gap-1.5 shrink-0">
           {/* Mobile Online Status Button */}
           {onOpenOnlineModal && (
             <button
               onClick={onOpenOnlineModal}
-              className={`mc-icon-btn !w-auto !h-8 !px-2 flex items-center gap-1 text-[10px] font-bold border-2 border-[#2D1A11] cursor-pointer ${
+              className={`h-7 sm:h-8 px-1.5 sm:px-2 flex items-center gap-1 text-[9px] sm:text-[10px] font-bold border-2 border-[#2D1A11] shadow-[1px_1px_0px_#2D1A11] cursor-pointer ${
                 isOnlineMode && networkOnline && serverConnected
                   ? 'bg-emerald-100 text-emerald-800'
                   : 'bg-amber-100 text-amber-900'
               }`}
               title="Nhấn xem Trạng thái Online"
             >
-              <span className={`w-2 h-2 rounded-full ${isOnlineMode && networkOnline && serverConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
-              <span>{isOnlineMode && networkOnline && serverConnected ? 'ONLINE' : 'OFFLINE'}</span>
+              <span className={`w-2 h-2 rounded-full shrink-0 ${isOnlineMode && networkOnline && serverConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
+              <span className="hidden min-[360px]:inline">{isOnlineMode && networkOnline && serverConnected ? 'ONLINE' : 'OFF'}</span>
             </button>
           )}
 
           {/* Sound FX Switch */}
           <button
             onClick={toggleSound}
-            className={`mc-icon-btn !w-8 !h-8 !min-w-8 !min-h-8 ${
+            className={`mc-icon-btn !w-7 !h-7 sm:!w-8 sm:!h-8 !min-w-7 sm:!min-w-8 !min-h-7 sm:!min-h-8 ${
               soundEnabled
                 ? 'bg-[#2D1A11] text-[#FAF2DC]'
                 : 'bg-[#E5D6B6] text-[#836251]'
@@ -195,28 +218,40 @@ export const Header: React.FC<HeaderProps> = ({
             title={soundEnabled ? 'Âm thanh: Đang Bật' : 'Âm thanh: Đang Tắt'}
           >
             {soundEnabled ? (
-              <Volume2 size={15} className="text-[#FAF2DC] shrink-0" />
+              <Volume2 size={14} className="text-[#FAF2DC] shrink-0" />
             ) : (
-              <VolumeX size={15} className="text-[#836251] shrink-0" />
+              <VolumeX size={14} className="text-[#836251] shrink-0" />
             )}
+          </button>
+
+          {/* Mobile Arcade Game Trigger */}
+          <button
+            onClick={() => {
+              soundEngine.playClick();
+              onOpenArcade();
+            }}
+            className="mc-icon-btn !w-7 !h-7 sm:!w-8 sm:!h-8 !min-w-7 sm:!min-w-8 !min-h-7 sm:!min-h-8 mc-btn-1835 text-white relative cursor-pointer"
+            title="Trạm Giải Trí Arcade Pixel"
+          >
+            <Gamepad2 size={15} className="text-white drop-shadow shrink-0" />
           </button>
 
           {/* Profile Avatar */}
           <button
             onClick={onOpenProfileModal}
-            className="mc-icon-btn !w-8 !h-8 !min-w-8 !min-h-8 bg-[#FFFDF7] border-2 border-[#2D1A11]"
+            className="mc-icon-btn !w-7 !h-7 sm:!w-8 sm:!h-8 !min-w-7 sm:!min-w-8 !min-h-7 sm:!min-h-8 bg-[#FFFDF7] border-2 border-[#2D1A11]"
             title={`Hồ sơ: ${activeUser.name}`}
           >
-            <PixelAvatar userId={activeUser.id} avatarKey={activeUser.avatarKey} size={20} showBorder={false} />
+            <PixelAvatar userId={activeUser.id} avatarKey={activeUser.avatarKey} size={18} showBorder={false} />
           </button>
 
           {/* Logout */}
           <button
             onClick={logout}
-            className="mc-icon-btn !w-8 !h-8 !min-w-8 !min-h-8 bg-[#2D1A11] text-[#FF4D4D]"
+            className="mc-icon-btn !w-7 !h-7 sm:!w-8 sm:!h-8 !min-w-7 sm:!min-w-8 !min-h-7 sm:!min-h-8 bg-[#2D1A11] text-[#FF4D4D]"
             title="Đăng xuất"
           >
-            <LogOut size={15} className="text-[#FF4D4D] shrink-0" />
+            <LogOut size={14} className="text-[#FF4D4D] shrink-0" />
           </button>
         </div>
       </div>

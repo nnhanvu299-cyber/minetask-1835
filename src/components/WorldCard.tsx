@@ -13,7 +13,7 @@ interface WorldCardProps {
 }
 
 export const WorldCard: React.FC<WorldCardProps> = ({ world, onSelect, onOpenTimeline }) => {
-  const { tasks, deleteWorld, getWorldProgress } = useApp();
+  const { tasks, deleteWorld, getWorldProgress, requestConfirmDelete } = useApp();
   const progress = getWorldProgress(world.id);
   const biomeCfg = BIOME_CONFIGS[world.biome] || BIOME_CONFIGS.diamond_cavern;
 
@@ -23,9 +23,13 @@ export const WorldCard: React.FC<WorldCardProps> = ({ world, onSelect, onOpenTim
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (window.confirm(`Xác nhận xóa Thế giới "${world.name}" và tất cả trạm nhiệm vụ bên trong?`)) {
-      deleteWorld(world.id);
-    }
+    requestConfirmDelete({
+      title: 'XÓA THẾ GIỚI',
+      message: 'Bạn có chắc chắn muốn xóa Thế giới này và toàn bộ các trạm nhiệm vụ bên trong không?',
+      itemName: world.name,
+      confirmText: 'XÓA THẾ GIỚI ✕',
+      onConfirm: () => deleteWorld(world.id),
+    });
   };
 
   const handleEnterWorld = () => {

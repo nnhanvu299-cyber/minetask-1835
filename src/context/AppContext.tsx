@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
-import { UserProfile, UserId, World, Task, TaskStatus, NotificationItem } from '../types';
+import { UserProfile, UserId, World, Task, TaskStatus, NotificationItem, ChatMessage } from '../types';
 import { soundEngine } from '../utils/audio';
 import { sendOtpEmail } from '../utils/emailService';
 import { sendDeviceNotification } from '../utils/deviceNotification';
@@ -17,9 +17,15 @@ import {
   saveFirebaseConfig,
   clearFirebaseConfig,
   FirebaseConfig,
+  sendChatMessageToFirestore,
+  subscribeToChatMessages,
+  reactToChatMessageInFirestore,
+  deleteChatMessageFromFirestore,
+  markChatMessageReadInFirestore,
 } from '../services/firebase';
 
 import { DEFAULT_USERS, INITIAL_WORLDS, INITIAL_TASKS } from '../data/initialData';
+import { ConfirmDeleteState } from '../components/ConfirmDeleteModal';
 
 interface AppContextValue {
   users: UserProfile[];
@@ -110,6 +116,28 @@ interface AppContextValue {
     level: number;
     isCleared: boolean;
   };
+
+  // Team Co-op Chat
+  chatMessages: ChatMessage[];
+  unreadChatCount: number;
+  isChatOpen: boolean;
+  setIsChatOpen: (open: boolean) => void;
+  sendChatMessage: (text: string, type?: 'text' | 'shout' | 'task_share', attachedTaskId?: string, attachedTaskTitle?: string) => Promise<boolean>;
+  reactToChatMessage: (messageId: string, emoji: string) => Promise<void>;
+  deleteChatMessage: (messageId: string) => Promise<void>;
+  markChatAsRead: () => void;
+
+  // Global Confirm Delete Dialog
+  confirmDeleteState: ConfirmDeleteState;
+  requestConfirmDelete: (opts: {
+    title?: string;
+    message: string;
+    itemName?: string;
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm: () => void;
+  }) => void;
+  closeConfirmDelete: () => void;
 }
 
 const AppContext = createContext<AppContextValue | undefined>(undefined);
@@ -269,6 +297,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return saved !== null ? JSON.parse(saved) : true;
   });
 
+  // Team Co-op Chat State
+  const STORAGE_KEY_CHAT = 'minetask_1835_chat_messages_v24';
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_CHAT);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [
+      {
+        id: 'msg_welcome_1835',
+        senderId: 'user_steve_default',
+        senderName: 'Steve',
+        senderAvatar: 'steve',
+        senderRole: 'Thợ Mỏ Co-op',
+        senderColor: '#F37022',
+        text: 'Chào mừng cả đội 1835 đến với kênh chat Co-op! Chúc anh em đào task vui vẻ ⛏️💎',
+        createdAt: Date.now() - 3600000,
+        type: 'shout',
+      },
+    ];
+  });
+  const [unreadChatCount, setUnreadChatCount] = useState<number>(0);
+  const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
+  const lastKnownChatIdRef = useRef<string | null>(null);
+
   // Online Mode, Connectivity & Live Presence
   const [isOnlineMode, setIsOnlineMode] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
@@ -399,11 +456,50 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     });
 
+    const unsubChat = subscribeToChatMessages((cloudMsgs) => {
+      if (!Array.isArray(cloudMsgs) || cloudMsgs.length === 0) return;
+
+      setChatMessages((prev) => {
+        const map = new Map<string, ChatMessage>();
+        prev.forEach((m) => map.set(m.id, m));
+        cloudMsgs.forEach((m) => map.set(m.id, m));
+        const merged = Array.from(map.values()).sort((a, b) => a.createdAt - b.createdAt);
+
+        try {
+          localStorage.setItem(STORAGE_KEY_CHAT, JSON.stringify(merged.slice(-100)));
+        } catch {}
+
+        const latestMsg = merged[merged.length - 1];
+        if (
+          latestMsg &&
+          lastKnownChatIdRef.current &&
+          latestMsg.id !== lastKnownChatIdRef.current &&
+          latestMsg.senderId !== currentUserRef.current?.id
+        ) {
+          if (!isChatOpenRef.current) {
+            setUnreadChatCount((c) => c + 1);
+            soundEngine.playChatMessage();
+          }
+        }
+        if (latestMsg) {
+          lastKnownChatIdRef.current = latestMsg.id;
+        }
+
+        return merged;
+      });
+    });
+
     return () => {
       if (unsubscribeUsers) unsubscribeUsers();
       if (unsubApp) unsubApp();
+      if (unsubChat) unsubChat();
     };
   }, [isFirebaseConnected]);
+
+  const currentUserRef = useRef<UserProfile | null>(currentUser);
+  currentUserRef.current = currentUser;
+  const isChatOpenRef = useRef<boolean>(isChatOpen);
+  isChatOpenRef.current = isChatOpen;
 
   // Realtime Broadcast Channel across browser tabs
   const [broadcastChannel, setBroadcastChannel] = useState<BroadcastChannel | null>(null);
@@ -427,6 +523,46 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           setNotifications((prev) => [notif, ...prev]);
           setActivePopupNotification(notif);
           soundEngine.playTurnNotification();
+        } else if (type === 'CHAT_MESSAGE') {
+          const msg = payload as ChatMessage;
+          setChatMessages((prev) => {
+            if (prev.some((m) => m.id === msg.id)) return prev;
+            const updated = [...prev, msg].sort((a, b) => a.createdAt - b.createdAt);
+            try {
+              localStorage.setItem(STORAGE_KEY_CHAT, JSON.stringify(updated.slice(-100)));
+            } catch {}
+            return updated;
+          });
+          if (msg.senderId !== currentUserRef.current?.id) {
+            if (!isChatOpenRef.current) {
+              setUnreadChatCount((c) => c + 1);
+            }
+            soundEngine.playChatMessage();
+          }
+        } else if (type === 'CHAT_READ_RECEIPT') {
+          const { userId, messageIds } = payload || {};
+          if (userId && Array.isArray(messageIds) && messageIds.length > 0) {
+            setChatMessages((prev) => {
+              let updated = false;
+              const next = prev.map((m) => {
+                if (messageIds.includes(m.id)) {
+                  const currentReads = Array.isArray(m.readBy) ? m.readBy : [];
+                  if (!currentReads.includes(userId)) {
+                    updated = true;
+                    return { ...m, readBy: [...currentReads, userId] };
+                  }
+                }
+                return m;
+              });
+              if (updated) {
+                try {
+                  localStorage.setItem(STORAGE_KEY_CHAT, JSON.stringify(next.slice(-100)));
+                } catch {}
+                return next;
+              }
+              return prev;
+            });
+          }
         } else if (type === 'PRESENCE_HEARTBEAT') {
           const p = payload;
           if (p && p.userId) {
@@ -1837,6 +1973,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     soundEngine.playBreak();
     soundEngine.playVictoryFanfare();
 
+    // Tự động đẩy tin mừng hoàn thành trạm vào kênh chat đội 1835
+    const systemChatMessage: ChatMessage = {
+      id: `sys_win_${nowTime}_${taskId}`,
+      senderId: 'system_1835',
+      senderName: 'HỆ THỐNG CO-OP',
+      senderAvatar: 'sniffer',
+      senderRole: 'Thông Báo',
+      senderColor: '#1aa64e',
+      text: `🏆 ${finisher?.name || 'Thợ mỏ'} vừa đào xong trạm #${currentIdx + 1}: "${task.title}"! (+${task.xpValue} XP)`,
+      createdAt: nowTime,
+      type: 'system',
+      attachedTaskId: taskId,
+      attachedTaskTitle: task.title,
+    };
+    setChatMessages((prev) => [...prev, systemChatMessage]);
+    sendChatMessageToFirestore(systemChatMessage).catch(() => {});
+
     // 2. Cross-Notification for NEXT station assignee
     const nextTask = worldTasks[currentIdx + 1];
     if (nextTask) {
@@ -2022,11 +2175,207 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   }, [tasks]);
 
+  // Team Co-op Chat Action Handlers
+  const markChatAsRead = useCallback(() => {
+    setUnreadChatCount(0);
+    if (!currentUser) return;
+    const myId = currentUser.id;
+
+    setChatMessages((prev) => {
+      let changed = false;
+      const unreadIds: string[] = [];
+      const next = prev.map((msg) => {
+        const readList = Array.isArray(msg.readBy) ? msg.readBy : [];
+        if (!readList.includes(myId)) {
+          changed = true;
+          unreadIds.push(msg.id);
+          return {
+            ...msg,
+            readBy: [...readList, myId],
+          };
+        }
+        return msg;
+      });
+
+      if (changed) {
+        try {
+          localStorage.setItem(STORAGE_KEY_CHAT, JSON.stringify(next.slice(-100)));
+        } catch {}
+
+        if (broadcastChannel) {
+          try {
+            broadcastChannel.postMessage({
+              type: 'CHAT_READ_RECEIPT',
+              payload: {
+                userId: myId,
+                messageIds: unreadIds,
+              },
+            });
+          } catch {}
+        }
+
+        markChatMessageReadInFirestore(unreadIds, myId).catch(() => {});
+        return next;
+      }
+      return prev;
+    });
+  }, [currentUser, broadcastChannel]);
+
+  const handleSetIsChatOpen = useCallback((open: boolean) => {
+    setIsChatOpen(open);
+    if (open) {
+      markChatAsRead();
+    }
+  }, [markChatAsRead]);
+
+  const sendChatMessage = useCallback(
+    async (
+      text: string,
+      type: 'text' | 'shout' | 'system' | 'task_share' = 'text',
+      attachedTaskId?: string,
+      attachedTaskTitle?: string
+    ): Promise<boolean> => {
+      if (!currentUser || !text.trim()) return false;
+
+      const newMsg: ChatMessage = {
+        id: `chat_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        senderId: currentUser.id,
+        senderName: currentUser.name || 'Thợ Mỏ 1835',
+        senderAvatar: currentUser.avatarKey || 'sniffer',
+        senderRole: currentUser.role || 'Thành viên Co-op',
+        senderColor: currentUser.primaryColor || '#F37022',
+        text: text.trim(),
+        createdAt: Date.now(),
+        type,
+        attachedTaskId,
+        attachedTaskTitle,
+        reactions: {},
+        readBy: [currentUser.id],
+      };
+
+      setChatMessages((prev) => {
+        const updated = [...prev, newMsg];
+        try {
+          localStorage.setItem(STORAGE_KEY_CHAT, JSON.stringify(updated.slice(-100)));
+        } catch {}
+        return updated;
+      });
+
+      soundEngine.playChatMessage();
+
+      if (broadcastChannel) {
+        broadcastChannel.postMessage({
+          type: 'CHAT_MESSAGE',
+          payload: newMsg,
+        });
+      }
+
+      try {
+        await sendChatMessageToFirestore(newMsg);
+      } catch (err) {
+        console.warn('[Chat] Lỗi sync Firebase:', err);
+      }
+
+      return true;
+    },
+    [currentUser, broadcastChannel]
+  );
+
+  const reactToChatMessage = useCallback(
+    async (messageId: string, emoji: string) => {
+      if (!currentUser) return;
+      const uid = currentUser.id;
+
+      setChatMessages((prev) => {
+        const next = prev.map((m) => {
+          if (m.id !== messageId) return m;
+          const reactions = { ...(m.reactions || {}) };
+          const users = Array.isArray(reactions[emoji]) ? [...reactions[emoji]] : [];
+          if (users.includes(uid)) {
+            reactions[emoji] = users.filter((u) => u !== uid);
+            if (reactions[emoji].length === 0) delete reactions[emoji];
+          } else {
+            reactions[emoji] = [...users, uid];
+          }
+          return { ...m, reactions };
+        });
+        try {
+          localStorage.setItem(STORAGE_KEY_CHAT, JSON.stringify(next.slice(-100)));
+        } catch {}
+        return next;
+      });
+
+      soundEngine.playClick();
+
+      try {
+        await reactToChatMessageInFirestore(messageId, emoji, uid);
+      } catch (e) {
+        console.warn('[Chat] Lỗi reaction Firebase:', e);
+      }
+    },
+    [currentUser]
+  );
+
+  const deleteChatMessage = useCallback(
+    async (messageId: string) => {
+      setChatMessages((prev) => {
+        const next = prev.filter((m) => m.id !== messageId);
+        try {
+          localStorage.setItem(STORAGE_KEY_CHAT, JSON.stringify(next.slice(-100)));
+        } catch {}
+        return next;
+      });
+      soundEngine.playBreak();
+      try {
+        await deleteChatMessageFromFirestore(messageId);
+      } catch (e) {
+        console.warn('[Chat] Lỗi xóa tin nhắn:', e);
+      }
+    },
+    []
+  );
+
   const activeWorld = worlds.find((w) => w.id === activeWorldId) || null;
+
+  // Global Confirm Delete State & Handlers
+  const [confirmDeleteState, setConfirmDeleteState] = useState<ConfirmDeleteState>({
+    isOpen: false,
+    message: '',
+    onConfirm: () => {},
+  });
+
+  const requestConfirmDelete = useCallback((opts: {
+    title?: string;
+    message: string;
+    itemName?: string;
+    confirmText?: string;
+    cancelText?: string;
+    onConfirm: () => void;
+  }) => {
+    soundEngine.playClick();
+    setConfirmDeleteState({
+      isOpen: true,
+      title: opts.title || 'XÁC NHẬN XÓA',
+      message: opts.message,
+      itemName: opts.itemName,
+      confirmText: opts.confirmText,
+      cancelText: opts.cancelText,
+      onConfirm: opts.onConfirm,
+    });
+  }, []);
+
+  const closeConfirmDelete = useCallback(() => {
+    setConfirmDeleteState((prev) => ({ ...prev, isOpen: false }));
+  }, []);
 
   return (
     <AppContext.Provider
       value={{
+        // Global Confirm Delete Dialog
+        confirmDeleteState,
+        requestConfirmDelete,
+        closeConfirmDelete,
+
         users,
         currentUser,
         worlds,
@@ -2055,6 +2404,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         updateFirebaseConfig: updateFirebaseConfigHandler,
         clearFirebaseConfig: clearFirebaseConfigHandler,
         syncToFirebaseNow,
+
+        // Team Co-op Chat
+        chatMessages,
+        unreadChatCount,
+        isChatOpen,
+        setIsChatOpen: handleSetIsChatOpen,
+        sendChatMessage,
+        reactToChatMessage,
+        deleteChatMessage,
+        markChatAsRead,
 
         setActiveWorldId,
         login,

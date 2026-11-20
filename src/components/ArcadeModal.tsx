@@ -352,16 +352,16 @@ export const ArcadeModal: React.FC<ArcadeModalProps> = ({ isOpen, onClose }) => 
         </div>
 
         {/* Game Canvas Container */}
-        <div className="p-3 bg-[#2D1A11] flex items-center justify-center cursor-pointer select-none" onClick={jump}>
+        <div className="p-2 sm:p-3 bg-[#2D1A11] flex items-center justify-center cursor-pointer select-none" onClick={jump}>
           <canvas
             ref={canvasRef}
-            className="border-3 border-[#FAF2DC] shadow-inner max-w-full h-auto block"
-            style={{ imageRendering: 'pixelated' }}
+            className="border-2 sm:border-3 border-[#FAF2DC] shadow-inner max-w-full h-auto block"
+            style={{ imageRendering: 'pixelated', maxHeight: '52dvh' }}
           />
         </div>
 
         {/* Arcade Control Deck */}
-        <div className="p-3 bg-[#EFE4CA] border-t-3 border-[#2D1A11] flex items-center justify-between gap-2">
+        <div className="p-2.5 sm:p-3 pb-[max(0.75rem,env(safe-area-inset-bottom,0.5rem))] bg-[#EFE4CA] border-t-3 border-[#2D1A11] flex items-center justify-between gap-2">
           <button
             type="button"
             onClick={jump}

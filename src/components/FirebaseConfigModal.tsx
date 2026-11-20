@@ -17,6 +17,7 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({ isOpen
     clearFirebaseConfig,
     syncToFirebaseNow,
     users,
+    requestConfirmDelete,
   } = useApp();
 
   const [rawSnippet, setRawSnippet] = useState('');
@@ -148,19 +149,24 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({ isOpen
   };
 
   const handleClear = () => {
-    if (window.confirm('Bạn có chắc muốn xóa cấu hình Firebase cục bộ trên thiết bị này?')) {
-      clearFirebaseConfig();
-      setApiKey('');
-      setProjectId('');
-      setAppId('');
-      setAuthDomain('');
-      setRawSnippet('');
-      soundEngine.playBreak();
-      setFeedback({
-        type: 'success',
-        message: 'Đã ngắt kết nối Firebase trên máy này.',
-      });
-    }
+    requestConfirmDelete({
+      title: 'XÓA CẤU HÌNH CLOUD',
+      message: 'Bạn có chắc chắn muốn xóa cấu hình Firebase cục bộ trên thiết bị này không?',
+      confirmText: 'XÓA CẤU HÌNH ✕',
+      onConfirm: () => {
+        clearFirebaseConfig();
+        setApiKey('');
+        setProjectId('');
+        setAppId('');
+        setAuthDomain('');
+        setRawSnippet('');
+        soundEngine.playBreak();
+        setFeedback({
+          type: 'success',
+          message: 'Đã ngắt kết nối Firebase trên máy này.',
+        });
+      },
+    });
   };
 
   return (

@@ -331,17 +331,15 @@ p, span, label, input, textarea, select, .mc-font-body {
 
 /* Compact Square Icon-Only Buttons (HUD Header & Floating Tools) */
 .mc-icon-btn {
-  width: 36px !important;
-  height: 36px !important;
-  min-width: 36px !important;
-  min-height: 36px !important;
-  max-width: 36px !important;
-  max-height: 36px !important;
-  padding: 0 !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  box-sizing: border-box !important;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
   cursor: pointer;
   border-top: 2.5px solid rgba(255, 255, 255, 0.45);
   border-left: 2.5px solid rgba(255, 255, 255, 0.45);
@@ -349,7 +347,16 @@ p, span, label, input, textarea, select, .mc-font-body {
   border-bottom: 2.5px solid rgba(0, 0, 0, 0.7);
   box-shadow: 2px 2px 0px rgba(45, 26, 17, 0.3);
   transition: transform 0.05s ease, filter 0.1s ease;
-  line-height: 1 !important;
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  .mc-icon-btn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+  }
 }
 
 .mc-icon-btn:hover {
@@ -366,11 +373,9 @@ p, span, label, input, textarea, select, .mc-font-body {
 }
 
 .mc-icon-btn svg {
-  width: 18px !important;
-  height: 18px !important;
-  display: block !important;
-  flex-shrink: 0 !important;
-  stroke-width: 2.3 !important;
+  display: block;
+  flex-shrink: 0;
+  stroke-width: 2.3;
 }
 
 /* Minecraft & 1835s Form Inputs (Nền Ngà, Chữ Nâu Mực) */

@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const distDir = path.resolve(__dirname, '../dist');
 
-console.log('🚀 Đang đẩy bản cập nhật lên GitHub Pages (https://nhanvu299-cyber.github.io)...');
+console.log('🚀 Đang đẩy bản cập nhật lên GitHub Pages (https://nnhanvu299-cyber.github.io/minetask-1835/)...');
 const gitDir = path.join(distDir, '.git');
 if (fs.existsSync(gitDir)) {
   fs.rmSync(gitDir, { recursive: true, force: true });
