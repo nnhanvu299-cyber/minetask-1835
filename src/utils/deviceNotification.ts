@@ -116,6 +116,34 @@ export async function sendUpdateAvailableNotification(
   });
 }
 
+// Send new chat message notification directly to device (Windows / Android)
+export async function sendChatMessageDeviceNotification(
+  senderName: string,
+  messageText: string,
+  onOpenChat?: () => void
+): Promise<boolean> {
+  soundEngine.playChatMessage();
+
+  const title = `💬 Tin nhắn từ ${senderName}`;
+  const body = messageText.length > 90 ? messageText.slice(0, 90) + '...' : messageText;
+
+  return await sendDeviceNotification(title, {
+    body,
+    tag: 'minetask-1835-chat-message',
+    requireInteraction: false,
+    onClick: () => {
+      try {
+        window.focus();
+      } catch {}
+      if (onOpenChat) {
+        onOpenChat();
+      } else {
+        window.dispatchEvent(new CustomEvent('1835_OPEN_CHAT'));
+      }
+    },
+  });
+}
+
 // Send test notification to verify device notifications work
 export async function sendTestDeviceNotification(): Promise<boolean> {
   soundEngine.playUnlock();

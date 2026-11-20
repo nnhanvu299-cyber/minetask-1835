@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { UserProfile, UserId, World, Task, TaskStatus, NotificationItem, ChatMessage } from '../types';
 import { soundEngine } from '../utils/audio';
 import { sendOtpEmail } from '../utils/emailService';
-import { sendDeviceNotification } from '../utils/deviceNotification';
+import { sendDeviceNotification, sendChatMessageDeviceNotification } from '../utils/deviceNotification';
 import {
   isFirebaseReady,
   subscribeToFirebaseUsers,
@@ -127,6 +127,8 @@ interface AppContextValue {
   reactToChatMessage: (messageId: string, emoji: string) => Promise<void>;
   deleteChatMessage: (messageId: string) => Promise<void>;
   markChatAsRead: () => void;
+  activeChatToast: { id: string; senderName: string; text: string; senderAvatar?: string } | null;
+  dismissChatToast: () => void;
 
   // Global Confirm Delete Dialog
   confirmDeleteState: ConfirmDeleteState;
@@ -340,7 +342,54 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [chatMessages]);
   const [unreadChatCount, setUnreadChatCount] = useState<number>(0);
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
+  const [activeChatToast, setActiveChatToast] = useState<{
+    id: string;
+    senderName: string;
+    text: string;
+    senderAvatar?: string;
+  } | null>(null);
   const lastKnownChatIdRef = useRef<string | null>(null);
+
+  const dismissChatToast = useCallback(() => {
+    setActiveChatToast(null);
+  }, []);
+
+  const notifyIncomingChatMessage = useCallback((msg: ChatMessage) => {
+    if (!msg || msg.senderId === currentUserRef.current?.id) return;
+
+    if (!isChatOpenRef.current) {
+      setUnreadChatCount((c) => c + 1);
+      soundEngine.playChatMessage();
+
+      setActiveChatToast({
+        id: msg.id,
+        senderName: msg.senderName,
+        text: msg.text,
+        senderAvatar: msg.senderAvatar,
+      });
+
+      sendChatMessageDeviceNotification(msg.senderName, msg.text, () => {
+        setIsChatOpen(true);
+      });
+
+      try {
+        if (typeof document !== 'undefined' && document.hidden) {
+          document.title = `💬 (${msg.senderName}) MINETASK 1835`;
+        }
+      } catch {}
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isChatOpen) {
+      setActiveChatToast(null);
+      try {
+        if (typeof document !== 'undefined') {
+          document.title = 'MINETASK 1835';
+        }
+      } catch {}
+    }
+  }, [isChatOpen]);
 
   // Online Mode, Connectivity & Live Presence
   const [isOnlineMode, setIsOnlineMode] = useState<boolean>(() => {
@@ -508,10 +557,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           latestMsg.id !== lastKnownChatIdRef.current &&
           latestMsg.senderId !== currentUserRef.current?.id
         ) {
-          if (!isChatOpenRef.current) {
-            setUnreadChatCount((c) => c + 1);
-            soundEngine.playChatMessage();
-          }
+          notifyIncomingChatMessage(latestMsg);
         }
         if (latestMsg) {
           lastKnownChatIdRef.current = latestMsg.id;
@@ -565,12 +611,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             } catch {}
             return updated;
           });
-          if (msg.senderId !== currentUserRef.current?.id) {
-            if (!isChatOpenRef.current) {
-              setUnreadChatCount((c) => c + 1);
-            }
-            soundEngine.playChatMessage();
-          }
+          notifyIncomingChatMessage(msg);
         } else if (type === 'CHAT_READ_RECEIPT') {
           const { userId, messageIds } = payload || {};
           if (userId && Array.isArray(messageIds) && messageIds.length > 0) {
@@ -2446,6 +2487,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         reactToChatMessage,
         deleteChatMessage,
         markChatAsRead,
+        activeChatToast,
+        dismissChatToast,
 
         setActiveWorldId,
         login,

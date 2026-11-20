@@ -16,7 +16,8 @@ import { OnlineStatusModal } from './components/OnlineStatusModal';
 import { TeamChatModal } from './components/TeamChatModal';
 import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { Gamepad2, Globe, Calendar, Bell, User, RefreshCw, MessageSquare } from 'lucide-react';
+import { Gamepad2, Globe, Calendar, Bell, User, RefreshCw, MessageSquare, X } from 'lucide-react';
+import { PixelAvatar } from './utils/pixelAvatars';
 import { soundEngine } from './utils/audio';
 import {
   requestDeviceNotificationPermission,
@@ -39,7 +40,19 @@ const MainContent: React.FC = () => {
     tasks,
     confirmDeleteState,
     closeConfirmDelete,
+    activeChatToast,
+    dismissChatToast,
   } = useApp();
+
+  // Auto-dismiss in-app chat toast after 7s
+  useEffect(() => {
+    if (activeChatToast) {
+      const timer = setTimeout(() => {
+        dismissChatToast();
+      }, 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [activeChatToast, dismissChatToast]);
 
   // Instant Auto-Update Detection & Device Notification
   const [hasNewUpdate, setHasNewUpdate] = useState(false);
@@ -327,6 +340,59 @@ const MainContent: React.FC = () => {
 
         {/* Real-time 8-bit Notification Toast */}
         <NotificationToast />
+
+        {/* Realtime In-App Chat Toast */}
+        {activeChatToast && !isChatOpen && (
+          <aside
+            role="status"
+            aria-label="Tin nhắn chat mới"
+            className="fixed top-20 right-3 sm:right-6 z-[99998] max-w-sm w-[92%] animate-bounceIn select-none"
+          >
+            <div className="mc-panel p-3 bg-[#FAF2DC] border-3 border-[#2D1A11] shadow-[6px_6px_0px_#2D1A11] flex items-start justify-between gap-2.5 rounded">
+              <div className="flex items-start gap-2.5 min-w-0">
+                <div className="shrink-0 mt-0.5">
+                  <PixelAvatar
+                    userId={activeChatToast.id}
+                    avatarKey={activeChatToast.senderAvatar || 'sniffer'}
+                    size={32}
+                    showBorder={true}
+                  />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="text-xs font-bold text-[#F37022] truncate">
+                      {activeChatToast.senderName}
+                    </span>
+                    <span className="text-[9px] font-semibold text-[#836251] bg-[#FFFDF7] px-1 border border-[#2D1A11]/30 rounded shrink-0">
+                      Tin nhắn mới
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#2D1A11] line-clamp-2 leading-relaxed">
+                    {activeChatToast.text}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      dismissChatToast();
+                      setIsChatOpen(true);
+                    }}
+                    className="mt-1.5 mc-btn mc-btn-emerald px-2 py-0.5 text-[10px] font-bold text-white inline-flex items-center gap-1 cursor-pointer active:scale-95 transition-transform"
+                  >
+                    <span>MỞ CHAT XEM 💬</span>
+                  </button>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={dismissChatToast}
+                className="text-[#836251] hover:text-[#ED1B24] p-0.5 shrink-0 cursor-pointer"
+                title="Đóng thông báo"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </aside>
+        )}
 
         {/* Main App Body */}
         <main className="flex-1 max-w-7xl w-full mx-auto p-2.5 sm:p-5 md:p-6 pb-28 sm:pb-24 md:pb-6">
