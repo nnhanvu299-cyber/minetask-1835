@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode, useMemo } from 'react';
 import { UserProfile, UserId, World, Task, TaskStatus, NotificationItem, ChatMessage } from '../types';
 import { soundEngine } from '../utils/audio';
 import { sendOtpEmail } from '../utils/emailService';
@@ -340,7 +340,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       } catch {}
     }
   }, [chatMessages]);
-  const [unreadChatCount, setUnreadChatCount] = useState<number>(0);
+  const notifiedToastIdsRef = useRef<Set<string>>(new Set());
+
+  // Tính số lượng tin nhắn chưa đọc chuẩn xác 100% dựa vào danh sách readBy, không bao giờ bị tăng ảo
+  const unreadChatCount = useMemo(() => {
+    if (!currentUser || !Array.isArray(chatMessages)) return 0;
+    const myId = currentUser.id;
+    return chatMessages.filter(
+      (m) => m && m.senderId !== myId && (!Array.isArray(m.readBy) || !m.readBy.includes(myId))
+    ).length;
+  }, [chatMessages, currentUser]);
+
   const [isChatOpen, setIsChatOpen] = useState<boolean>(false);
   const [activeChatToast, setActiveChatToast] = useState<{
     id: string;
@@ -357,6 +367,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const notifyIncomingChatMessage = useCallback((msg: ChatMessage) => {
     if (!msg || msg.senderId === currentUserRef.current?.id) return;
 
+    // Chống lặp thông báo: mỗi tin nhắn chỉ hiển thị Toast và phát chuông 1 lần duy nhất
+    if (notifiedToastIdsRef.current.has(msg.id)) return;
+    notifiedToastIdsRef.current.add(msg.id);
+
     // 1. Luôn phát chuông âm thanh 8-bit và rung điện thoại khi có tin nhắn mới
     try {
       soundEngine.playChatMessage();
@@ -368,10 +382,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       } catch {}
     }
 
-    // 2. Nếu đang đóng khung chat: Bật banner Toast nổi, đếm số đỏ trên icon và gửi Push Notification
+    // 2. Nếu đang đóng khung chat: Bật banner Toast nổi và gửi Push Notification
     if (!isChatOpenRef.current) {
-      setUnreadChatCount((c) => c + 1);
-
       setActiveChatToast({
         id: msg.id,
         senderName: msg.senderName,
@@ -2336,7 +2348,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Team Co-op Chat Action Handlers
   const markChatAsRead = useCallback(() => {
-    setUnreadChatCount(0);
+    setActiveChatToast(null);
     if (!currentUser) return;
     const myId = currentUser.id;
 

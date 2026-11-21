@@ -1,4 +1,4 @@
-const CACHE_NAME = 'minetask-1835s-v35-firestore-sanitized';
+const CACHE_NAME = 'minetask-1835s-v36-toast-fix';
 
 const PRECACHE_ASSETS = [
   './',

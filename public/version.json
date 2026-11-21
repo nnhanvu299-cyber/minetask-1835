@@ -1,5 +1,5 @@
 {
-  "version": 1795230000000,
-  "buildTime": "2026-11-21T02:40:00.000Z",
-  "note": "Khắc phục lỗi undefined Firestore setDoc, tin nhắn gửi nhận tức thì 100%"
+  "version": 1795230900000,
+  "buildTime": "2026-11-21T02:54:00.000Z",
+  "note": "Khắc phục lỗi toast lặp lại, sửa nút đóng thông báo, tính chuẩn số tin chưa đọc"
 }

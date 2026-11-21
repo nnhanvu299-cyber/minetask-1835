@@ -376,7 +376,7 @@ const MainContent: React.FC = () => {
                       dismissChatToast();
                       setIsChatOpen(true);
                     }}
-                    className="mt-1.5 mc-btn mc-btn-emerald px-2 py-0.5 text-[10px] font-bold text-white inline-flex items-center gap-1 cursor-pointer active:scale-95 transition-transform"
+                    className="mt-2 mc-btn mc-btn-emerald px-3 py-1 text-[11px] font-bold text-white inline-flex items-center gap-1 cursor-pointer active:scale-95 transition-transform"
                   >
                     <span>MỞ CHAT XEM 💬</span>
                   </button>
@@ -384,11 +384,15 @@ const MainContent: React.FC = () => {
               </div>
               <button
                 type="button"
-                onClick={dismissChatToast}
-                className="text-[#836251] hover:text-[#ED1B24] p-0.5 shrink-0 cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  dismissChatToast();
+                }}
+                className="w-8 h-8 min-w-[32px] min-h-[32px] flex items-center justify-center bg-[#2D1A11]/10 hover:bg-[#ED1B24] hover:text-white text-[#2D1A11] rounded shrink-0 cursor-pointer active:scale-90 transition-all border border-[#2D1A11]/20 touch-manipulation"
                 title="Đóng thông báo"
+                aria-label="Đóng thông báo"
               >
-                <X size={14} />
+                <X size={18} />
               </button>
             </div>
           </aside>
