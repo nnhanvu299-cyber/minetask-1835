@@ -1,5 +1,5 @@
 {
-  "version": 1795232500000,
-  "buildTime": "2026-11-21T03:35:00.000Z",
-  "note": "Kích hoạt đồng bộ trạng thái Online đa thiết bị thời gian thực qua Cloud Firestore"
+  "version": 1795233000000,
+  "buildTime": "2026-11-21T03:42:00.000Z",
+  "note": "Thông luồng tin nhắn siêu tốc: Đồng bộ chủ động đa kênh Firestore, loại bỏ độ trễ và nghẽn ntfy"
 }

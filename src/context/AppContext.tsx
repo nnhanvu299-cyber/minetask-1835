@@ -132,6 +132,7 @@ interface AppContextValue {
   reactToChatMessage: (messageId: string, emoji: string) => Promise<void>;
   deleteChatMessage: (messageId: string) => Promise<void>;
   markChatAsRead: () => void;
+  refreshChatMessages: () => Promise<void>;
   activeChatToast: { id: string; senderName: string; text: string; senderAvatar?: string } | null;
   dismissChatToast: () => void;
 
@@ -1302,6 +1303,49 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
+  // Nạp và làm mới tin nhắn chat chủ động từ Firebase Cloud Firestore
+  const refreshChatMessages = useCallback(async () => {
+    if (!isFirebaseReady()) return;
+    try {
+      const cloudMsgs = await fetchChatMessagesFromFirestore();
+      if (Array.isArray(cloudMsgs) && cloudMsgs.length > 0) {
+        setChatMessages((prev) => {
+          const map = new Map<string, ChatMessage>();
+          prev.forEach((m) => map.set(m.id, m));
+          let hasNew = false;
+          cloudMsgs.forEach((m) => {
+            if (!map.has(m.id)) {
+              hasNew = true;
+              map.set(m.id, m);
+            }
+          });
+          if (!hasNew) return prev;
+          const merged = Array.from(map.values()).sort((a, b) => a.createdAt - b.createdAt);
+          try {
+            localStorage.setItem(STORAGE_KEY_CHAT, JSON.stringify(merged.slice(-150)));
+          } catch {}
+
+          const latestMsg = merged[merged.length - 1];
+          if (
+            latestMsg &&
+            lastKnownChatIdRef.current &&
+            latestMsg.id !== lastKnownChatIdRef.current &&
+            latestMsg.senderId !== currentUserRef.current?.id
+          ) {
+            notifyIncomingChatMessage(latestMsg);
+          }
+          if (latestMsg) {
+            lastKnownChatIdRef.current = latestMsg.id;
+          }
+
+          return merged;
+        });
+      }
+    } catch (e) {
+      console.warn('[Chat Refresh] Error:', e);
+    }
+  }, [notifyIncomingChatMessage]);
+
   const fetchServerState = useCallback(async (force = false): Promise<boolean> => {
     if (isFetchingRef.current && !force) {
       return true;
@@ -1335,43 +1379,41 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         } catch {}
       }
 
-      // Poll latest messages from ntfy.sh cache (last 12h)
-      const c = new AbortController();
-      const t = setTimeout(() => c.abort(), 6500);
-      const res = await fetch(`${NTFY_SYNC_URL}/json?poll=1&since=all`, { signal: c.signal });
-      clearTimeout(t);
+      // 1. Đồng bộ và làm mới tin nhắn từ Firebase Cloud Firestore trước tiên (chính xác & không bị chặn)
+      if (isFirebaseReady()) {
+        await refreshChatMessages();
+        setNetworkOnline(true);
+        setServerConnected(true);
+        setSyncStatus('synced');
+        setLastSyncTime(Date.now());
+      }
+
+      // 2. Poll ntfy.sh chạy ngầm không chặn (timeout 1.2s)
+      try {
+        const c = new AbortController();
+        const t = setTimeout(() => c.abort(), 1200);
+        fetch(`${NTFY_SYNC_URL}/json?poll=1&since=all`, { signal: c.signal })
+          .then(async (res) => {
+            clearTimeout(t);
+            if (res.ok) {
+              const text = await res.text();
+              const lines = text.trim().split('\n').filter(Boolean);
+              for (const line of lines) {
+                try {
+                  const msgObj = JSON.parse(line);
+                  if (msgObj.message) {
+                    handleIncomingCloudSync(JSON.parse(msgObj.message));
+                  }
+                } catch {}
+              }
+            }
+          })
+          .catch(() => {});
+      } catch {}
 
       const ping = Math.round(performance.now() - startPing);
       setServerPing(ping);
-
-      if (res.ok) {
-        const text = await res.text();
-        const lines = text.trim().split('\n').filter(Boolean);
-        for (const line of lines) {
-          try {
-            const msgObj = JSON.parse(line);
-            if (msgObj.message) {
-              const payload = JSON.parse(msgObj.message);
-              handleIncomingCloudSync(payload);
-            }
-          } catch {}
-        }
-        setNetworkOnline(true);
-        setServerConnected(true);
-        setSyncStatus('synced');
-        setLastSyncTime(Date.now());
-        return true;
-      }
-
-      if (isFirebaseReady()) {
-        setNetworkOnline(true);
-        setServerConnected(true);
-        setSyncStatus('synced');
-        setLastSyncTime(Date.now());
-        return true;
-      }
-
-      return false;
+      return true;
     } catch {
       if (isFirebaseReady()) {
         setNetworkOnline(true);
@@ -1385,7 +1427,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     } finally {
       isFetchingRef.current = false;
     }
-  }, [isOnlineMode, currentUser, handleIncomingCloudSync]);
+  }, [isOnlineMode, currentUser, handleIncomingCloudSync, refreshChatMessages]);
 
   // Tự động đồng bộ liên tục thích ứng: 3.5s khi mở app, 15s khi ẩn tab
   useEffect(() => {
@@ -2715,6 +2757,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         reactToChatMessage,
         deleteChatMessage,
         markChatAsRead,
+        refreshChatMessages,
         activeChatToast,
         dismissChatToast,
 
