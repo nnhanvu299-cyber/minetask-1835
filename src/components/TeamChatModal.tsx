@@ -64,6 +64,7 @@ export const TeamChatModal: React.FC<TeamChatModalProps> = ({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const isSendingRef = useRef(false);
 
   // Auto-scroll to bottom on new message
   useEffect(() => {
@@ -94,25 +95,44 @@ export const TeamChatModal: React.FC<TeamChatModalProps> = ({
 
   const handleSend = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!inputText.trim() && !selectedTask) return;
+    const rawText = inputText.trim();
+    if (!rawText && !selectedTask) return;
+    if (isSendingRef.current) return;
+    isSendingRef.current = true;
 
-    const textToSend = inputText.trim() || (selectedTask ? `Đang làm việc tại trạm: "${selectedTask.title}"` : '');
+    const textToSend = rawText || (selectedTask ? `Đang làm việc tại trạm: "${selectedTask.title}"` : '');
     const msgType = selectedTask ? 'task_share' : 'text';
+    const currentTask = selectedTask;
 
-    await sendChatMessage(
-      textToSend,
-      msgType,
-      selectedTask ? selectedTask.id : undefined,
-      selectedTask ? selectedTask.title : undefined
-    );
-
+    // 1. XÓA NGAY LẬP TỨC TRÊN Ô NHẬP & BÀN PHÍM (Không chờ đợi mạng)
     setInputText('');
+    if (inputRef.current) {
+      inputRef.current.value = '';
+    }
     setSelectedTask(null);
     setShowEmojiPicker(false);
     setShowTaskPicker(false);
+
+    // 2. Cuộn xuống tin nhắn mới nhất
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, 50);
+    }, 40);
+
+    // 3. Gửi tin nhắn qua Cloud Firestore
+    try {
+      await sendChatMessage(
+        textToSend,
+        msgType,
+        currentTask ? currentTask.id : undefined,
+        currentTask ? currentTask.title : undefined
+      );
+    } catch (err) {
+      console.warn('[Chat] Gửi tin nhắn thất bại:', err);
+    } finally {
+      isSendingRef.current = false;
+      // Giữ focus trên ô nhập liệu để người dùng gõ tiếp liên tục
+      inputRef.current?.focus();
+    }
   };
 
   const formatTime = (timestamp: number) => {
@@ -595,6 +615,14 @@ export const TeamChatModal: React.FC<TeamChatModalProps> = ({
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+            autoComplete="off"
+            autoCorrect="off"
             placeholder="Nhập tin nhắn cho đội 1835... (Enter để gửi)"
             className="flex-1 bg-white border-2 border-[#2D1A11] px-3 py-1.5 text-xs text-[#2D1A11] placeholder-[#836251]/60 focus:outline-hidden focus:border-[#F37022] shadow-inner font-medium"
           />

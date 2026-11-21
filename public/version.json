@@ -1,5 +1,5 @@
 {
-  "version": 1795233000000,
-  "buildTime": "2026-11-21T03:42:00.000Z",
-  "note": "Thông luồng tin nhắn siêu tốc: Đồng bộ chủ động đa kênh Firestore, loại bỏ độ trễ và nghẽn ntfy"
+  "version": 1795233500000,
+  "buildTime": "2026-11-21T03:48:00.000Z",
+  "note": "Tối ưu phản hồi nhập liệu: Xóa sạch chữ trên ô gõ & bàn phím tức thì ngay khi nhấn Gửi"
 }

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'minetask-1835s-v39-chat-fast-flow';
+const CACHE_NAME = 'minetask-1835s-v40-instant-input-clear';
 
 const PRECACHE_ASSETS = [
   './',
