@@ -1,5 +1,4 @@
 {
-  "version": 1795236000000,
-  "buildTime": "2026-11-21T04:30:00.000Z",
-  "note": "Tối ưu hóa kết nối Cloud Firestore trực tiếp: Loại bỏ dịch vụ trung gian gây nghẽn mạng, hỗ trợ đa mạng 4G/WiFi tức thì, khắc phục triệt để đồng bộ online và gửi nhận tin nhắn."
+  "version": 1795252372576,
+  "buildTime": "2026-11-21T09:12:52.576Z"
 }

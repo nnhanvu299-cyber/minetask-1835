@@ -94,6 +94,13 @@ export interface NotificationItem {
   xpEarned?: number;
 }
 
+export interface ChatReplyInfo {
+  messageId: string;
+  senderName: string;
+  text: string;
+  imageUrl?: string;
+}
+
 export interface ChatMessage {
   id: string;
   senderId: UserId;
@@ -103,9 +110,11 @@ export interface ChatMessage {
   senderColor?: string;
   text: string;
   createdAt: number;
-  type?: 'text' | 'shout' | 'system' | 'task_share';
+  type?: 'text' | 'shout' | 'system' | 'task_share' | 'image';
   attachedTaskId?: string;
   attachedTaskTitle?: string;
+  imageUrl?: string; // URL hoặc Data URL base64 của ảnh đính kèm
+  replyTo?: ChatReplyInfo; // Trích dẫn trả lời tin nhắn giống Messenger
   reactions?: Record<string, string[]>; // emoji key -> array of userIds
   readBy?: string[]; // array of userIds who have read this message
   deviceId?: string; // id thiết bị gửi để phân biệt đa thiết bị (PC vs Phone)

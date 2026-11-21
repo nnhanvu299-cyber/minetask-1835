@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode, useMemo } from 'react';
-import { UserProfile, UserId, World, Task, TaskStatus, NotificationItem, ChatMessage } from '../types';
+import { UserProfile, UserId, World, Task, TaskStatus, NotificationItem, ChatMessage, ChatReplyInfo } from '../types';
 import { soundEngine } from '../utils/audio';
 import { sendOtpEmail } from '../utils/emailService';
 import { sendDeviceNotification, sendChatMessageDeviceNotification } from '../utils/deviceNotification';
@@ -128,7 +128,7 @@ interface AppContextValue {
   unreadChatCount: number;
   isChatOpen: boolean;
   setIsChatOpen: (open: boolean) => void;
-  sendChatMessage: (text: string, type?: 'text' | 'shout' | 'task_share', attachedTaskId?: string, attachedTaskTitle?: string) => Promise<boolean>;
+  sendChatMessage: (text: string, type?: 'text' | 'shout' | 'system' | 'task_share' | 'image', attachedTaskId?: string, attachedTaskTitle?: string, imageUrl?: string, replyTo?: ChatReplyInfo) => Promise<boolean>;
   reactToChatMessage: (messageId: string, emoji: string) => Promise<void>;
   deleteChatMessage: (messageId: string) => Promise<void>;
   markChatAsRead: () => void;
@@ -1262,7 +1262,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           let changed = false;
           cloudMsgs.forEach((m) => {
             const existing = map.get(m.id);
-            if (!existing || existing.text !== m.text || JSON.stringify(existing.readBy) !== JSON.stringify(m.readBy) || JSON.stringify(existing.reactions) !== JSON.stringify(m.reactions)) {
+            if (!existing || existing.text !== m.text || existing.imageUrl !== m.imageUrl || JSON.stringify(existing.readBy) !== JSON.stringify(m.readBy) || JSON.stringify(existing.reactions) !== JSON.stringify(m.reactions)) {
               changed = true;
               map.set(m.id, { ...existing, ...m });
             }
@@ -2487,11 +2487,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const sendChatMessage = useCallback(
     async (
       text: string,
-      type: 'text' | 'shout' | 'system' | 'task_share' = 'text',
+      type: 'text' | 'shout' | 'system' | 'task_share' | 'image' = 'text',
       attachedTaskId?: string,
-      attachedTaskTitle?: string
+      attachedTaskTitle?: string,
+      imageUrl?: string,
+      replyTo?: ChatReplyInfo
     ): Promise<boolean> => {
-      if (!currentUser || !text.trim()) return false;
+      const cleanText = (text || '').trim();
+      if (!currentUser || (!cleanText && !imageUrl && !attachedTaskId)) return false;
 
       const newMsg: ChatMessage = {
         id: `chat_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -2500,11 +2503,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         senderAvatar: currentUser.avatarKey || 'sniffer',
         senderRole: currentUser.role || 'Thành viên Co-op',
         senderColor: currentUser.primaryColor || '#F37022',
-        text: text.trim(),
+        text: cleanText || (imageUrl ? '📷 [Hình ảnh]' : ''),
         createdAt: Date.now(),
-        type,
+        type: imageUrl && type === 'text' ? 'image' : type,
         attachedTaskId,
         attachedTaskTitle,
+        imageUrl: imageUrl || undefined,
+        replyTo: replyTo || undefined,
         reactions: {},
         readBy: [currentUser.id],
         deviceId: CLIENT_DEVICE_ID,

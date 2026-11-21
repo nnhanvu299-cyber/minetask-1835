@@ -325,9 +325,9 @@ const MainContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col text-[#2D1A11] relative overflow-x-hidden mc-minecraft-landscape">
+    <div className="min-h-screen flex flex-col text-[#2D1A11] relative overflow-x-hidden mc-minecraft-landscape w-full max-w-full min-w-0 touch-pan-y">
       {UpdateNotificationBanner}
-      <div className="relative z-10 flex flex-col min-h-screen">
+      <div className="relative z-10 flex flex-col min-h-screen w-full max-w-full min-w-0 overflow-x-hidden">
         {/* Top Header */}
         <Header
           onOpenProfileModal={() => setIsProfileOpen(true)}

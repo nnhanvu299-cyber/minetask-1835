@@ -72,14 +72,27 @@
   background-position: center top;
 }
 
-/* Geometry Defaults */
+/* Geometry Defaults & Anti-Horizontal Overflow Lock */
 *, *::before, *::after {
   box-sizing: border-box;
 }
 
-body {
+html, body, #root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  touch-action: pan-y;
   margin: 0;
   padding: 0;
+}
+
+/* Ensure all embedded media respects container bounds */
+img, video, iframe, embed, object {
+  max-width: 100%;
+  height: auto;
+}
+
+body {
   background-color: var(--c-ivory-bg);
   background-image: 
     linear-gradient(180deg, rgba(253, 247, 231, 0.72) 0%, rgba(253, 247, 231, 0.78) 100%),
@@ -94,7 +107,6 @@ body {
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
-  overflow-x: hidden;
 }
 
 /* Touch & Mobile Optimizations */
@@ -121,13 +133,18 @@ button, .mc-btn, .mc-icon-btn, [role="button"], a {
   padding-right: max(0.5rem, env(safe-area-inset-right, 0px));
 }
 
-/* Fix iOS Auto-zoom on focus: inputs must be at least 16px font-size on mobile */
-@media (max-width: 640px) {
-  input, select, textarea,
-  .mc-input, .mc-select, .mc-textarea,
-  .input-login-image2 {
-    font-size: 16px !important;
-  }
+/* Fix iOS Auto-zoom on focus: inputs and textareas must be at least 16px font-size */
+input, select, textarea,
+.mc-input, .mc-select, .mc-textarea,
+.input-login-image2 {
+  font-size: 16px !important;
+}
+
+/* Break words & prevent overflow on long text / links */
+.break-word-force {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 /* Hide scrollbars for horizontal pill tabs on mobile */

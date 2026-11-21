@@ -326,7 +326,7 @@ const renderIsometric3DFace = (key: string) => {
   }
 };
 
-export const PixelAvatar: React.FC<AvatarProps> = ({
+export const PixelAvatar: React.FC<AvatarProps> = React.memo(({
   userId,
   avatarKey,
   size = 48,
@@ -364,4 +364,4 @@ export const PixelAvatar: React.FC<AvatarProps> = ({
       )}
     </div>
   );
-};
+});

@@ -1,24 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useApp } from '../context/AppContext';
 import { PixelAvatar } from '../utils/pixelAvatars';
-import { soundEngine } from '../utils/audio';
 import {
-  Wifi,
   WifiOff,
-  RefreshCw,
   X,
   Users,
-  Zap,
   Globe,
   Radio,
   Bell,
-  Flame,
 } from 'lucide-react';
 import {
   requestDeviceNotificationPermission,
   sendTestDeviceNotification,
 } from '../utils/deviceNotification';
-import { FirebaseConfigModal } from './FirebaseConfigModal';
 
 interface OnlineStatusModalProps {
   isOpen: boolean;
@@ -32,28 +26,12 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
     toggleOnlineMode,
     networkOnline,
     serverConnected,
-    syncStatus,
-    lastSyncTime,
-    serverPing,
     onlineMembers,
-    isFirebaseConnected,
-    firebaseConfig,
   } = useApp();
-
-  const [isFirebaseModalOpen, setIsFirebaseModalOpen] = useState(false);
 
   if (!isOpen) return null;
 
   const isConnected = isOnlineMode && networkOnline && serverConnected;
-
-  const formatLastSync = (ts: number | null) => {
-    if (!ts) return 'Chưa đồng bộ';
-    const diff = Math.floor((Date.now() - ts) / 1000);
-    if (diff < 5) return 'Vừa xong';
-    if (diff < 60) return `${diff} giây trước`;
-    const mins = Math.floor(diff / 60);
-    return `${mins} phút trước`;
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
@@ -119,99 +97,6 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
           </div>
         </div>
 
-        {/* Live Metrics Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mb-4">
-          {/* Card 1: Internet & Server */}
-          <div className="p-3 bg-[#FFFDF7] border-2 border-[#E5D6B6] rounded flex flex-col justify-between">
-            <div className="text-[10px] uppercase font-bold text-[#836251] flex items-center justify-between">
-              <span>ĐƯỜNG TRUYỀN</span>
-              <Wifi size={13} className={isConnected ? 'text-emerald-600' : 'text-amber-600'} />
-            </div>
-            <div className="my-1.5 text-xs font-bold text-[#2D1A11] flex items-center gap-1">
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'
-                }`}
-              ></span>
-              <span>{networkOnline ? (serverConnected ? 'Online 24/7' : 'Đám Mây đang kết nối...') : 'Ngoại tuyến (Offline)'}</span>
-            </div>
-            <div className="text-[10px] text-[#6b4724]">
-              {networkOnline ? 'Sẵn sàng trao đổi' : 'Tự động lưu ngoại tuyến'}
-            </div>
-          </div>
-
-          {/* Card 2: Ping & Speed */}
-          <div className="p-3 bg-[#FFFDF7] border-2 border-[#E5D6B6] rounded flex flex-col justify-between">
-            <div className="text-[10px] uppercase font-bold text-[#836251] flex items-center justify-between">
-              <span>ĐỘ TRỄ (PING)</span>
-              <Zap size={13} className="text-amber-500" />
-            </div>
-            <div className="my-1.5 text-xs font-bold text-[#2D1A11]">
-              {serverPing !== null ? `${serverPing} ms` : 'Tức thì (<1ms)'}
-            </div>
-            <div className="text-[10px] text-emerald-700 font-semibold">
-              {serverPing !== null && serverPing < 50 ? '⚡ Phản hồi siêu tốc' : 'Ổn định'}
-            </div>
-          </div>
-
-          {/* Card 3: Last Sync Time */}
-          <div className="p-3 bg-[#FFFDF7] border-2 border-[#E5D6B6] rounded flex flex-col justify-between">
-            <div className="text-[10px] uppercase font-bold text-[#836251] flex items-center justify-between">
-              <span>LẦN ĐỒNG BỘ CUỐI</span>
-              <RefreshCw size={13} className={`text-[#F37022] ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
-            </div>
-            <div className="my-1.5 text-xs font-bold text-[#2D1A11]">
-              {formatLastSync(lastSyncTime)}
-            </div>
-            <div className="text-[10px] text-[#836251]">
-              {syncStatus === 'syncing' ? 'Đang gửi...' : 'Đã khớp dữ liệu'}
-            </div>
-          </div>
-        </div>
-
-
-
-        {/* Firebase Cloud Firestore Card */}
-        <div className={`p-3 border-2 rounded mb-3 flex items-center justify-between gap-3 ${
-          isFirebaseConnected
-            ? 'bg-[#FFFDF7] border-emerald-600 text-[#2D1A11]'
-            : 'bg-[#FFFDF7] border-[#D0C2A8] text-[#2D1A11]'
-        }`}>
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className={`w-8 h-8 rounded flex items-center justify-center shrink-0 border ${
-              isFirebaseConnected ? 'bg-emerald-500 text-white border-emerald-700' : 'bg-[#EFE5D0] text-[#7A6B5D] border-[#D0C2A8]'
-            }`}>
-              <Flame size={18} className={isFirebaseConnected ? 'animate-pulse text-amber-200' : ''} />
-            </div>
-            <div className="min-w-0">
-              <div className="text-xs font-bold uppercase tracking-wide flex items-center gap-1.5 flex-wrap">
-                <span>CƠ SỞ DỮ LIỆU ĐÁM MÂY</span>
-                <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${
-                  isFirebaseConnected
-                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                    : 'bg-[#EFE5D0] text-[#7A6B5D] border-[#D0C2A8]'
-                }`}>
-                  {isFirebaseConnected ? '🟢 CLOUD FIRESTORE' : 'TÙY CHỌN'}
-                </span>
-              </div>
-              <div className="text-[10px] text-[#7A6B5D] truncate">
-                {isFirebaseConnected
-                  ? `Project: ${firebaseConfig?.projectId || 'Connected'} • Lưu tài khoản vĩnh viễn`
-                  : 'Kết nối Firebase Firestore để lưu tài khoản vĩnh viễn trên đám mây'}
-              </div>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setIsFirebaseModalOpen(true)}
-            className="mc-btn mc-btn-secondary px-2.5 py-1 text-[11px] font-bold shrink-0 cursor-pointer"
-          >
-            {isFirebaseConnected ? 'Cài đặt' : 'Cấu hình'}
-          </button>
-        </div>
-
-
-
         {/* Section: Live Online Members Roster */}
         <div className="p-3 bg-[#FAF2DC] border-2 border-[#2D1A11] rounded mb-4">
           <div className="flex items-center justify-between mb-2 pb-1.5 border-b border-[#E5D6B6]">
@@ -224,7 +109,7 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
             </span>
           </div>
 
-          <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+          <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
             {onlineMembers.length > 0 ? (
               onlineMembers.map((m) => {
                 const isMe = currentUser && m.userId === currentUser.id;
@@ -251,7 +136,7 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
                             </span>
                           )}
                         </div>
-                        <div className="text-[10px] text-[#836251] truncate">{m.role || 'Thành viên 1835s'}</div>
+                        <div className="text-[10px] text-[#836251] truncate">{m.role || 'Thành viên 1835'}</div>
                       </div>
                     </div>
 
@@ -310,11 +195,6 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
           </button>
         </div>
       </div>
-
-      <FirebaseConfigModal
-        isOpen={isFirebaseModalOpen}
-        onClose={() => setIsFirebaseModalOpen(false)}
-      />
     </div>
   );
 };

@@ -354,7 +354,7 @@ export async function fetchChatMessagesFromFirestore(): Promise<ChatMessage[]> {
     const msgs: ChatMessage[] = [];
     snapshot.forEach((d) => {
       const item = d.data() as ChatMessage;
-      if (item && item.id && item.senderId && item.text) {
+      if (item && item.id && item.senderId && (item.text || item.imageUrl)) {
         msgs.push(item);
       }
     });
@@ -380,7 +380,7 @@ export function subscribeToChatMessages(
         const msgs: ChatMessage[] = [];
         snapshot.forEach((d) => {
           const item = d.data() as ChatMessage;
-          if (item && item.id && item.senderId && item.text) {
+          if (item && item.id && item.senderId && (item.text || item.imageUrl)) {
             msgs.push(item);
           }
         });
