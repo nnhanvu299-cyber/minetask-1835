@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import {
   getFirestore,
+  initializeFirestore,
   collection,
   doc,
   setDoc,
@@ -119,7 +120,14 @@ export function initFirebase(): { app: FirebaseApp | null; db: Firestore | null;
     } else {
       app = initializeApp(config);
     }
-    const db = getFirestore(app);
+    let db: Firestore;
+    try {
+      db = initializeFirestore(app, {
+        experimentalAutoDetectLongPolling: true,
+      });
+    } catch {
+      db = getFirestore(app);
+    }
 
     cachedApp = app;
     cachedDb = db;

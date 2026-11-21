@@ -1,4 +1,4 @@
-const CACHE_NAME = 'minetask-1835s-v43-device-id-chat-sync';
+const CACHE_NAME = 'minetask-1835s-v44-direct-firestore-optimized';
 
 const PRECACHE_ASSETS = [
   './',

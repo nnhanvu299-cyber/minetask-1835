@@ -74,11 +74,11 @@ export const TeamChatModal: React.FC<TeamChatModalProps> = ({
     }
   }, [isOpen, chatMessages.length, markChatAsRead]);
 
-  // Luôn làm mới tin nhắn từ Cloud Firestore ngay khi mở và định kỳ mỗi 2.5s khi đang chat
+  // Luôn làm mới tin nhắn từ Cloud Firestore ngay khi mở và định kỳ mỗi 1.8s khi đang chat
   useEffect(() => {
     if (!isOpen) return;
     refreshChatMessages();
-    const interval = setInterval(refreshChatMessages, 2500);
+    const interval = setInterval(refreshChatMessages, 1800);
     return () => clearInterval(interval);
   }, [isOpen, refreshChatMessages]);
 

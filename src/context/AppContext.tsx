@@ -694,7 +694,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           }
         });
         for (const [id, item] of next.entries()) {
-          if (now - item.lastSeen > 60000 && id !== currentUserRef.current?.id) {
+          if (now - item.lastSeen > 90000 && id !== currentUserRef.current?.id) {
             next.delete(id);
           }
         }
@@ -815,8 +815,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         } catch {}
       }
 
-      // 2. Gửi Heartbeat lên Cloud Firestore mỗi 10 giây (hoặc ngay lần đầu)
-      if (now - lastCloudHeartbeat >= 10000) {
+      // 2. Gửi Heartbeat lên Cloud Firestore mỗi 8 giây (hoặc ngay lần đầu)
+      if (now - lastCloudHeartbeat >= 8000) {
         lastCloudHeartbeat = now;
         updatePresenceInFirestore(selfItem).catch(() => {});
       }
@@ -826,7 +826,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const next = new Map(prev);
         next.set(currentUser.id, selfItem);
         for (const [id, item] of next.entries()) {
-          if (now - item.lastSeen > 35000 && id !== currentUser.id) {
+          if (now - item.lastSeen > 90000 && id !== currentUser.id) {
             next.delete(id);
           }
         }
@@ -837,16 +837,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     sendHeartbeat();
     const interval = setInterval(sendHeartbeat, 5000);
 
-    const handleBeforeUnload = () => {
-      if (currentUser?.id) {
-        setOfflineInFirestore(currentUser.id).catch(() => {});
-      }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
     return () => {
       clearInterval(interval);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, [currentUser, broadcastChannel]);
 
@@ -875,8 +867,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     for (const [id, item] of localPresences.entries()) {
       if (currentUser && id === currentUser.id) continue;
-      // Coi là online nếu có tương tác trong vòng 35s và lastSeen > 0
-      if (item.lastSeen > 0 && now - item.lastSeen < 35000) {
+      // Coi là online nếu có tương tác trong vòng 90s và lastSeen > 0
+      if (item.lastSeen > 0 && now - item.lastSeen < 90000) {
         list.push({ ...item, isSelf: false });
       }
     }
@@ -1011,23 +1003,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return finalUsers;
   };
 
-  // 0. Realtime server & Cloud synchronization across devices (Phone, PC, etc.) via ntfy.sh Realtime SSE Relay
-  const NTFY_SYNC_TOPIC = 'minetask_1835_sync_relay_v23';
-  const NTFY_SYNC_URL = `https://ntfy.sh/${NTFY_SYNC_TOPIC}`;
-
-  // Broadcast Realtime Chat to ntfy.sh Cloud Relay (Zero latency cross-device push)
-  const broadcastChatToRelay = useCallback((actionPayload: any) => {
-    try {
-      fetch(NTFY_SYNC_URL, {
-        method: 'POST',
-        headers: {
-          'Title': '1835 Team Chat',
-          'Tags': 'speech_balloon',
-        },
-        body: JSON.stringify(actionPayload),
-      }).catch(() => {});
-    } catch {}
-  }, [NTFY_SYNC_URL]);
+  // 0. Realtime Cloud Relay (Firebase Cloud Firestore handles 100% of real-time chat & data)
+  const broadcastChatToRelay = useCallback((_actionPayload: any) => {
+    // Không dùng ntfy.sh để tránh lỗi timeout mạng tại Việt Nam
+  }, []);
 
   // Helper to merge and apply incoming cloud sync payload from any device (phone, laptop, etc.)
   const handleIncomingCloudSync = useCallback((payload: any) => {
@@ -1213,48 +1192,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Real-time EventSource (SSE) listener: Zero delay, instant updates!
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    let es: EventSource | null = null;
-    let reconnectTimer: any = null;
-
-    const connectSSE = () => {
-      try {
-        es = new EventSource(`${NTFY_SYNC_URL}/sse`);
-        es.onmessage = (event) => {
-          try {
-            const msgObj = JSON.parse(event.data);
-            if (msgObj.event === 'message' && msgObj.message) {
-              const payload = JSON.parse(msgObj.message);
-              handleIncomingCloudSync(payload);
-            }
-          } catch (e) {
-            console.warn('[1835 SSE] Message parse error:', e);
-          }
-        };
-
-        es.onerror = () => {
-          if (es) {
-            es.close();
-            es = null;
-          }
-          clearTimeout(reconnectTimer);
-          reconnectTimer = setTimeout(connectSSE, 4000);
-        };
-      } catch (err) {
-        console.warn('[1835 SSE] Connect error:', err);
-        clearTimeout(reconnectTimer);
-        reconnectTimer = setTimeout(connectSSE, 5000);
-      }
-    };
-
-    connectSSE();
-
-    return () => {
-      if (es) es.close();
-      clearTimeout(reconnectTimer);
-    };
-  }, [handleIncomingCloudSync]);
+    // SSE disabled to prevent timeout
+  }, []);
 
   const pushToServer = async (usersList?: UserProfile[], worldsList?: World[], tasksList?: Task[], replaceUsers?: boolean) => {
     if (isPushingRef.current) {
@@ -1298,46 +1237,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
       }
 
-      // ALWAYS publish to Global ntfy.sh Realtime Cloud Relay!
-      // BẢO MẬT: Loại bỏ toàn bộ password khỏi payload đồng bộ công khai
-      const sanitizedUsers = cleanUsers.map(u => {
-        const { password, ...safeUser } = u;
-        return safeUser;
-      });
-
-      const payload = {
-        type: 'SYNC_FULL_STATE',
-        senderId: currentUser ? currentUser.id : 'device_' + Date.now(),
-        senderName: currentUser ? currentUser.name : '',
-        users: sanitizedUsers,
-        worlds: worldsList || worlds,
-        tasks: tasksList || tasks,
-        deletedTaskIds: Array.from(deletedTaskIdsRef.current),
-        deletedWorldIds: Array.from(deletedWorldIdsRef.current),
-        presence: currentUser ? {
-          userId: currentUser.id,
-          name: currentUser.name,
-          avatarKey: currentUser.avatarKey,
-          role: currentUser.role,
-          timestamp: Date.now(),
-        } : undefined,
-        timestamp: Date.now(),
-      };
-
-      const c = new AbortController();
-      const t = setTimeout(() => c.abort(), 6000);
-      const res = await fetch(NTFY_SYNC_URL, {
-        method: 'POST',
-        headers: {
-          'Title': '1835 Realtime Cloud Sync',
-          'Tags': 'hammer_and_pick,busts_in_silhouette',
-        },
-        body: JSON.stringify(payload),
-        signal: c.signal,
-      });
-      clearTimeout(t);
-
-      if (res.ok || isFirebaseReady()) {
+      if (isFirebaseReady()) {
         setNetworkOnline(true);
         setServerConnected(true);
         setSyncStatus('synced');
@@ -1359,14 +1259,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setChatMessages((prev) => {
           const map = new Map<string, ChatMessage>();
           prev.forEach((m) => map.set(m.id, m));
-          let hasNew = false;
+          let changed = false;
           cloudMsgs.forEach((m) => {
-            if (!map.has(m.id)) {
-              hasNew = true;
-              map.set(m.id, m);
+            const existing = map.get(m.id);
+            if (!existing || existing.text !== m.text || JSON.stringify(existing.readBy) !== JSON.stringify(m.readBy) || JSON.stringify(existing.reactions) !== JSON.stringify(m.reactions)) {
+              changed = true;
+              map.set(m.id, { ...existing, ...m });
             }
           });
-          if (!hasNew) return prev;
+          if (!changed && map.size === prev.length) return prev;
           const merged = Array.from(map.values()).sort((a, b) => a.createdAt - b.createdAt);
           try {
             localStorage.setItem(STORAGE_KEY_CHAT, JSON.stringify(merged.slice(-150)));
@@ -1448,29 +1349,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setSyncStatus('synced');
         setLastSyncTime(Date.now());
       }
-
-      // 2. Poll ntfy.sh chạy ngầm không chặn (timeout 1.2s)
-      try {
-        const c = new AbortController();
-        const t = setTimeout(() => c.abort(), 1200);
-        fetch(`${NTFY_SYNC_URL}/json?poll=1&since=all`, { signal: c.signal })
-          .then(async (res) => {
-            clearTimeout(t);
-            if (res.ok) {
-              const text = await res.text();
-              const lines = text.trim().split('\n').filter(Boolean);
-              for (const line of lines) {
-                try {
-                  const msgObj = JSON.parse(line);
-                  if (msgObj.message) {
-                    handleIncomingCloudSync(JSON.parse(msgObj.message));
-                  }
-                } catch {}
-              }
-            }
-          })
-          .catch(() => {});
-      } catch {}
 
       const ping = Math.round(performance.now() - startPing);
       setServerPing(ping);
