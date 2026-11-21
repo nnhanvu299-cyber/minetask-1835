@@ -595,23 +595,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         // Thông báo cho tất cả tin nhắn mới đến từ đồng đội chưa xem
         const myId = currentUserRef.current?.id;
-        cloudMsgs.forEach((msg) => {
-          if (
-            msg &&
-            msg.id &&
-            myId &&
-            msg.senderId !== myId &&
-            !notifiedToastIdsRef.current.has(msg.id)
-          ) {
-            const isUnread = !Array.isArray(msg.readBy) || !msg.readBy.includes(myId);
-            const isRecent = Date.now() - (msg.createdAt || 0) < 600000;
-            if (isUnread && isRecent) {
-              notifyIncomingChatMessage(msg);
-            } else {
-              notifiedToastIdsRef.current.add(msg.id);
-            }
+        if (myId) {
+          const unreadMsgs = cloudMsgs.filter(
+            (msg) =>
+              msg &&
+              msg.id &&
+              msg.senderId !== myId &&
+              !notifiedToastIdsRef.current.has(msg.id) &&
+              (!Array.isArray(msg.readBy) || !msg.readBy.includes(myId))
+          );
+
+          if (unreadMsgs.length > 0) {
+            const targetMsg = unreadMsgs[unreadMsgs.length - 1];
+            unreadMsgs.forEach((m) => {
+              if (m.id !== targetMsg.id) {
+                notifiedToastIdsRef.current.add(m.id);
+              }
+            });
+            notifyIncomingChatMessage(targetMsg);
           }
-        });
+        }
 
         return merged;
       });
@@ -1334,23 +1337,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
           // Thông báo cho tất cả tin nhắn mới đến từ đồng đội chưa xem
           const myId = currentUserRef.current?.id;
-          cloudMsgs.forEach((msg) => {
-            if (
-              msg &&
-              msg.id &&
-              myId &&
-              msg.senderId !== myId &&
-              !notifiedToastIdsRef.current.has(msg.id)
-            ) {
-              const isUnread = !Array.isArray(msg.readBy) || !msg.readBy.includes(myId);
-              const isRecent = Date.now() - (msg.createdAt || 0) < 600000;
-              if (isUnread && isRecent) {
-                notifyIncomingChatMessage(msg);
-              } else {
-                notifiedToastIdsRef.current.add(msg.id);
-              }
+          if (myId) {
+            const unreadMsgs = cloudMsgs.filter(
+              (msg) =>
+                msg &&
+                msg.id &&
+                msg.senderId !== myId &&
+                !notifiedToastIdsRef.current.has(msg.id) &&
+                (!Array.isArray(msg.readBy) || !msg.readBy.includes(myId))
+            );
+
+            if (unreadMsgs.length > 0) {
+              const targetMsg = unreadMsgs[unreadMsgs.length - 1];
+              unreadMsgs.forEach((m) => {
+                if (m.id !== targetMsg.id) {
+                  notifiedToastIdsRef.current.add(m.id);
+                }
+              });
+              notifyIncomingChatMessage(targetMsg);
             }
-          });
+          }
 
           return merged;
         });

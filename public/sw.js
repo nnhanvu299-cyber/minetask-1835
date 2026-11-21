@@ -1,4 +1,4 @@
-const CACHE_NAME = 'minetask-1835s-v41-phone-notification-fix';
+const CACHE_NAME = 'minetask-1835s-v42-toast-force-active';
 
 const PRECACHE_ASSETS = [
   './',

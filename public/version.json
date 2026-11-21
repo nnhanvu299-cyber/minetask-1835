@@ -1,5 +1,5 @@
 {
-  "version": 1795234000000,
-  "buildTime": "2026-11-21T03:56:00.000Z",
-  "note": "Khắc phục triệt để thông báo tin nhắn trên điện thoại: Tự động quét và báo chuông/toast mọi tin nhắn mới"
+  "version": 1795234500000,
+  "buildTime": "2026-11-21T04:02:00.000Z",
+  "note": "Kích hoạt thông báo tức thì cho toàn bộ tin nhắn chưa đọc từ đồng đội"
 }
