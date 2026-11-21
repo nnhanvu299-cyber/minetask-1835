@@ -518,3 +518,125 @@ export async function broadcastAppVersionToFirestore(version: number, note?: str
     return false;
   }
 }
+
+// ==========================================
+// 6. Theo dõi trạng thái Online thời gian thực (Presence) trên Firestore
+// ==========================================
+
+export interface UserPresence {
+  userId: string;
+  name: string;
+  avatarKey?: string;
+  role?: string;
+  lastSeen: number;
+}
+
+// Cập nhật nhịp tim (Heartbeat) của user lên Firestore
+export async function updatePresenceInFirestore(presence: {
+  userId: string;
+  name: string;
+  avatarKey?: string;
+  role?: string;
+  lastSeen?: number;
+}): Promise<boolean> {
+  const { db, isReady } = initFirebase();
+  if (!isReady || !db || !presence.userId) return false;
+
+  try {
+    const presenceRef = doc(db, 'presence', presence.userId);
+    const cleanPayload = JSON.parse(JSON.stringify({
+      userId: presence.userId,
+      name: presence.name || '',
+      avatarKey: presence.avatarKey || '',
+      role: presence.role || '',
+      lastSeen: presence.lastSeen || Date.now(),
+      updatedAt: Date.now(),
+    }));
+    await setDoc(presenceRef, cleanPayload, { merge: true });
+    return true;
+  } catch (err) {
+    console.warn('[Firebase] Lỗi cập nhật presence:', err);
+    return false;
+  }
+}
+
+// Đặt trạng thái offline khi đóng ứng dụng hoặc đăng xuất
+export async function setOfflineInFirestore(userId: string): Promise<boolean> {
+  const { db, isReady } = initFirebase();
+  if (!isReady || !db || !userId) return false;
+
+  try {
+    const presenceRef = doc(db, 'presence', userId);
+    await setDoc(presenceRef, { lastSeen: 0, updatedAt: Date.now() }, { merge: true });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Lắng nghe danh sách thành viên online theo thời gian thực (Real-time listener)
+export function subscribeToPresenceInFirestore(
+  onPresenceUpdate: (presences: UserPresence[]) => void,
+  onError?: (err: any) => void
+): Unsubscribe | null {
+  const { db, isReady } = initFirebase();
+  if (!isReady || !db) return null;
+
+  try {
+    const presenceCol = collection(db, 'presence');
+    return onSnapshot(
+      presenceCol,
+      (snapshot) => {
+        const list: UserPresence[] = [];
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          if (data && data.userId && typeof data.lastSeen === 'number') {
+            list.push({
+              userId: data.userId,
+              name: data.name || '',
+              avatarKey: data.avatarKey || '',
+              role: data.role || '',
+              lastSeen: data.lastSeen,
+            });
+          }
+        });
+        onPresenceUpdate(list);
+      },
+      (err) => {
+        console.warn('[Firebase Presence] Lỗi lắng nghe presence Firestore:', err);
+        if (onError) onError(err);
+      }
+    );
+  } catch (err) {
+    console.warn('[Firebase Presence] Không thể thiết lập listener:', err);
+    return null;
+  }
+}
+
+// Lấy danh sách presence một lần (One-time fetch khi khởi động)
+export async function fetchPresenceFromFirestore(): Promise<UserPresence[] | null> {
+  const { db, isReady } = initFirebase();
+  if (!isReady || !db) return null;
+
+  try {
+    const snapshot = await getDocs(collection(db, 'presence'));
+    const list: UserPresence[] = [];
+    snapshot.forEach((docSnap) => {
+      const data = docSnap.data();
+      if (data && data.userId && typeof data.lastSeen === 'number') {
+        list.push({
+          userId: data.userId,
+          name: data.name || '',
+          avatarKey: data.avatarKey || '',
+          role: data.role || '',
+          lastSeen: data.lastSeen,
+        });
+      }
+    });
+    return list;
+  } catch (err) {
+    console.warn('[Firebase Presence] Lỗi tải presence:', err);
+    return null;
+  }
+}
+

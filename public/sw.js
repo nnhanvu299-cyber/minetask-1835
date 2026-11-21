@@ -1,4 +1,4 @@
-const CACHE_NAME = 'minetask-1835s-v37-badge-transparent';
+const CACHE_NAME = 'minetask-1835s-v38-realtime-presence';
 
 const PRECACHE_ASSETS = [
   './',

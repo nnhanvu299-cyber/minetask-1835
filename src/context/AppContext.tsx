@@ -23,6 +23,11 @@ import {
   deleteChatMessageFromFirestore,
   markChatMessageReadInFirestore,
   fetchChatMessagesFromFirestore,
+  updatePresenceInFirestore,
+  setOfflineInFirestore,
+  subscribeToPresenceInFirestore,
+  fetchPresenceFromFirestore,
+  UserPresence,
 } from '../services/firebase';
 
 import { DEFAULT_USERS, INITIAL_WORLDS, INITIAL_TASKS } from '../data/initialData';
@@ -458,6 +463,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     isSelf?: boolean;
   }>>(new Map());
 
+  // Nhịp tick định kỳ mỗi 5s để cập nhật trạng thái online và dọn dẹp người dùng hết hạn
+  const [presenceTick, setPresenceTick] = useState<number>(0);
+  useEffect(() => {
+    const tickInterval = setInterval(() => {
+      setPresenceTick((t) => (t + 1) % 100000);
+    }, 5000);
+    return () => clearInterval(tickInterval);
+  }, []);
+
   // Firebase State & Configuration
   const [isFirebaseConnected, setIsFirebaseConnected] = useState<boolean>(() => isFirebaseReady());
   const [firebaseConfigState, setFirebaseConfigState] = useState<FirebaseConfig | null>(() => getFirebaseConfig());
@@ -489,6 +503,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return false;
     }
   };
+
+  const currentUserRef = useRef<UserProfile | null>(currentUser);
+  currentUserRef.current = currentUser;
+  const isChatOpenRef = useRef<boolean>(isChatOpen);
+  isChatOpenRef.current = isChatOpen;
 
   // Lắng nghe dữ liệu người dùng và Tasks/Worlds thời gian thực từ Cloud Firestore
   useEffect(() => {
@@ -590,17 +609,62 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       });
     });
 
+    // Nạp presence ban đầu từ Cloud Firestore
+    fetchPresenceFromFirestore().then((cloudPresences) => {
+      if (Array.isArray(cloudPresences) && cloudPresences.length > 0) {
+        setLocalPresences((prev) => {
+          const next = new Map(prev);
+          cloudPresences.forEach((p) => {
+            if (p.userId) {
+              next.set(p.userId, {
+                userId: p.userId,
+                name: p.name,
+                avatarKey: p.avatarKey,
+                role: p.role,
+                lastSeen: p.lastSeen,
+                isSelf: currentUserRef.current?.id === p.userId,
+              });
+            }
+          });
+          return next;
+        });
+      }
+    }).catch(() => {});
+
+    // Lắng nghe trạng thái online của toàn bộ thành viên qua Cloud Firestore
+    const unsubPresence = subscribeToPresenceInFirestore((cloudPresences) => {
+      if (!Array.isArray(cloudPresences)) return;
+      setLocalPresences((prev) => {
+        const next = new Map(prev);
+        const now = Date.now();
+        cloudPresences.forEach((p) => {
+          if (p.userId) {
+            next.set(p.userId, {
+              userId: p.userId,
+              name: p.name,
+              avatarKey: p.avatarKey,
+              role: p.role,
+              lastSeen: p.lastSeen,
+              isSelf: currentUserRef.current?.id === p.userId,
+            });
+          }
+        });
+        for (const [id, item] of next.entries()) {
+          if (now - item.lastSeen > 60000 && id !== currentUserRef.current?.id) {
+            next.delete(id);
+          }
+        }
+        return next;
+      });
+    });
+
     return () => {
       if (unsubscribeUsers) unsubscribeUsers();
       if (unsubApp) unsubApp();
       if (unsubChat) unsubChat();
+      if (unsubPresence) unsubPresence();
     };
   }, [isFirebaseConnected]);
-
-  const currentUserRef = useRef<UserProfile | null>(currentUser);
-  currentUserRef.current = currentUser;
-  const isChatOpenRef = useRef<boolean>(isChatOpen);
-  isChatOpenRef.current = isChatOpen;
 
   // Realtime Broadcast Channel across browser tabs
   const [broadcastChannel, setBroadcastChannel] = useState<BroadcastChannel | null>(null);
@@ -677,20 +741,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, []);
 
-  // Broadcast presence heartbeat cross-tab & prune old members
+  // Broadcast presence heartbeat cross-tab & toàn mạng Cloud Firestore
   useEffect(() => {
     if (!currentUser) return;
 
+    let lastCloudHeartbeat = 0;
+
     const sendHeartbeat = () => {
+      const now = Date.now();
       const selfItem = {
         userId: currentUser.id,
         name: currentUser.name,
         avatarKey: currentUser.avatarKey,
         role: currentUser.role,
-        lastSeen: Date.now(),
+        lastSeen: now,
         isSelf: true,
       };
 
+      // 1. Tab cục bộ (BroadcastChannel)
       if (broadcastChannel) {
         try {
           broadcastChannel.postMessage({
@@ -700,12 +768,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         } catch {}
       }
 
+      // 2. Gửi Heartbeat lên Cloud Firestore mỗi 10 giây (hoặc ngay lần đầu)
+      if (now - lastCloudHeartbeat >= 10000) {
+        lastCloudHeartbeat = now;
+        updatePresenceInFirestore(selfItem).catch(() => {});
+      }
+
+      // 3. Cập nhật state local
       setLocalPresences((prev) => {
         const next = new Map(prev);
         next.set(currentUser.id, selfItem);
-        const now = Date.now();
         for (const [id, item] of next.entries()) {
-          if (now - item.lastSeen > 25000 && id !== currentUser.id) {
+          if (now - item.lastSeen > 35000 && id !== currentUser.id) {
             next.delete(id);
           }
         }
@@ -714,11 +788,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
 
     sendHeartbeat();
-    const interval = setInterval(sendHeartbeat, 4000);
-    return () => clearInterval(interval);
+    const interval = setInterval(sendHeartbeat, 5000);
+
+    const handleBeforeUnload = () => {
+      if (currentUser?.id) {
+        setOfflineInFirestore(currentUser.id).catch(() => {});
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, [currentUser, broadcastChannel]);
 
-  // Unified list of active online members
+  // Unified list of active online members (Tự động cập nhật mỗi 5 giây qua presenceTick)
   const onlineMembers = React.useMemo(() => {
     const now = Date.now();
     const list: Array<{
@@ -743,13 +828,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     for (const [id, item] of localPresences.entries()) {
       if (currentUser && id === currentUser.id) continue;
-      if (now - item.lastSeen < 25000) {
+      // Coi là online nếu có tương tác trong vòng 35s và lastSeen > 0
+      if (item.lastSeen > 0 && now - item.lastSeen < 35000) {
         list.push({ ...item, isSelf: false });
       }
     }
 
     return list;
-  }, [localPresences, currentUser]);
+  }, [localPresences, currentUser, presenceTick]);
 
   // Sync to local storage
   useEffect(() => {
@@ -1203,7 +1289,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       });
       clearTimeout(t);
 
-      if (res.ok) {
+      if (res.ok || isFirebaseReady()) {
         setNetworkOnline(true);
         setServerConnected(true);
         setSyncStatus('synced');
@@ -1277,8 +1363,23 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return true;
       }
 
+      if (isFirebaseReady()) {
+        setNetworkOnline(true);
+        setServerConnected(true);
+        setSyncStatus('synced');
+        setLastSyncTime(Date.now());
+        return true;
+      }
+
       return false;
     } catch {
+      if (isFirebaseReady()) {
+        setNetworkOnline(true);
+        setServerConnected(true);
+        setSyncStatus('synced');
+        setLastSyncTime(Date.now());
+        return true;
+      }
       setSyncStatus('error');
       return false;
     } finally {
@@ -1756,6 +1857,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const logout = () => {
+    if (currentUser?.id) {
+      setOfflineInFirestore(currentUser.id).catch(() => {});
+    }
     setCurrentUser(null);
     setActiveWorldId(null);
     try {
