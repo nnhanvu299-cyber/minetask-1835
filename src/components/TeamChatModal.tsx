@@ -21,6 +21,7 @@ import {
   Check,
   CheckCheck,
   Eye,
+  Bell,
 } from 'lucide-react';
 
 interface TeamChatModalProps {
@@ -56,6 +57,9 @@ export const TeamChatModal: React.FC<TeamChatModalProps> = ({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showTaskPicker, setShowTaskPicker] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [notifGranted, setNotifGranted] = useState<boolean>(() => {
+    return typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted';
+  });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -147,6 +151,23 @@ export const TeamChatModal: React.FC<TeamChatModalProps> = ({
           </div>
 
           <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={async () => {
+                soundEngine.playChatMessage();
+                if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+                  try { navigator.vibrate([100, 50, 100]); } catch {}
+                }
+                if (typeof Notification !== 'undefined') {
+                  const perm = await Notification.requestPermission();
+                  setNotifGranted(perm === 'granted');
+                }
+              }}
+              className="mc-icon-btn !w-7 !h-7 bg-[#FFFDF7] border-2 border-[#2D1A11] text-[#2D1A11] hover:bg-[#FAF2DC]"
+              title={notifGranted ? "Đã bật thông báo thiết bị (Bấm để thử chuông)" : "Bấm để Bật thông báo & Thử chuông"}
+            >
+              <Bell size={13} className={notifGranted ? "text-emerald-600" : "text-[#F37022]"} />
+            </button>
             <button
               type="button"
               onClick={toggleSound}

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'minetask-1835s-v33-realtime-relay-chat';
+const CACHE_NAME = 'minetask-1835s-v34-bell-vibrate-alerts';
 
 const PRECACHE_ASSETS = [
   './',

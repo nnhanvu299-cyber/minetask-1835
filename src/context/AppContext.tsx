@@ -357,9 +357,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const notifyIncomingChatMessage = useCallback((msg: ChatMessage) => {
     if (!msg || msg.senderId === currentUserRef.current?.id) return;
 
+    // 1. Luôn phát chuông âm thanh 8-bit và rung điện thoại khi có tin nhắn mới
+    try {
+      soundEngine.playChatMessage();
+    } catch {}
+
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+      try {
+        navigator.vibrate([120, 60, 120]);
+      } catch {}
+    }
+
+    // 2. Nếu đang đóng khung chat: Bật banner Toast nổi, đếm số đỏ trên icon và gửi Push Notification
     if (!isChatOpenRef.current) {
       setUnreadChatCount((c) => c + 1);
-      soundEngine.playChatMessage();
 
       setActiveChatToast({
         id: msg.id,
@@ -1012,8 +1023,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return updated;
       });
 
-      const isRecent = incomingMsg.createdAt && Date.now() - incomingMsg.createdAt < 60000;
-      if (isRecent && incomingMsg.senderId !== currentUserRef.current?.id) {
+      if (incomingMsg.senderId !== currentUserRef.current?.id) {
         notifyIncomingChatMessage(incomingMsg);
       }
       return;
