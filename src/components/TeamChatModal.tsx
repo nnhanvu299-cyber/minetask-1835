@@ -130,8 +130,14 @@ export const TeamChatModal: React.FC<TeamChatModalProps> = ({
       console.warn('[Chat] Gửi tin nhắn thất bại:', err);
     } finally {
       isSendingRef.current = false;
-      // Giữ focus trên ô nhập liệu để người dùng gõ tiếp liên tục
-      inputRef.current?.focus();
+      // Trên điện thoại: Tự động hạ bàn phím ảo (blur) để người dùng xem được tin nhắn vừa gửi và không bị che màn hình
+      // Trên máy tính: Giữ focus để người dùng có thể gõ tiếp liên tục bằng bàn phím vật lý
+      const isMobile = typeof window !== 'undefined' && (window.innerWidth < 768 || 'ontouchstart' in window);
+      if (isMobile) {
+        inputRef.current?.blur();
+      } else {
+        inputRef.current?.focus();
+      }
     }
   };
 

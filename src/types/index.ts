@@ -108,6 +108,7 @@ export interface ChatMessage {
   attachedTaskTitle?: string;
   reactions?: Record<string, string[]>; // emoji key -> array of userIds
   readBy?: string[]; // array of userIds who have read this message
+  deviceId?: string; // id thiết bị gửi để phân biệt đa thiết bị (PC vs Phone)
 }
 
 export interface AppState {

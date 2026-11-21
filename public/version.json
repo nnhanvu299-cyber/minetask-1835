@@ -1,5 +1,5 @@
 {
-  "version": 1795234500000,
-  "buildTime": "2026-11-21T04:02:00.000Z",
-  "note": "Kích hoạt thông báo tức thì cho toàn bộ tin nhắn chưa đọc từ đồng đội"
+  "version": 1795235500000,
+  "buildTime": "2026-11-21T04:16:00.000Z",
+  "note": "Tương thích đa thiết bị: Tự động nhảy thông báo và chuông trên điện thoại khi gửi từ máy tính, tự hạ bàn phím sau khi gửi trên di động."
 }

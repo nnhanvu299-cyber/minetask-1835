@@ -167,6 +167,21 @@ const isDefaultMockUser = (u: any): boolean => {
 
 const CURRENT_VERSION_TAG = 'v23';
 
+// Device ID duy nhất cho mỗi máy/trình duyệt để hỗ trợ phân biệt và thông báo chéo đa thiết bị (PC <-> Phone)
+export const CLIENT_DEVICE_ID = (() => {
+  if (typeof window === 'undefined') return 'server';
+  try {
+    let id = localStorage.getItem('minetask_1835_client_device_id');
+    if (!id) {
+      id = 'dev_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 9);
+      localStorage.setItem('minetask_1835_client_device_id', id);
+    }
+    return id;
+  } catch {
+    return 'dev_' + Date.now().toString(36);
+  }
+})();
+
 function purgeLegacyAppData() {
   if (typeof window === 'undefined' || !window.localStorage) return;
   if (localStorage.getItem('minetask_1835_purged_legacy_done')) return;
@@ -371,7 +386,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, []);
 
   const notifyIncomingChatMessage = useCallback((msg: ChatMessage) => {
-    if (!msg || msg.senderId === currentUserRef.current?.id) return;
+    if (!msg || !msg.id) return;
+
+    // Không bao giờ thông báo trên chính thiết bị vừa bấm gửi tin nhắn này
+    if (msg.deviceId && msg.deviceId === CLIENT_DEVICE_ID) return;
+    if (!msg.deviceId && msg.senderId === currentUserRef.current?.id) return;
 
     // Chống lặp thông báo: mỗi tin nhắn chỉ hiển thị Toast và phát chuông 1 lần duy nhất
     if (notifiedToastIdsRef.current.has(msg.id)) return;
@@ -593,30 +612,44 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           localStorage.setItem(STORAGE_KEY_CHAT, JSON.stringify(merged.slice(-100)));
         } catch {}
 
-        // Thông báo cho tất cả tin nhắn mới đến từ đồng đội chưa xem
-        const myId = currentUserRef.current?.id;
-        if (myId) {
-          const unreadMsgs = cloudMsgs.filter(
-            (msg) =>
-              msg &&
-              msg.id &&
-              msg.senderId !== myId &&
-              !notifiedToastIdsRef.current.has(msg.id) &&
-              (!Array.isArray(msg.readBy) || !msg.readBy.includes(myId))
-          );
+        return merged;
+      });
 
-          if (unreadMsgs.length > 0) {
-            const targetMsg = unreadMsgs[unreadMsgs.length - 1];
-            unreadMsgs.forEach((m) => {
-              if (m.id !== targetMsg.id) {
-                notifiedToastIdsRef.current.add(m.id);
-              }
-            });
-            notifyIncomingChatMessage(targetMsg);
-          }
+      // Xử lý thông báo tin nhắn mới ngoài setState (đảm bảo an toàn React và tức thì)
+      const myId = currentUserRef.current?.id;
+      const recentThreshold = Date.now() - 300000; // 5 phút gần nhất
+
+      cloudMsgs.forEach((msg) => {
+        if (!msg || !msg.id) return;
+
+        // Bỏ qua nếu tin nhắn do chính thiết bị này gửi đi
+        if (msg.deviceId && msg.deviceId === CLIENT_DEVICE_ID) {
+          notifiedToastIdsRef.current.add(msg.id);
+          return;
         }
 
-        return merged;
+        // Bỏ qua nếu tin nhắn đã cũ (> 5 phút)
+        if ((msg.createdAt || 0) < recentThreshold) {
+          notifiedToastIdsRef.current.add(msg.id);
+          return;
+        }
+
+        // Kiểm tra xem tin nhắn có từ thiết bị/người khác không
+        const isFromOtherDevice = msg.deviceId ? msg.deviceId !== CLIENT_DEVICE_ID : (msg.senderId !== myId);
+        if (!isFromOtherDevice) {
+          notifiedToastIdsRef.current.add(msg.id);
+          return;
+        }
+
+        // Kiểm tra trạng thái chưa xem:
+        // Nếu khác người dùng: kiểm tra readBy. Nếu cùng tài khoản (test đa thiết bị PC <-> Phone): luôn thông báo!
+        const isUnread = msg.senderId !== myId
+          ? (!Array.isArray(msg.readBy) || !myId || !msg.readBy.includes(myId))
+          : true;
+
+        if (isUnread && !notifiedToastIdsRef.current.has(msg.id)) {
+          notifyIncomingChatMessage(msg);
+        }
       });
     });
 
@@ -709,7 +742,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             } catch {}
             return updated;
           });
-          notifyIncomingChatMessage(msg);
+          const isFromOtherDevice = msg.deviceId ? msg.deviceId !== CLIENT_DEVICE_ID : msg.senderId !== currentUserRef.current?.id;
+          if (isFromOtherDevice) {
+            notifyIncomingChatMessage(msg);
+          }
         } else if (type === 'CHAT_READ_RECEIPT') {
           const { userId, messageIds } = payload || {};
           if (userId && Array.isArray(messageIds) && messageIds.length > 0) {
@@ -1132,7 +1168,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return updated;
       });
 
-      if (incomingMsg.senderId !== currentUserRef.current?.id) {
+      const isFromOtherDevice = incomingMsg.deviceId ? incomingMsg.deviceId !== CLIENT_DEVICE_ID : incomingMsg.senderId !== currentUserRef.current?.id;
+      if (isFromOtherDevice) {
         notifyIncomingChatMessage(incomingMsg);
       }
       return;
@@ -1334,31 +1371,35 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           try {
             localStorage.setItem(STORAGE_KEY_CHAT, JSON.stringify(merged.slice(-150)));
           } catch {}
-
-          // Thông báo cho tất cả tin nhắn mới đến từ đồng đội chưa xem
-          const myId = currentUserRef.current?.id;
-          if (myId) {
-            const unreadMsgs = cloudMsgs.filter(
-              (msg) =>
-                msg &&
-                msg.id &&
-                msg.senderId !== myId &&
-                !notifiedToastIdsRef.current.has(msg.id) &&
-                (!Array.isArray(msg.readBy) || !msg.readBy.includes(myId))
-            );
-
-            if (unreadMsgs.length > 0) {
-              const targetMsg = unreadMsgs[unreadMsgs.length - 1];
-              unreadMsgs.forEach((m) => {
-                if (m.id !== targetMsg.id) {
-                  notifiedToastIdsRef.current.add(m.id);
-                }
-              });
-              notifyIncomingChatMessage(targetMsg);
-            }
-          }
-
           return merged;
+        });
+
+        // Xử lý thông báo tin nhắn mới ngoài setState
+        const myId = currentUserRef.current?.id;
+        const recentThreshold = Date.now() - 300000; // 5 phút gần nhất
+
+        cloudMsgs.forEach((msg) => {
+          if (!msg || !msg.id) return;
+          if (msg.deviceId && msg.deviceId === CLIENT_DEVICE_ID) {
+            notifiedToastIdsRef.current.add(msg.id);
+            return;
+          }
+          if ((msg.createdAt || 0) < recentThreshold) {
+            notifiedToastIdsRef.current.add(msg.id);
+            return;
+          }
+          const isFromOtherDevice = msg.deviceId ? msg.deviceId !== CLIENT_DEVICE_ID : (msg.senderId !== myId);
+          if (!isFromOtherDevice) {
+            notifiedToastIdsRef.current.add(msg.id);
+            return;
+          }
+          const isUnread = msg.senderId !== myId
+            ? (!Array.isArray(msg.readBy) || !myId || !msg.readBy.includes(myId))
+            : true;
+
+          if (isUnread && !notifiedToastIdsRef.current.has(msg.id)) {
+            notifyIncomingChatMessage(msg);
+          }
         });
       }
     } catch (e) {
@@ -2588,7 +2629,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         attachedTaskTitle,
         reactions: {},
         readBy: [currentUser.id],
+        deviceId: CLIENT_DEVICE_ID,
       };
+
+      // Đánh dấu để chính thiết bị gửi không bao giờ tự thông báo cho chính mình
+      notifiedToastIdsRef.current.add(newMsg.id);
 
       setChatMessages((prev) => {
         const updated = [...prev, newMsg];

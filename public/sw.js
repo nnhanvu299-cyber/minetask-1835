@@ -1,4 +1,4 @@
-const CACHE_NAME = 'minetask-1835s-v42-toast-force-active';
+const CACHE_NAME = 'minetask-1835s-v43-device-id-chat-sync';
 
 const PRECACHE_ASSETS = [
   './',
