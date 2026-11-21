@@ -1,4 +1,4 @@
-const CACHE_NAME = 'minetask-1835s-v36-toast-fix';
+const CACHE_NAME = 'minetask-1835s-v37-badge-transparent';
 
 const PRECACHE_ASSETS = [
   './',
@@ -7,6 +7,8 @@ const PRECACHE_ASSETS = [
   './minecraft-bg.jpg',
   './cherry-bg.jpg',
   './favicon.ico',
+  './badge-96.png',
+  './badge-chat-96.png',
   './icon-1835-v2-192.png',
   './icon-1835-v2-512.png',
   './icon-1835-v2.png',
@@ -42,8 +44,8 @@ self.addEventListener('activate', (event) => {
         if (hasUpgraded && self.registration && typeof self.registration.showNotification === 'function') {
           self.registration.showNotification('🚀 MINETASK 1835s: BẢN CẬP NHẬT MỚI!', {
             body: 'Hệ thống vừa cập nhật phiên bản mới nhất với tính năng được nâng cấp. Chạm vào đây để mở ngay!',
-            icon: './icon-192.png',
-            badge: './icon-192.png',
+            icon: './icon-1835-v2-192.png',
+            badge: './badge-96.png',
             tag: 'minetask-1835-app-update',
             requireInteraction: true,
             data: { url: './' }
@@ -64,8 +66,8 @@ self.addEventListener('periodicsync', (event) => {
           if (data && data.version && self.registration) {
             self.registration.showNotification('🚀 MINETASK 1835s: BẢN CẬP NHẬT MỚI!', {
               body: 'Hệ thống vừa có bản cập nhật mới trên máy chủ. Chạm vào để cập nhật!',
-              icon: './icon-192.png',
-              badge: './icon-192.png',
+              icon: './icon-1835-v2-192.png',
+              badge: './badge-96.png',
               tag: 'minetask-1835-app-update',
               requireInteraction: true,
               data: { url: './' }
@@ -97,8 +99,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
-      icon: './icon-192.png',
-      badge: './icon-192.png',
+      icon: './icon-1835-v2-192.png',
+      badge: './badge-96.png',
       tag: 'minetask-1835-push',
       requireInteraction: true,
       data: { url }

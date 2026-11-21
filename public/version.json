@@ -1,5 +1,5 @@
 {
-  "version": 1795230900000,
-  "buildTime": "2026-11-21T02:54:00.000Z",
-  "note": "Khắc phục lỗi toast lặp lại, sửa nút đóng thông báo, tính chuẩn số tin chưa đọc"
+  "version": 1795231500000,
+  "buildTime": "2026-11-21T03:04:00.000Z",
+  "note": "Cập nhật badge thông báo Android trong suốt (hình cuốc quặng & bong bóng chat), xóa bỏ ô vuông trắng"
 }

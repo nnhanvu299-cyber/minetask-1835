@@ -49,8 +49,8 @@ export async function sendDeviceNotification(
     return false;
   }
 
-  const defaultIcon = './icon-192.png';
-  const defaultBadge = './icon-192.png';
+  const defaultIcon = './icon-1835-v2-192.png';
+  const defaultBadge = './badge-96.png';
 
   const notifOptions: NotificationOptions = {
     body: options?.body || '',
@@ -104,6 +104,8 @@ export async function sendUpdateAvailableNotification(
 
   return await sendDeviceNotification(title, {
     body,
+    icon: './icon-1835-v2-192.png',
+    badge: './badge-96.png',
     tag: 'minetask-1835-app-update',
     requireInteraction: true,
     onClick: () => {
@@ -129,6 +131,8 @@ export async function sendChatMessageDeviceNotification(
 
   return await sendDeviceNotification(title, {
     body,
+    icon: './icon-1835-v2-192.png',
+    badge: './badge-chat-96.png',
     tag: 'minetask-1835-chat-message',
     requireInteraction: false,
     onClick: () => {
