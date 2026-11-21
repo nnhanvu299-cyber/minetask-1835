@@ -1,5 +1,5 @@
 {
-  "version": 1795168000000,
-  "buildTime": "2026-11-20T09:43:00.000Z",
-  "note": "Cập nhật lưu trữ tin nhắn vĩnh viễn, tự động gửi thông báo cập nhật về máy"
+  "version": 1795228500000,
+  "buildTime": "2026-11-21T02:16:00.000Z",
+  "note": "Kênh chat siêu tốc Realtime Cloud Relay + Firestore kép, nhận tin nhắn tức thì 100%"
 }

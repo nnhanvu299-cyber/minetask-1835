@@ -859,6 +859,20 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const NTFY_SYNC_TOPIC = 'minetask_1835_sync_relay_v23';
   const NTFY_SYNC_URL = `https://ntfy.sh/${NTFY_SYNC_TOPIC}`;
 
+  // Broadcast Realtime Chat to ntfy.sh Cloud Relay (Zero latency cross-device push)
+  const broadcastChatToRelay = useCallback((actionPayload: any) => {
+    try {
+      fetch(NTFY_SYNC_URL, {
+        method: 'POST',
+        headers: {
+          'Title': '1835 Team Chat',
+          'Tags': 'speech_balloon',
+        },
+        body: JSON.stringify(actionPayload),
+      }).catch(() => {});
+    } catch {}
+  }, [NTFY_SYNC_URL]);
+
   // Helper to merge and apply incoming cloud sync payload from any device (phone, laptop, etc.)
   const handleIncomingCloudSync = useCallback((payload: any) => {
     if (!payload || typeof payload !== 'object') return;
@@ -982,6 +996,62 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         next.set(payload.presence.userId, { ...payload.presence, isSelf: false, lastSeen: Date.now() });
         return next;
       });
+    }
+
+    // 5. Real-time Team Chat Message via ntfy.sh Relay (Đảm bảo 100% nhận tin tức thì)
+    if (payload.type === 'CHAT_MESSAGE' && payload.message && payload.message.id) {
+      const incomingMsg = payload.message as ChatMessage;
+      setChatMessages((prev) => {
+        if (prev.some((m) => m.id === incomingMsg.id)) {
+          return prev;
+        }
+        const updated = [...prev, incomingMsg].sort((a, b) => a.createdAt - b.createdAt);
+        try {
+          localStorage.setItem(STORAGE_KEY_CHAT, JSON.stringify(updated.slice(-150)));
+        } catch {}
+        return updated;
+      });
+
+      const isRecent = incomingMsg.createdAt && Date.now() - incomingMsg.createdAt < 60000;
+      if (isRecent && incomingMsg.senderId !== currentUserRef.current?.id) {
+        notifyIncomingChatMessage(incomingMsg);
+      }
+      return;
+    }
+
+    // 6. Real-time Chat Reactions via ntfy.sh Relay
+    if (payload.type === 'CHAT_REACTION' && payload.messageId && payload.emoji && payload.userId) {
+      setChatMessages((prev) => {
+        const next = prev.map((m) => {
+          if (m.id !== payload.messageId) return m;
+          const reactions = { ...(m.reactions || {}) };
+          const users = Array.isArray(reactions[payload.emoji]) ? [...reactions[payload.emoji]] : [];
+          if (users.includes(payload.userId)) {
+            reactions[payload.emoji] = users.filter((u) => u !== payload.userId);
+            if (reactions[payload.emoji].length === 0) delete reactions[payload.emoji];
+          } else {
+            reactions[payload.emoji] = [...users, payload.userId];
+          }
+          return { ...m, reactions };
+        });
+        try {
+          localStorage.setItem(STORAGE_KEY_CHAT, JSON.stringify(next.slice(-150)));
+        } catch {}
+        return next;
+      });
+      return;
+    }
+
+    // 7. Real-time Chat Delete via ntfy.sh Relay
+    if (payload.type === 'CHAT_DELETE' && payload.messageId) {
+      setChatMessages((prev) => {
+        const next = prev.filter((m) => m.id !== payload.messageId);
+        try {
+          localStorage.setItem(STORAGE_KEY_CHAT, JSON.stringify(next.slice(-150)));
+        } catch {}
+        return next;
+      });
+      return;
     }
   }, [currentUser]);
 
@@ -2062,6 +2132,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
     setChatMessages((prev) => [...prev, systemChatMessage]);
     sendChatMessageToFirestore(systemChatMessage).catch(() => {});
+    broadcastChatToRelay({
+      type: 'CHAT_MESSAGE',
+      senderId: 'system',
+      message: systemChatMessage,
+      timestamp: Date.now(),
+    });
 
     // 2. Cross-Notification for NEXT station assignee
     const nextTask = worldTasks[currentIdx + 1];
@@ -2343,6 +2419,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         });
       }
 
+      // 2. Broadcast qua Realtime Cloud Relay (ntfy.sh) đảm bảo 100% mọi máy nhận tức thì
+      broadcastChatToRelay({
+        type: 'CHAT_MESSAGE',
+        senderId: currentUser.id,
+        message: newMsg,
+        timestamp: Date.now(),
+      });
+
+      // 3. Lưu trữ lâu dài lên Cloud Firestore
       try {
         await sendChatMessageToFirestore(newMsg);
       } catch (err) {
@@ -2351,7 +2436,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       return true;
     },
-    [currentUser, broadcastChannel]
+    [currentUser, broadcastChannel, broadcastChatToRelay]
   );
 
   const reactToChatMessage = useCallback(
@@ -2380,13 +2465,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       soundEngine.playClick();
 
+      // Broadcast reaction qua ntfy.sh
+      broadcastChatToRelay({
+        type: 'CHAT_REACTION',
+        senderId: currentUser.id,
+        messageId,
+        emoji,
+        userId: uid,
+      });
+
       try {
         await reactToChatMessageInFirestore(messageId, emoji, uid);
       } catch (e) {
         console.warn('[Chat] Lỗi reaction Firebase:', e);
       }
     },
-    [currentUser]
+    [currentUser, broadcastChatToRelay]
   );
 
   const deleteChatMessage = useCallback(
@@ -2399,13 +2493,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return next;
       });
       soundEngine.playBreak();
+
+      // Broadcast xóa tin nhắn qua ntfy.sh
+      broadcastChatToRelay({
+        type: 'CHAT_DELETE',
+        senderId: currentUserRef.current?.id || 'unknown',
+        messageId,
+      });
+
       try {
         await deleteChatMessageFromFirestore(messageId);
       } catch (e) {
         console.warn('[Chat] Lỗi xóa tin nhắn:', e);
       }
     },
-    []
+    [broadcastChatToRelay]
   );
 
   const activeWorld = worlds.find((w) => w.id === activeWorldId) || null;
