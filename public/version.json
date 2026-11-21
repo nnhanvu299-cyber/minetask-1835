@@ -1,5 +1,5 @@
 {
-  "version": 1795233500000,
-  "buildTime": "2026-11-21T03:48:00.000Z",
-  "note": "Tối ưu phản hồi nhập liệu: Xóa sạch chữ trên ô gõ & bàn phím tức thì ngay khi nhấn Gửi"
+  "version": 1795234000000,
+  "buildTime": "2026-11-21T03:56:00.000Z",
+  "note": "Khắc phục triệt để thông báo tin nhắn trên điện thoại: Tự động quét và báo chuông/toast mọi tin nhắn mới"
 }
