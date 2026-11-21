@@ -180,9 +180,10 @@ export async function saveUserToFirestore(user: UserProfile): Promise<boolean> {
     const docId = user.id || `user_${Date.now()}`;
     const userRef = doc(db, 'users', docId);
     
-    // Lưu thông tin người dùng lên Firestore (bao gồm timestamp)
+    // Lưu thông tin người dùng lên Firestore (loại bỏ undefined)
+    const cleanUser = JSON.parse(JSON.stringify(user));
     await setDoc(userRef, {
-      ...user,
+      ...cleanUser,
       updatedAt: Date.now(),
     }, { merge: true });
 
@@ -274,11 +275,12 @@ export async function syncTasksAndWorldsToFirestore(worlds: World[], tasks: Task
 
   try {
     const stateDoc = doc(db, 'app_state', 'workspace_data');
-    await setDoc(stateDoc, {
+    const cleanPayload = JSON.parse(JSON.stringify({
       worlds,
       tasks,
       updatedAt: Date.now(),
-    }, { merge: true });
+    }));
+    await setDoc(stateDoc, cleanPayload, { merge: true });
     return true;
   } catch (err) {
     console.warn('[Firebase] Lỗi sync tasks/worlds:', err);
@@ -318,15 +320,16 @@ export async function sendChatMessageToFirestore(msg: ChatMessage | Omit<ChatMes
 
   try {
     const chatCol = collection(db, 'chat_messages');
-    const msgId = (msg as ChatMessage).id;
-    const msgDoc = msgId ? doc(chatCol, msgId) : doc(chatCol);
-    const id = msgDoc.id;
+    const msgId = (msg as ChatMessage).id || `msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const msgDoc = doc(chatCol, msgId);
     const payload: ChatMessage = {
       ...msg,
-      id,
+      id: msgId,
     };
-    await setDoc(msgDoc, payload, { merge: true });
-    return id;
+    // Loại bỏ mọi trường undefined để setDoc không bao giờ bị lỗi
+    const cleanPayload = JSON.parse(JSON.stringify(payload));
+    await setDoc(msgDoc, cleanPayload, { merge: true });
+    return msgId;
   } catch (err) {
     console.error('[Firebase] Lỗi gửi tin nhắn chat:', err);
     return null;
@@ -339,8 +342,7 @@ export async function fetchChatMessagesFromFirestore(): Promise<ChatMessage[]> {
 
   try {
     const chatCol = collection(db, 'chat_messages');
-    const q = query(chatCol, orderBy('createdAt', 'asc'), limit(150));
-    const snapshot = await getDocs(q);
+    const snapshot = await getDocs(chatCol);
     const msgs: ChatMessage[] = [];
     snapshot.forEach((d) => {
       const item = d.data() as ChatMessage;
@@ -348,7 +350,8 @@ export async function fetchChatMessagesFromFirestore(): Promise<ChatMessage[]> {
         msgs.push(item);
       }
     });
-    return msgs;
+    msgs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+    return msgs.slice(-150);
   } catch (err) {
     console.warn('[Firebase] Lỗi nạp tin nhắn chat:', err);
     return [];
@@ -363,9 +366,8 @@ export function subscribeToChatMessages(
 
   try {
     const chatCol = collection(db, 'chat_messages');
-    const q = query(chatCol, orderBy('createdAt', 'asc'), limit(150));
     return onSnapshot(
-      q,
+      chatCol,
       (snapshot) => {
         const msgs: ChatMessage[] = [];
         snapshot.forEach((d) => {
@@ -374,7 +376,8 @@ export function subscribeToChatMessages(
             msgs.push(item);
           }
         });
-        onMessages(msgs);
+        msgs.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+        onMessages(msgs.slice(-150));
       },
       (err) => {
         console.warn('[Firebase] Lỗi lắng nghe chat:', err);

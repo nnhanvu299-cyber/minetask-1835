@@ -1,5 +1,5 @@
 {
-  "version": 1795229500000,
-  "buildTime": "2026-11-21T02:30:00.000Z",
-  "note": "Bổ sung chuông pop tức thì, rung điện thoại, nút bật quyền thông báo thiết bị"
+  "version": 1795230000000,
+  "buildTime": "2026-11-21T02:40:00.000Z",
+  "note": "Khắc phục lỗi undefined Firestore setDoc, tin nhắn gửi nhận tức thì 100%"
 }

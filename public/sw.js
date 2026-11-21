@@ -1,4 +1,4 @@
-const CACHE_NAME = 'minetask-1835s-v34-bell-vibrate-alerts';
+const CACHE_NAME = 'minetask-1835s-v35-firestore-sanitized';
 
 const PRECACHE_ASSETS = [
   './',
