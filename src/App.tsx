@@ -24,7 +24,7 @@ import {
   checkAndTriggerDailyTaskNotification,
   sendUpdateAvailableNotification,
 } from './utils/deviceNotification';
-import { subscribeToAppVersion, broadcastAppVersionToFirestore } from './services/firebase';
+import { subscribeToAppVersion } from './services/firebase';
 
 const MainContent: React.FC = () => {
   const {
@@ -55,37 +55,72 @@ const MainContent: React.FC = () => {
   }, [activeChatToast, dismissChatToast]);
 
   // Instant Auto-Update Detection & Device Notification
+  const CURRENT_BUILD_VERSION = typeof __APP_BUILD_VERSION__ === 'number' ? __APP_BUILD_VERSION__ : 0;
   const [hasNewUpdate, setHasNewUpdate] = useState(false);
   const [updateVersion, setUpdateVersion] = useState<number | null>(null);
   const [updateNote, setUpdateNote] = useState<string>('');
-  const currentAppVersion = useRef<number | null>(null);
+  const targetUpdateVersionRef = useRef<number | null>(null);
   const hasNotifiedRef = useRef<boolean>(false);
 
-  const handleApplyUpdate = useCallback(() => {
-    if (updateVersion) {
+  // Check if incoming version is truly newer than both running bundle AND last applied update
+  const isNewerVersion = useCallback((incomingVersion: number | undefined | null): boolean => {
+    if (!incomingVersion || isNaN(incomingVersion) || incomingVersion <= 0) return false;
+
+    // 1. If currently running JS bundle is already at or ahead of incomingVersion -> NO UPDATE NEEDED
+    if (CURRENT_BUILD_VERSION > 0 && incomingVersion <= CURRENT_BUILD_VERSION) {
+      return false;
+    }
+
+    // 2. If user already applied/installed this version in localStorage -> NO UPDATE NEEDED
+    let lastInstalled = 0;
+    try {
+      const raw = localStorage.getItem('minetask_1835_installed_version');
+      if (raw) lastInstalled = Number(raw);
+    } catch {}
+
+    if (lastInstalled > 0 && incomingVersion <= lastInstalled) {
+      return false;
+    }
+
+    const effectiveLocal = Math.max(CURRENT_BUILD_VERSION, lastInstalled);
+    return incomingVersion > effectiveLocal;
+  }, [CURRENT_BUILD_VERSION]);
+
+  const handleApplyUpdate = useCallback(async () => {
+    const ver = targetUpdateVersionRef.current || updateVersion;
+    if (ver) {
       try {
-        localStorage.setItem('minetask_1835_installed_version', String(updateVersion));
+        localStorage.setItem('minetask_1835_installed_version', String(ver));
       } catch {}
     }
-    // Clean caches and reload
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistrations().then((regs) => {
-        for (const reg of regs) {
-          reg.unregister();
-        }
-      });
-      if ('caches' in window) {
-        caches.keys().then((names) => {
-          names.forEach((name) => caches.delete(name));
-        });
+    setHasNewUpdate(false);
+
+    // Clean caches and service worker cleanly
+    try {
+      if ('serviceWorker' in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map((reg) => reg.unregister()));
       }
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      }
+    } catch (err) {
+      console.warn('[1835 Update] Cache purge error:', err);
     }
-    window.location.reload();
+
+    // Force hard reload bypassing cache with cache-buster
+    const targetUrl = new URL(window.location.href);
+    targetUrl.searchParams.set('v_sync', String(ver || Date.now()));
+    window.location.replace(targetUrl.toString());
   }, [updateVersion]);
 
   // Trigger notification to device and UI
   const triggerUpdateAlert = useCallback(
     (version: number, note?: string) => {
+      if (!isNewerVersion(version)) return;
+
+      targetUpdateVersionRef.current = version;
       setHasNewUpdate(true);
       setUpdateVersion(version);
       if (note) setUpdateNote(note);
@@ -96,7 +131,7 @@ const MainContent: React.FC = () => {
         sendUpdateAvailableNotification(version, handleApplyUpdate);
       }
     },
-    [handleApplyUpdate]
+    [isNewerVersion, handleApplyUpdate]
   );
 
   // Proactively request device notification permission so update alerts pop up on Windows / Android
@@ -126,10 +161,7 @@ const MainContent: React.FC = () => {
     const unsub = subscribeToAppVersion((data) => {
       if (data && data.version) {
         const cloudVersion = Number(data.version);
-        const lastKnown = localStorage.getItem('minetask_1835_installed_version');
-        const currentLocal = currentAppVersion.current || (lastKnown ? Number(lastKnown) : null);
-
-        if (currentLocal !== null && cloudVersion > currentLocal) {
+        if (isNewerVersion(cloudVersion)) {
           triggerUpdateAlert(cloudVersion, data.note);
         }
       }
@@ -138,7 +170,7 @@ const MainContent: React.FC = () => {
     return () => {
       if (unsub) unsub();
     };
-  }, [triggerUpdateAlert]);
+  }, [isNewerVersion, triggerUpdateAlert]);
 
   // Polling version.json as automatic background checker
   useEffect(() => {
@@ -154,21 +186,8 @@ const MainContent: React.FC = () => {
           const data = await res.json();
           if (data && data.version) {
             const serverVersion = Number(data.version);
-            if (currentAppVersion.current === null) {
-              const lastKnown = localStorage.getItem('minetask_1835_installed_version');
-              if (lastKnown && serverVersion > Number(lastKnown)) {
-                triggerUpdateAlert(serverVersion, data.note);
-              } else if (!lastKnown) {
-                try {
-                  localStorage.setItem('minetask_1835_installed_version', String(serverVersion));
-                } catch {}
-              }
-              currentAppVersion.current = serverVersion;
-            } else if (serverVersion > currentAppVersion.current) {
+            if (isNewerVersion(serverVersion)) {
               triggerUpdateAlert(serverVersion, data.note);
-              currentAppVersion.current = serverVersion;
-              // Broadcast this latest version to Firestore so all team devices get notified
-              broadcastAppVersionToFirestore(serverVersion, data.note).catch(() => {});
             }
           }
         }
@@ -178,7 +197,7 @@ const MainContent: React.FC = () => {
     };
 
     checkVersion();
-    const interval = setInterval(checkVersion, 15000); // Quét cập nhật mỗi 15 giây
+    const interval = setInterval(checkVersion, 20000); // Quét cập nhật mỗi 20 giây
 
     const onVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -197,7 +216,7 @@ const MainContent: React.FC = () => {
       document.removeEventListener('visibilitychange', onVisibilityChange);
       window.removeEventListener('focus', onWindowFocus);
     };
-  }, [triggerUpdateAlert]);
+  }, [isNewerVersion, triggerUpdateAlert]);
 
   // Automatic Daily Task Notification (Yêu cầu 4: Nhắc việc hàng ngày - bạn đang trong task nào & hạn chót)
   useEffect(() => {

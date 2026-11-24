@@ -1,4 +1,4 @@
-const CACHE_NAME = 'minetask-1835s-v44-direct-firestore-optimized';
+const CACHE_NAME = 'minetask-1835s-v47-cache-sync-fixed';
 
 const PRECACHE_ASSETS = [
   './',
@@ -149,6 +149,30 @@ self.addEventListener('fetch', (event) => {
 
   // Bypass service worker entirely for localhost development
   if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+    return;
+  }
+
+  // 0. Always fetch version.json directly from network, NEVER serve stale cached version
+  if (url.pathname.endsWith('version.json')) {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' }).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // 0.1 Always fetch cache-busting update requests directly from network
+  if (url.searchParams.has('v_sync') || url.searchParams.has('reload_ts') || url.searchParams.has('t')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match(event.request))
+    );
     return;
   }
 

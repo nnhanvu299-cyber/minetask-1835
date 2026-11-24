@@ -218,6 +218,38 @@ function apiBackendPlugin() {
   };
 }
 
+const versionFilePath = path.resolve(__dirname, 'public/version.json');
+let versionData = {
+  version: Date.now(),
+  buildTime: new Date().toISOString(),
+  note: 'Bản cập nhật 1835: Gõ phím siêu mượt, gửi & dán ảnh, reply, thả cảm xúc nổi và mở liên kết!'
+};
+
+try {
+  if (fs.existsSync(versionFilePath)) {
+    const raw = JSON.parse(fs.readFileSync(versionFilePath, 'utf-8'));
+    versionData = {
+      version: typeof raw.version === 'number' ? raw.version : Date.now(),
+      buildTime: raw.buildTime || new Date().toISOString(),
+      note: raw.note || versionData.note
+    };
+  }
+} catch (e) {
+  console.warn('Error reading version.json:', e);
+}
+
+// In build mode, generate a fresh unique build version and save back to public/version.json
+const isProductionBuild = process.env.NODE_ENV === 'production' || process.argv.includes('build');
+if (isProductionBuild) {
+  versionData.version = Date.now();
+  versionData.buildTime = new Date().toISOString();
+  try {
+    fs.writeFileSync(versionFilePath, JSON.stringify(versionData, null, 2), 'utf-8');
+  } catch (e) {
+    console.warn('Error saving updated version.json:', e);
+  }
+}
+
 function versionPlugin() {
   return {
     name: 'version-plugin',
@@ -225,10 +257,7 @@ function versionPlugin() {
       this.emitFile({
         type: 'asset',
         fileName: 'version.json',
-        source: JSON.stringify({
-          version: Date.now(),
-          buildTime: new Date().toISOString()
-        }, null, 2)
+        source: JSON.stringify(versionData, null, 2)
       });
     }
   };
@@ -236,6 +265,11 @@ function versionPlugin() {
 
 export default defineConfig({
   base: './',
+  define: {
+    __APP_BUILD_VERSION__: JSON.stringify(versionData.version),
+    __APP_BUILD_TIME__: JSON.stringify(versionData.buildTime),
+    __APP_BUILD_NOTE__: JSON.stringify(versionData.note)
+  },
   plugins: [react(), tailwindcss(), apiBackendPlugin(), versionPlugin()],
   server: {
     port: 3000,

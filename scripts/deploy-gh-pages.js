@@ -24,3 +24,9 @@ execSync('git push -f origin gh-pages', { cwd: distDir, stdio: 'inherit' });
 fs.rmSync(gitDir, { recursive: true, force: true });
 
 console.log('✅ Đã đẩy bản cập nhật lên GitHub Pages thành công!');
+console.log('📡 Đang đồng bộ thông báo phiên bản mới nhất tới Firebase Cloud Firestore...');
+try {
+  execSync('node scripts/broadcast-update.js', { stdio: 'inherit' });
+} catch (err) {
+  console.warn('Cảnh báo khi chạy broadcast-update:', err?.message);
+}

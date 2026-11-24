@@ -168,8 +168,9 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
             <button
               onClick={async () => {
                 await requestDeviceNotificationPermission();
+                const ver = typeof __APP_BUILD_VERSION__ === 'number' ? __APP_BUILD_VERSION__ : Date.now();
                 await broadcastAppVersionToFirestore(
-                  Date.now(),
+                  ver,
                   'Đã có bản cập nhật 1835: Gõ phím mượt, gửi & dán ảnh, reply, thả cảm xúc!'
                 );
               }}

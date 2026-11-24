@@ -1,5 +1,11 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, setDoc } from 'firebase/firestore';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const firebaseConfig = {
   apiKey: "AIzaSyAAGM3zd44HboBfjATvxFfRlmTT5TJ-Xfo",
@@ -13,8 +19,23 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const newVersion = Date.now();
-const note = "Bản cập nhật 1835: Gõ phím siêu mượt, gửi & dán ảnh, trích dẫn trả lời (reply), thả cảm xúc nổi và mở liên kết ngoài!";
+// Read EXACT version from dist/version.json or public/version.json
+const distVersionFile = path.resolve(__dirname, '../dist/version.json');
+const publicVersionFile = path.resolve(__dirname, '../public/version.json');
+const targetFile = fs.existsSync(distVersionFile) ? distVersionFile : publicVersionFile;
+
+let newVersion = Date.now();
+let note = "Bản cập nhật 1835: Gõ phím siêu mượt, gửi & dán ảnh, trích dẫn trả lời (reply), thả cảm xúc nổi và mở liên kết ngoài!";
+
+try {
+  if (fs.existsSync(targetFile)) {
+    const raw = JSON.parse(fs.readFileSync(targetFile, 'utf-8'));
+    if (raw.version) newVersion = Number(raw.version);
+    if (raw.note) note = raw.note;
+  }
+} catch (e) {
+  console.warn('Lỗi đọc version file:', e);
+}
 
 async function broadcastUpdate() {
   console.log(`📡 Đang gửi thông báo bản cập nhật mới (Version: ${newVersion}) lên Firebase Cloud Firestore...`);
