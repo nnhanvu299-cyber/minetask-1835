@@ -199,8 +199,17 @@ export const TaskBlock: React.FC<TaskBlockProps> = ({ task }) => {
         <div className="my-2 p-2.5 bg-[#FAF2DC] border-2 border-[#2D1A11] space-y-2">
           <textarea
             rows={2}
+            name="mc_task_progress"
+            id="mc_task_progress"
             value={noteInput}
             onChange={(e) => setNoteInput(e.target.value)}
+            autoComplete="one-time-code"
+            autoCorrect="off"
+            spellCheck={false}
+            data-form-type="other"
+            data-lpignore="true"
+            data-1p-ignore="true"
+            data-android-autofill="false"
             placeholder="Nhập tiến độ hoặc link..."
             className="mc-textarea text-xs"
           />

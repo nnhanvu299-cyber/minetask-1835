@@ -265,11 +265,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
             </div>
           )}
 
-          <form onSubmit={handleLoginSubmit} className="space-y-3.5">
+          <form onSubmit={handleLoginSubmit} autoComplete="off" data-form-type="other" noValidate className="space-y-3.5">
             {/* Username / E-mail Address Input with Envelope Icon */}
             <div className="relative">
               <input
                 type="text"
+                name="mc_auth_login_id"
+                id="mc_auth_login_id"
                 required
                 placeholder="Tên tài khoản hoặc Email (Username or Email)"
                 value={loginEmail}
@@ -278,10 +280,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
                   setShowForgotShortcut(false);
                 }}
                 className="w-full h-10 pl-10 pr-3 input-login-image2 text-xs sm:text-sm placeholder:text-[#a0a0a0]"
-                autoComplete="username"
+                autoComplete="one-time-code"
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
+                data-form-type="other"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-android-autofill="false"
               />
               <Mail size={16} className="text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
@@ -290,6 +296,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
+                name="mc_auth_login_key"
+                id="mc_auth_login_key"
                 required
                 placeholder="••••••••"
                 value={loginPassword}
@@ -298,10 +306,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
                   setShowForgotShortcut(false);
                 }}
                 className="w-full h-10 pl-10 pr-10 input-login-image2 text-xs sm:text-sm placeholder:text-[#a0a0a0]"
-                autoComplete="current-password"
+                autoComplete="one-time-code"
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
+                data-form-type="other"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-android-autofill="false"
               />
               <KeyRound size={16} className="text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <button
@@ -429,14 +441,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
             </div>
           )}
 
-          <form onSubmit={handleRegisterSubmit} className="space-y-3.5">
+          <form onSubmit={handleRegisterSubmit} autoComplete="off" data-form-type="other" noValidate className="space-y-3.5">
             <div className="relative">
               <input
                 type="text"
+                name="mc_auth_reg_user"
+                id="mc_auth_reg_user"
                 required
                 placeholder="Full Name"
                 value={regName}
                 onChange={(e) => setRegName(e.target.value)}
+                autoComplete="one-time-code"
+                autoCorrect="off"
+                spellCheck={false}
+                data-form-type="other"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-android-autofill="false"
                 className="w-full h-10 pl-10 pr-3 input-login-image2 text-xs sm:text-sm placeholder:text-[#a0a0a0]"
               />
               <User size={16} className="text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -444,11 +465,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
 
             <div className="relative">
               <input
-                type="email"
+                type="text"
+                name="mc_auth_reg_contact"
+                id="mc_auth_reg_contact"
                 required
                 placeholder="E-mail Address"
                 value={regEmail}
                 onChange={(e) => setRegEmail(e.target.value)}
+                autoComplete="one-time-code"
+                autoCorrect="off"
+                spellCheck={false}
+                data-form-type="other"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-android-autofill="false"
                 className="w-full h-10 pl-10 pr-3 input-login-image2 text-xs sm:text-sm placeholder:text-[#a0a0a0]"
               />
               <Mail size={16} className="text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -457,10 +487,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
             <div className="relative">
               <input
                 type="password"
+                name="mc_auth_reg_key"
+                id="mc_auth_reg_key"
                 required
                 placeholder="Password"
                 value={regPassword}
                 onChange={(e) => setRegPassword(e.target.value)}
+                autoComplete="one-time-code"
+                autoCorrect="off"
+                spellCheck={false}
+                data-form-type="other"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-android-autofill="false"
                 className="w-full h-10 pl-10 pr-3 input-login-image2 text-xs sm:text-sm placeholder:text-[#a0a0a0]"
               />
               <KeyRound size={16} className="text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -593,7 +632,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
           )}
 
           {!simulatedCodeSent ? (
-            <form onSubmit={handleRequestReset} className="space-y-3.5">
+            <form onSubmit={handleRequestReset} autoComplete="off" data-form-type="other" noValidate className="space-y-3.5">
               <div className="p-2.5 bg-[#FFFDF7] border border-[#2D1A11]/20 rounded text-xs text-[#52372A] leading-relaxed">
                 Nhập địa chỉ <strong>Email</strong> hoặc <strong>Tên tài khoản</strong> của bạn để hệ thống gửi mã xác thực OTP:
               </div>
@@ -601,15 +640,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
               <div className="relative">
                 <input
                   type="text"
+                  name="mc_auth_reset_target"
+                  id="mc_auth_reset_target"
                   required
                   autoFocus
                   placeholder="Email hoặc Tên tài khoản của bạn"
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
-                  className="w-full h-10 pl-10 pr-3 input-login-image2 text-xs sm:text-sm placeholder:text-[#a0a0a0]"
+                  autoComplete="one-time-code"
                   autoCapitalize="none"
                   autoCorrect="off"
                   spellCheck={false}
+                  data-form-type="other"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  data-android-autofill="false"
+                  className="w-full h-10 pl-10 pr-3 input-login-image2 text-xs sm:text-sm placeholder:text-[#a0a0a0]"
                 />
                 <Mail size={16} className="text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
@@ -643,7 +689,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
               </div>
             </form>
           ) : (
-            <form onSubmit={handleConfirmReset} className="space-y-3.5">
+            <form onSubmit={handleConfirmReset} autoComplete="off" data-form-type="other" noValidate className="space-y-3.5">
               <div className="p-3 bg-[#FAF2DC] border-2 border-[#2D1A11] rounded text-xs text-[#52372A] leading-relaxed shadow-xs">
                 <div className="flex items-center gap-1.5 font-bold text-[#1aa64e] mb-1">
                   <ShieldCheck size={16} />
@@ -663,12 +709,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
               <div className="relative">
                 <input
                   type="text"
+                  name="mc_auth_reset_otp"
+                  id="mc_auth_reset_otp"
                   required
                   autoFocus
                   maxLength={6}
                   placeholder="Nhập mã OTP 6 số"
                   value={resetCode}
                   onChange={(e) => setResetCode(e.target.value.replace(/\D/g, ''))}
+                  autoComplete="one-time-code"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  data-form-type="other"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  data-android-autofill="false"
                   className="w-full h-11 pl-10 pr-3 input-login-image2 text-center text-base font-mono font-bold tracking-widest placeholder:text-[#a0a0a0] placeholder:tracking-normal placeholder:font-sans"
                 />
                 <ShieldCheck size={18} className="text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -677,10 +732,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
               <div className="relative">
                 <input
                   type={showResetPassword ? 'text' : 'password'}
+                  name="mc_auth_reset_new_key"
+                  id="mc_auth_reset_new_key"
                   required
                   placeholder="Nhập mật khẩu mới"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
+                  autoComplete="one-time-code"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  data-form-type="other"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  data-android-autofill="false"
                   className="w-full h-11 pl-10 pr-10 input-login-image2 text-xs sm:text-sm placeholder:text-[#a0a0a0]"
                 />
                 <KeyRound size={18} className="text-[#9ca3af] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />

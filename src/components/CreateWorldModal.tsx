@@ -109,7 +109,7 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} autoComplete="off" data-form-type="other" noValidate className="space-y-4">
           {/* Tên Thế Giới */}
           <div>
             <label className="block text-xs font-bold text-[#2D1A11] mb-1">
@@ -117,10 +117,19 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
             </label>
             <input
               type="text"
+              name="mc_world_name"
+              id="mc_world_name"
               required
               placeholder="ví dụ: Dự Án Mobile App 1835s, Chiến Dịch Q4..."
               value={name}
               onChange={(e) => setName(e.target.value)}
+              autoComplete="one-time-code"
+              autoCorrect="off"
+              spellCheck={false}
+              data-form-type="other"
+              data-lpignore="true"
+              data-1p-ignore="true"
+              data-android-autofill="false"
               className="mc-input text-xs sm:text-sm font-medium"
             />
           </div>
@@ -132,9 +141,18 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
             </label>
             <textarea
               rows={2}
+              name="mc_world_desc"
+              id="mc_world_desc"
               placeholder="Mục tiêu của thế giới này..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              autoComplete="one-time-code"
+              autoCorrect="off"
+              spellCheck={false}
+              data-form-type="other"
+              data-lpignore="true"
+              data-1p-ignore="true"
+              data-android-autofill="false"
               className="mc-textarea text-xs font-medium"
             />
           </div>

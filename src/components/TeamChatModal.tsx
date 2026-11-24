@@ -730,12 +730,9 @@ const ChatInputArea = forwardRef<ChatInputAreaHandle, ChatInputAreaProps>(
           </div>
         )}
 
-        {/* Main Input Form with Anti-Autofill Attributes */}
-        <form
-          onSubmit={handleSubmit}
-          autoComplete="off"
+        {/* Main Input Container with Anti-Autofill Protection (Div instead of Form to prevent Android Autofill toolbar) */}
+        <div
           data-form-type="other"
-          noValidate
           className="p-2 sm:p-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom,0.5rem))] border-t-3 border-[#2D1A11] flex items-center gap-1.5 shrink-0 w-full max-w-full min-w-0 overflow-hidden"
         >
           {/* Hidden File Input for Image Upload */}
@@ -805,8 +802,8 @@ const ChatInputArea = forwardRef<ChatInputAreaHandle, ChatInputAreaProps>(
           <input
             ref={inputRef}
             type="text"
-            name="chat_message"
-            id="chat_message"
+            name="mc_chat_query"
+            id="mc_chat_query"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             onKeyDown={(e) => {
@@ -816,8 +813,8 @@ const ChatInputArea = forwardRef<ChatInputAreaHandle, ChatInputAreaProps>(
               }
             }}
             onPaste={handlePaste}
-            autoComplete="off"
-            autoCorrect="on"
+            autoComplete="one-time-code"
+            autoCorrect="off"
             autoCapitalize="sentences"
             spellCheck={false}
             enterKeyHint="send"
@@ -836,7 +833,8 @@ const ChatInputArea = forwardRef<ChatInputAreaHandle, ChatInputAreaProps>(
 
           {/* Send Button */}
           <button
-            type="submit"
+            type="button"
+            onClick={handleSubmit}
             disabled={!inputText.trim() && !attachedImage && !selectedTask}
             className="mc-btn mc-btn-1835 !px-3 !py-1.5 text-xs font-bold text-white flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed shadow-[2px_2px_0px_#2D1A11] active:translate-x-0.5 active:translate-y-0.5 cursor-pointer shrink-0"
             title="Gửi tin nhắn"
@@ -844,7 +842,7 @@ const ChatInputArea = forwardRef<ChatInputAreaHandle, ChatInputAreaProps>(
             <span className="hidden sm:inline">GỬI</span>
             <Send size={13} />
           </button>
-        </form>
+        </div>
       </div>
     );
   }

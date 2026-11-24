@@ -276,10 +276,19 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({ isOpen
               <span className="text-[10px] text-amber-700 font-normal">Tự động điền</span>
             </label>
             <textarea
+              name="mc_fb_snippet"
+              id="mc_fb_snippet"
               value={rawSnippet}
               onChange={(e) => handleParseSnippet(e.target.value)}
               placeholder="Dán đoạn mã const firebaseConfig = { apiKey: '...', projectId: '...' }; tại đây..."
               rows={3}
+              autoComplete="one-time-code"
+              autoCorrect="off"
+              spellCheck={false}
+              data-form-type="other"
+              data-lpignore="true"
+              data-1p-ignore="true"
+              data-android-autofill="false"
               className="w-full text-xs font-mono p-2 rounded border-2 border-[#2D1A11] bg-white text-[#2D1A11] focus:ring-2 focus:ring-[#F37022] outline-none"
             />
           </div>
@@ -297,9 +306,18 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({ isOpen
               </label>
               <input
                 type="text"
+                name="mc_fb_proj"
+                id="mc_fb_proj"
                 value={projectId}
                 onChange={(e) => setProjectId(e.target.value)}
                 placeholder="vd: minetask-1835"
+                autoComplete="one-time-code"
+                autoCorrect="off"
+                spellCheck={false}
+                data-form-type="other"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-android-autofill="false"
                 className="w-full text-xs p-2 rounded border-2 border-[#2D1A11] bg-white text-[#2D1A11] font-mono focus:ring-2 focus:ring-[#F37022] outline-none"
               />
             </div>
@@ -310,9 +328,18 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({ isOpen
               </label>
               <input
                 type="text"
+                name="mc_fb_key"
+                id="mc_fb_key"
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder="AIzaSy..."
+                autoComplete="one-time-code"
+                autoCorrect="off"
+                spellCheck={false}
+                data-form-type="other"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-android-autofill="false"
                 className="w-full text-xs p-2 rounded border-2 border-[#2D1A11] bg-white text-[#2D1A11] font-mono focus:ring-2 focus:ring-[#F37022] outline-none"
               />
             </div>
@@ -323,9 +350,18 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({ isOpen
               </label>
               <input
                 type="text"
+                name="mc_fb_app"
+                id="mc_fb_app"
                 value={appId}
                 onChange={(e) => setAppId(e.target.value)}
                 placeholder="1:1234567890:web:abcdef..."
+                autoComplete="one-time-code"
+                autoCorrect="off"
+                spellCheck={false}
+                data-form-type="other"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-android-autofill="false"
                 className="w-full text-xs p-2 rounded border-2 border-[#2D1A11] bg-white text-[#2D1A11] font-mono focus:ring-2 focus:ring-[#F37022] outline-none"
               />
             </div>
@@ -336,9 +372,18 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({ isOpen
               </label>
               <input
                 type="text"
+                name="mc_fb_domain"
+                id="mc_fb_domain"
                 value={authDomain}
                 onChange={(e) => setAuthDomain(e.target.value)}
                 placeholder="minetask-1835.firebaseapp.com"
+                autoComplete="one-time-code"
+                autoCorrect="off"
+                spellCheck={false}
+                data-form-type="other"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-android-autofill="false"
                 className="w-full text-xs p-2 rounded border-2 border-[#2D1A11] bg-white text-[#2D1A11] font-mono focus:ring-2 focus:ring-[#F37022] outline-none"
               />
             </div>

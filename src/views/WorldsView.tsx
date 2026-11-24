@@ -115,9 +115,18 @@ export const WorldsView: React.FC<WorldsViewProps> = ({
         <div className="relative w-full sm:w-72">
           <input
             type="text"
+            name="mc_search_world"
+            id="mc_search_world"
             placeholder="Tìm kiếm theo tên thế giới hoặc mục tiêu..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            autoComplete="one-time-code"
+            autoCorrect="off"
+            spellCheck={false}
+            data-form-type="other"
+            data-lpignore="true"
+            data-1p-ignore="true"
+            data-android-autofill="false"
             className="mc-input pl-8 text-xs font-medium w-full"
           />
           <Search size={14} className="absolute left-2.5 top-3 text-[#52372A]" />

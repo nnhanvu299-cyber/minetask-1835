@@ -32,6 +32,35 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
+      // Global anti-autofill enforcer for Android / iOS mobile keyboards (Hides 🔑 Key, 💳 Card, 📍 Pin toolbar)
+      (function() {
+        function sanitizeInput(el) {
+          if (!el || !el.tagName) return;
+          var tag = el.tagName.toLowerCase();
+          if (tag === 'input' || tag === 'textarea') {
+            var type = (el.getAttribute('type') || 'text').toLowerCase();
+            if (type !== 'file' && type !== 'checkbox' && type !== 'radio' && type !== 'range') {
+              el.setAttribute('autocomplete', 'one-time-code');
+              el.setAttribute('autocapitalize', 'sentences');
+              el.setAttribute('autocorrect', 'off');
+              el.setAttribute('spellcheck', 'false');
+              el.setAttribute('data-form-type', 'other');
+              el.setAttribute('data-lpignore', 'true');
+              el.setAttribute('data-1p-ignore', 'true');
+              el.setAttribute('data-android-autofill', 'false');
+            }
+          }
+        }
+
+        document.addEventListener('focusin', function(e) {
+          sanitizeInput(e.target);
+        }, true);
+
+        document.addEventListener('pointerdown', function(e) {
+          sanitizeInput(e.target);
+        }, true);
+      })();
+
       // Service worker management: Unregister on localhost to avoid stale caching during development
       if ('serviceWorker' in navigator) {
         if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {

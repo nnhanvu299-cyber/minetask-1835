@@ -533,8 +533,17 @@ export const WoodenSignModal: React.FC<WoodenSignModalProps> = ({
             {activeTab === 'write' ? (
               <textarea
                 rows={4}
+                name="mc_note_text"
+                id="mc_note_text"
                 value={noteText}
                 onChange={(e) => setNoteText(e.target.value)}
+                autoComplete="one-time-code"
+                autoCorrect="off"
+                spellCheck={false}
+                data-form-type="other"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-android-autofill="false"
                 placeholder="Nhập nội dung tiến độ hoặc dán liên kết tài liệu..."
                 className="mc-textarea text-xs sm:text-sm font-medium leading-relaxed bg-[#FFFDF7]"
               />

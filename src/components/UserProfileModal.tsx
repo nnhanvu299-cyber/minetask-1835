@@ -382,9 +382,18 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             <div className="relative">
               <input
                 type="text"
+                name="mc_member_search"
+                id="mc_member_search"
                 placeholder="🔍 Gõ tên hoặc email để tìm ngay (máy khác tạo nick sẽ thấy ngay)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                autoComplete="one-time-code"
+                autoCorrect="off"
+                spellCheck={false}
+                data-form-type="other"
+                data-lpignore="true"
+                data-1p-ignore="true"
+                data-android-autofill="false"
                 className="mc-input pl-8.5 pr-8 text-xs w-full py-2"
               />
               <Search size={14} className="text-gray-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
@@ -521,17 +530,26 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 </div>
 
                 {/* Step 2: Import Code From Friend */}
-                <form onSubmit={handleImportCode} className="p-2 bg-white border border-[#2D1A11]/30 rounded space-y-1.5">
+                <form onSubmit={handleImportCode} autoComplete="off" data-form-type="other" noValidate className="p-2 bg-white border border-[#2D1A11]/30 rounded space-y-1.5">
                   <div className="text-xs font-bold text-[#2D1A11]">
                     2. Nhập mã đội 6 ký tự:
                   </div>
                   <div className="flex gap-1.5">
                     <input
                       type="text"
+                      name="mc_team_code"
+                      id="mc_team_code"
                       maxLength={6}
                       placeholder="Mã 6 ký tự (VD: 1835VN)"
                       value={importCodeInput}
                       onChange={(e) => setImportCodeInput(e.target.value.toUpperCase())}
+                      autoComplete="one-time-code"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      data-form-type="other"
+                      data-lpignore="true"
+                      data-1p-ignore="true"
+                      data-android-autofill="false"
                       className="mc-input text-xs flex-1 py-1.5 px-2 font-mono uppercase tracking-widest font-bold"
                     />
                     <button
