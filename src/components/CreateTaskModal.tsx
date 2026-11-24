@@ -136,7 +136,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               placeholder="Nhập tên nhiệm vụ..."
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              autoComplete="one-time-code"
+              autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
               data-form-type="other"
@@ -159,7 +159,7 @@ export const CreateTaskModal: React.FC<CreateTaskModalProps> = ({
               placeholder="Nội dung công việc hoặc liên kết tài liệu..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              autoComplete="one-time-code"
+              autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
               data-form-type="other"

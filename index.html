@@ -40,7 +40,7 @@
           if (tag === 'input' || tag === 'textarea') {
             var type = (el.getAttribute('type') || 'text').toLowerCase();
             if (type !== 'file' && type !== 'checkbox' && type !== 'radio' && type !== 'range') {
-              el.setAttribute('autocomplete', 'one-time-code');
+              el.setAttribute('autocomplete', 'off');
               el.setAttribute('autocapitalize', 'sentences');
               el.setAttribute('autocorrect', 'off');
               el.setAttribute('spellcheck', 'false');

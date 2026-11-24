@@ -203,7 +203,7 @@ export const TaskBlock: React.FC<TaskBlockProps> = ({ task }) => {
             id="mc_task_progress"
             value={noteInput}
             onChange={(e) => setNoteInput(e.target.value)}
-            autoComplete="one-time-code"
+            autoComplete="off"
             autoCorrect="off"
             spellCheck={false}
             data-form-type="other"

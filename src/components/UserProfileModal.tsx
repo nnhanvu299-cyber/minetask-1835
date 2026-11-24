@@ -387,7 +387,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 placeholder="🔍 Gõ tên hoặc email để tìm ngay (máy khác tạo nick sẽ thấy ngay)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                autoComplete="one-time-code"
+                autoComplete="off"
                 autoCorrect="off"
                 spellCheck={false}
                 data-form-type="other"
@@ -543,7 +543,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       placeholder="Mã 6 ký tự (VD: 1835VN)"
                       value={importCodeInput}
                       onChange={(e) => setImportCodeInput(e.target.value.toUpperCase())}
-                      autoComplete="one-time-code"
+                      autoComplete="off"
                       autoCorrect="off"
                       spellCheck={false}
                       data-form-type="other"

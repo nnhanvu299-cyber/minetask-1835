@@ -801,7 +801,7 @@ const ChatInputArea = forwardRef<ChatInputAreaHandle, ChatInputAreaProps>(
           {/* Text Input with Android Chat Keyboard Optimization & font-size 16px to prevent iOS auto-zoom */}
           <input
             ref={inputRef}
-            type="text"
+            type="search"
             name="mc_chat_query"
             id="mc_chat_query"
             value={inputText}
@@ -813,7 +813,7 @@ const ChatInputArea = forwardRef<ChatInputAreaHandle, ChatInputAreaProps>(
               }
             }}
             onPaste={handlePaste}
-            autoComplete="one-time-code"
+            autoComplete="off"
             autoCorrect="off"
             autoCapitalize="sentences"
             spellCheck={false}
@@ -828,7 +828,7 @@ const ChatInputArea = forwardRef<ChatInputAreaHandle, ChatInputAreaProps>(
                 ? `Trả lời ${replyingTo.senderName}...`
                 : 'Nhập tin nhắn cho đội 1835... (Enter để gửi)'
             }
-            className="flex-1 min-w-0 max-w-full bg-white border-2 border-[#2D1A11] px-3 py-1.5 text-base sm:text-xs text-[#2D1A11] placeholder-[#836251]/60 focus:outline-hidden focus:border-[#F37022] shadow-inner font-medium"
+            className="flex-1 min-w-0 max-w-full bg-white border-2 border-[#2D1A11] px-3 py-1.5 text-base sm:text-xs text-[#2D1A11] placeholder-[#836251]/60 focus:outline-hidden focus:border-[#F37022] shadow-inner font-medium [appearance:none] [-webkit-appearance:none]"
           />
 
           {/* Send Button */}

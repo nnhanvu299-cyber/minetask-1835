@@ -280,7 +280,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
                   setShowForgotShortcut(false);
                 }}
                 className="w-full h-10 pl-10 pr-3 input-login-image2 text-xs sm:text-sm placeholder:text-[#a0a0a0]"
-                autoComplete="one-time-code"
+                autoComplete="off"
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
@@ -306,7 +306,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
                   setShowForgotShortcut(false);
                 }}
                 className="w-full h-10 pl-10 pr-10 input-login-image2 text-xs sm:text-sm placeholder:text-[#a0a0a0]"
-                autoComplete="one-time-code"
+                autoComplete="off"
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
@@ -451,7 +451,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
                 placeholder="Full Name"
                 value={regName}
                 onChange={(e) => setRegName(e.target.value)}
-                autoComplete="one-time-code"
+                autoComplete="off"
                 autoCorrect="off"
                 spellCheck={false}
                 data-form-type="other"
@@ -472,7 +472,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
                 placeholder="E-mail Address"
                 value={regEmail}
                 onChange={(e) => setRegEmail(e.target.value)}
-                autoComplete="one-time-code"
+                autoComplete="off"
                 autoCorrect="off"
                 spellCheck={false}
                 data-form-type="other"
@@ -493,7 +493,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
                 placeholder="Password"
                 value={regPassword}
                 onChange={(e) => setRegPassword(e.target.value)}
-                autoComplete="one-time-code"
+                autoComplete="off"
                 autoCorrect="off"
                 spellCheck={false}
                 data-form-type="other"
@@ -647,7 +647,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
                   placeholder="Email hoặc Tên tài khoản của bạn"
                   value={forgotEmail}
                   onChange={(e) => setForgotEmail(e.target.value)}
-                  autoComplete="one-time-code"
+                  autoComplete="off"
                   autoCapitalize="none"
                   autoCorrect="off"
                   spellCheck={false}
@@ -717,7 +717,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
                   placeholder="Nhập mã OTP 6 số"
                   value={resetCode}
                   onChange={(e) => setResetCode(e.target.value.replace(/\D/g, ''))}
-                  autoComplete="one-time-code"
+                  autoComplete="off"
                   autoCorrect="off"
                   spellCheck={false}
                   data-form-type="other"
@@ -738,7 +738,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
                   placeholder="Nhập mật khẩu mới"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  autoComplete="one-time-code"
+                  autoComplete="off"
                   autoCapitalize="none"
                   autoCorrect="off"
                   spellCheck={false}

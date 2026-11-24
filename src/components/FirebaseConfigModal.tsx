@@ -311,7 +311,7 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({ isOpen
                 value={projectId}
                 onChange={(e) => setProjectId(e.target.value)}
                 placeholder="vd: minetask-1835"
-                autoComplete="one-time-code"
+                autoComplete="off"
                 autoCorrect="off"
                 spellCheck={false}
                 data-form-type="other"
@@ -333,7 +333,7 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({ isOpen
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 placeholder="AIzaSy..."
-                autoComplete="one-time-code"
+                autoComplete="off"
                 autoCorrect="off"
                 spellCheck={false}
                 data-form-type="other"
@@ -355,7 +355,7 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({ isOpen
                 value={appId}
                 onChange={(e) => setAppId(e.target.value)}
                 placeholder="1:1234567890:web:abcdef..."
-                autoComplete="one-time-code"
+                autoComplete="off"
                 autoCorrect="off"
                 spellCheck={false}
                 data-form-type="other"
@@ -377,7 +377,7 @@ export const FirebaseConfigModal: React.FC<FirebaseConfigModalProps> = ({ isOpen
                 value={authDomain}
                 onChange={(e) => setAuthDomain(e.target.value)}
                 placeholder="minetask-1835.firebaseapp.com"
-                autoComplete="one-time-code"
+                autoComplete="off"
                 autoCorrect="off"
                 spellCheck={false}
                 data-form-type="other"

@@ -537,7 +537,7 @@ export const WoodenSignModal: React.FC<WoodenSignModalProps> = ({
                 id="mc_note_text"
                 value={noteText}
                 onChange={(e) => setNoteText(e.target.value)}
-                autoComplete="one-time-code"
+                autoComplete="off"
                 autoCorrect="off"
                 spellCheck={false}
                 data-form-type="other"

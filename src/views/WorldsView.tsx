@@ -120,7 +120,7 @@ export const WorldsView: React.FC<WorldsViewProps> = ({
             placeholder="Tìm kiếm theo tên thế giới hoặc mục tiêu..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            autoComplete="one-time-code"
+            autoComplete="off"
             autoCorrect="off"
             spellCheck={false}
             data-form-type="other"

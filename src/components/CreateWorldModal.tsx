@@ -123,7 +123,7 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
               placeholder="ví dụ: Dự Án Mobile App 1835s, Chiến Dịch Q4..."
               value={name}
               onChange={(e) => setName(e.target.value)}
-              autoComplete="one-time-code"
+              autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
               data-form-type="other"
@@ -146,7 +146,7 @@ export const CreateWorldModal: React.FC<CreateWorldModalProps> = ({
               placeholder="Mục tiêu của thế giới này..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              autoComplete="one-time-code"
+              autoComplete="off"
               autoCorrect="off"
               spellCheck={false}
               data-form-type="other"
