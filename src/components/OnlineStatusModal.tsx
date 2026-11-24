@@ -13,6 +13,7 @@ import {
   requestDeviceNotificationPermission,
   sendTestDeviceNotification,
 } from '../utils/deviceNotification';
+import { broadcastAppVersionToFirestore } from '../services/firebase';
 
 interface OnlineStatusModalProps {
   isOpen: boolean;
@@ -167,7 +168,10 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
             <button
               onClick={async () => {
                 await requestDeviceNotificationPermission();
-                window.dispatchEvent(new CustomEvent('1835_TRIGGER_UPDATE_ALERT'));
+                await broadcastAppVersionToFirestore(
+                  Date.now(),
+                  'Đã có bản cập nhật 1835: Gõ phím mượt, gửi & dán ảnh, reply, thả cảm xúc!'
+                );
               }}
               className="mc-btn mc-btn-1835 text-[10px] px-2.5 py-1 font-bold text-white cursor-pointer shadow-xs active:scale-95 whitespace-nowrap"
             >
