@@ -134,6 +134,40 @@ const MainContent: React.FC = () => {
     [isNewerVersion, handleApplyUpdate]
   );
 
+  // Sync current running version to Service Worker so background periodicsync knows our baseline
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+    let lastInstalled = 0;
+    try {
+      const raw = localStorage.getItem('minetask_1835_installed_version');
+      if (raw) lastInstalled = Number(raw);
+    } catch {}
+    const effectiveVersion = Math.max(CURRENT_BUILD_VERSION, Number.isFinite(lastInstalled) ? lastInstalled : 0);
+    if (effectiveVersion <= 0) return;
+
+    const syncToSw = async () => {
+      try {
+        if (navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({
+            type: 'SYNC_VERSION',
+            version: effectiveVersion,
+          });
+        }
+        const reg = await navigator.serviceWorker.ready;
+        reg?.active?.postMessage({
+          type: 'SYNC_VERSION',
+          version: effectiveVersion,
+        });
+      } catch {}
+    };
+
+    syncToSw();
+    navigator.serviceWorker.addEventListener('controllerchange', syncToSw);
+    return () => {
+      navigator.serviceWorker.removeEventListener('controllerchange', syncToSw);
+    };
+  }, [CURRENT_BUILD_VERSION]);
+
   // Proactively request device notification permission so update alerts pop up on Windows / Android
   useEffect(() => {
     if (typeof window === 'undefined') return;

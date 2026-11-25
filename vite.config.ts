@@ -238,15 +238,13 @@ try {
   console.warn('Error reading version.json:', e);
 }
 
-// In build mode, generate a fresh unique build version and save back to public/version.json
-const isProductionBuild = process.env.NODE_ENV === 'production' || process.argv.includes('build');
-if (isProductionBuild) {
-  versionData.version = Date.now();
-  versionData.buildTime = new Date().toISOString();
+// Keep version.json as the single source of truth across CI/local builds.
+// Only generate a fallback version if public/version.json does not exist.
+if (!fs.existsSync(versionFilePath)) {
   try {
     fs.writeFileSync(versionFilePath, JSON.stringify(versionData, null, 2), 'utf-8');
   } catch (e) {
-    console.warn('Error saving updated version.json:', e);
+    console.warn('Error saving initial version.json:', e);
   }
 }
 

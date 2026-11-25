@@ -1,4 +1,28 @@
-const CACHE_NAME = 'minetask-1835s-v47-cache-sync-fixed';
+const CACHE_NAME = 'minetask-1835s-v48-no-false-update';
+const VERSION_META_CACHE = 'minetask-1835s-version-meta';
+const VERSION_META_KEY = './__sw_known_version__';
+
+async function getStoredKnownVersion() {
+  try {
+    const cache = await caches.open(VERSION_META_CACHE);
+    const res = await cache.match(VERSION_META_KEY);
+    if (!res) return 0;
+    const text = await res.text();
+    const num = Number(text);
+    return Number.isFinite(num) && num > 0 ? num : 0;
+  } catch {
+    return 0;
+  }
+}
+
+async function setStoredKnownVersion(version) {
+  const num = Number(version);
+  if (!Number.isFinite(num) || num <= 0) return;
+  try {
+    const cache = await caches.open(VERSION_META_CACHE);
+    await cache.put(VERSION_META_KEY, new Response(String(num)));
+  } catch {}
+}
 
 const PRECACHE_ASSETS = [
   './',
@@ -27,44 +51,43 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate: Automatically PURGE old caches and trigger system notification on background update!
+// Activate: Automatically PURGE old caches without firing false update notifications
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
-      let hasUpgraded = false;
       const deletePromises = keys.map((key) => {
-        if (key !== CACHE_NAME) {
+        if (key !== CACHE_NAME && key !== VERSION_META_CACHE) {
           console.log('[1835 SW] Auto-deleting old obsolete cache:', key);
-          hasUpgraded = true;
           return caches.delete(key);
         }
       });
-      return Promise.all(deletePromises).then(() => {
-        // Tự động đẩy thông báo ra ngoài màn hình thiết bị khi Service Worker cập nhật ngầm
-        if (hasUpgraded && self.registration && typeof self.registration.showNotification === 'function') {
-          self.registration.showNotification('🚀 MINETASK 1835s: BẢN CẬP NHẬT MỚI!', {
-            body: 'Hệ thống vừa cập nhật phiên bản mới nhất với tính năng được nâng cấp. Chạm vào đây để mở ngay!',
-            icon: './icon-1835-v2-192.png',
-            badge: './badge-96.png',
-            tag: 'minetask-1835-app-update',
-            requireInteraction: true,
-            data: { url: './' }
-          }).catch((err) => console.warn('[1835 SW] Error showing bg notif:', err));
-        }
-      });
+      return Promise.all(deletePromises);
     }).then(() => self.clients.claim())
   );
 });
 
-// Periodic Background Sync: Tự động chạy ngầm định kỳ trên Android/Windows ngay cả khi đóng app
+// Periodic Background Sync: Chỉ thông báo khi phiên bản trên máy chủ thực sự mới hơn phiên bản đã biết
 self.addEventListener('periodicsync', (event) => {
   if (event.tag === 'minetask-check-update' || event.tag === 'check-updates') {
     event.waitUntil(
-      fetch('./version.json?t=' + Date.now(), { cache: 'no-store' })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data && data.version && self.registration) {
-            self.registration.showNotification('🚀 MINETASK 1835s: BẢN CẬP NHẬT MỚI!', {
+      (async () => {
+        try {
+          const res = await fetch('./version.json?t=' + Date.now(), { cache: 'no-store' });
+          if (!res.ok) return;
+          const data = await res.json();
+          const serverVersion = Number(data && data.version);
+          if (!Number.isFinite(serverVersion) || serverVersion <= 0) return;
+
+          const knownVersion = await getStoredKnownVersion();
+          if (knownVersion <= 0) {
+            // Chưa có mốc phiên bản: lưu mốc hiện tại, không tự ý báo cập nhật
+            await setStoredKnownVersion(serverVersion);
+            return;
+          }
+
+          if (serverVersion > knownVersion && self.registration) {
+            await setStoredKnownVersion(serverVersion);
+            await self.registration.showNotification('🚀 MINETASK 1835s: BẢN CẬP NHẬT MỚI!', {
               body: 'Hệ thống vừa có bản cập nhật mới trên máy chủ. Chạm vào để cập nhật!',
               icon: './icon-1835-v2-192.png',
               badge: './badge-96.png',
@@ -73,8 +96,8 @@ self.addEventListener('periodicsync', (event) => {
               data: { url: './' }
             });
           }
-        })
-        .catch(() => {})
+        } catch {}
+      })()
     );
   }
 });
@@ -126,16 +149,28 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-// Message listener for instant skip-waiting & cache purge
+// Message listener for instant skip-waiting, version sync & cache purge
 self.addEventListener('message', (event) => {
   if (!event.data) return;
   if (event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
+  if (event.data.type === 'SYNC_VERSION' && event.data.version) {
+    event.waitUntil(
+      (async () => {
+        const incoming = Number(event.data.version);
+        if (!Number.isFinite(incoming) || incoming <= 0) return;
+        const known = await getStoredKnownVersion();
+        if (incoming > known) {
+          await setStoredKnownVersion(incoming);
+        }
+      })()
+    );
+  }
   if (event.data.type === 'PURGE_OLD_CACHES') {
     caches.keys().then((keys) => {
       keys.forEach((key) => {
-        if (key !== CACHE_NAME) caches.delete(key);
+        if (key !== CACHE_NAME && key !== VERSION_META_CACHE) caches.delete(key);
       });
     });
   }

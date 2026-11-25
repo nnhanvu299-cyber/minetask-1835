@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { PixelAvatar } from '../utils/pixelAvatars';
 import {
@@ -12,8 +12,8 @@ import {
 import {
   requestDeviceNotificationPermission,
   sendTestDeviceNotification,
+  sendUpdateAvailableNotification,
 } from '../utils/deviceNotification';
-import { broadcastAppVersionToFirestore } from '../services/firebase';
 
 interface OnlineStatusModalProps {
   isOpen: boolean;
@@ -29,6 +29,7 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
     serverConnected,
     onlineMembers,
   } = useApp();
+  const [updateCheckMessage, setUpdateCheckMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -159,35 +160,59 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
         </div>
 
         {/* Device Notification Actions */}
-        <div className="p-2.5 bg-[#FFFDF7] border-2 border-[#E5D6B6] rounded flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-xs font-bold text-[#2D1A11]">
-            <Bell size={14} className="text-[#F37022]" />
-            <span>THÔNG BÁO THIẾT BỊ</span>
+        <div className="p-2.5 bg-[#FFFDF7] border-2 border-[#E5D6B6] rounded space-y-1.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#2D1A11]">
+              <Bell size={14} className="text-[#F37022]" />
+              <span>THÔNG BÁO THIẾT BỊ</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={async () => {
+                  setUpdateCheckMessage('Đang kiểm tra phiên bản...');
+                  try {
+                    const res = await fetch(`./version.json?t=${Date.now()}`, { cache: 'no-store' });
+                    if (!res.ok) {
+                      setUpdateCheckMessage('Không kiểm tra được máy chủ.');
+                      return;
+                    }
+                    const data = await res.json();
+                    const serverVer = Number(data?.version || 0);
+                    const localBuild = typeof __APP_BUILD_VERSION__ === 'number' ? __APP_BUILD_VERSION__ : 0;
+                    const installedRaw = localStorage.getItem('minetask_1835_installed_version');
+                    const effectiveLocal = Math.max(localBuild, installedRaw ? Number(installedRaw) : 0);
+
+                    if (serverVer > effectiveLocal && effectiveLocal > 0) {
+                      setUpdateCheckMessage('Đã phát hiện bản cập nhật mới!');
+                      await requestDeviceNotificationPermission();
+                      await sendUpdateAvailableNotification(serverVer);
+                    } else {
+                      setUpdateCheckMessage('Bạn đang dùng phiên bản mới nhất.');
+                    }
+                  } catch {
+                    setUpdateCheckMessage('Lỗi khi kiểm tra cập nhật.');
+                  }
+                }}
+                className="mc-btn mc-btn-1835 text-[10px] px-2.5 py-1 font-bold text-white cursor-pointer shadow-xs active:scale-95 whitespace-nowrap"
+              >
+                KIỂM TRA CẬP NHẬT 🔄
+              </button>
+              <button
+                onClick={async () => {
+                  await requestDeviceNotificationPermission();
+                  await sendTestDeviceNotification();
+                }}
+                className="mc-btn text-[10px] px-2.5 py-1 font-bold bg-[#FAF2DC] border border-[#2D1A11] hover:bg-[#F3E6C8] cursor-pointer whitespace-nowrap"
+              >
+                THỬ CHUÔNG 🔔
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <button
-              onClick={async () => {
-                await requestDeviceNotificationPermission();
-                const ver = typeof __APP_BUILD_VERSION__ === 'number' ? __APP_BUILD_VERSION__ : Date.now();
-                await broadcastAppVersionToFirestore(
-                  ver,
-                  'Đã có bản cập nhật 1835: Gõ phím mượt, gửi & dán ảnh, reply, thả cảm xúc!'
-                );
-              }}
-              className="mc-btn mc-btn-1835 text-[10px] px-2.5 py-1 font-bold text-white cursor-pointer shadow-xs active:scale-95 whitespace-nowrap"
-            >
-              GỬI TB CẬP NHẬT 🚀
-            </button>
-            <button
-              onClick={async () => {
-                await requestDeviceNotificationPermission();
-                await sendTestDeviceNotification();
-              }}
-              className="mc-btn text-[10px] px-2.5 py-1 font-bold bg-[#FAF2DC] border border-[#2D1A11] hover:bg-[#F3E6C8] cursor-pointer whitespace-nowrap"
-            >
-              THỬ CHUÔNG 🔔
-            </button>
-          </div>
+          {updateCheckMessage && (
+            <div className="text-[11px] font-medium text-[#836251] text-right">
+              {updateCheckMessage}
+            </div>
+          )}
         </div>
 
         {/* Footer */}
