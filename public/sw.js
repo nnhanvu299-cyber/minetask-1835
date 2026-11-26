@@ -1,4 +1,4 @@
-const CACHE_NAME = 'minetask-1835s-v48-no-false-update';
+const CACHE_NAME = 'minetask-1835s-v49-clean-update';
 const VERSION_META_CACHE = 'minetask-1835s-version-meta';
 const VERSION_META_KEY = './__sw_known_version__';
 
@@ -39,14 +39,23 @@ const PRECACHE_ASSETS = [
   './fonts/minecraft-f2d-v1-42.otf'
 ];
 
-// Install: Cache new core shell and immediately skip waiting to take over
+// Install: Cache new core shell (always bypassing HTTP cache for HTML) and immediately skip waiting
 self.addEventListener('install', (event) => {
   self.skipWaiting();
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(PRECACHE_ASSETS).catch((err) => {
-        console.warn('[1835 SW] Pre-cache warning:', err);
-      });
+    caches.open(CACHE_NAME).then(async (cache) => {
+      for (const asset of PRECACHE_ASSETS) {
+        try {
+          if (asset === './' || asset === './index.html') {
+            const res = await fetch(asset, { cache: 'no-store' });
+            if (res && res.ok) await cache.put(asset, res);
+          } else {
+            await cache.add(asset);
+          }
+        } catch (err) {
+          console.warn('[1835 SW] Pre-cache warning:', asset, err);
+        }
+      }
     })
   );
 });
@@ -66,7 +75,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Periodic Background Sync: Chỉ thông báo khi phiên bản trên máy chủ thực sự mới hơn phiên bản đã biết
+// Periodic Background Sync: Chỉ đồng bộ âm thầm version mới, không tự bắn thông báo làm phiền
 self.addEventListener('periodicsync', (event) => {
   if (event.tag === 'minetask-check-update' || event.tag === 'check-updates') {
     event.waitUntil(
@@ -76,25 +85,8 @@ self.addEventListener('periodicsync', (event) => {
           if (!res.ok) return;
           const data = await res.json();
           const serverVersion = Number(data && data.version);
-          if (!Number.isFinite(serverVersion) || serverVersion <= 0) return;
-
-          const knownVersion = await getStoredKnownVersion();
-          if (knownVersion <= 0) {
-            // Chưa có mốc phiên bản: lưu mốc hiện tại, không tự ý báo cập nhật
+          if (Number.isFinite(serverVersion) && serverVersion > 0) {
             await setStoredKnownVersion(serverVersion);
-            return;
-          }
-
-          if (serverVersion > knownVersion && self.registration) {
-            await setStoredKnownVersion(serverVersion);
-            await self.registration.showNotification('🚀 MINETASK 1835s: BẢN CẬP NHẬT MỚI!', {
-              body: 'Hệ thống vừa có bản cập nhật mới trên máy chủ. Chạm vào để cập nhật!',
-              icon: './icon-1835-v2-192.png',
-              badge: './badge-96.png',
-              tag: 'minetask-1835-app-update',
-              requireInteraction: true,
-              data: { url: './' }
-            });
           }
         } catch {}
       })()
@@ -131,21 +123,38 @@ self.addEventListener('push', (event) => {
   );
 });
 
-// Notification Click: Chạm vào thông báo để mở hoặc focus vào ứng dụng
+// Notification Click: Chạm vào thông báo để mở/focus và áp dụng cập nhật nếu là thông báo cập nhật
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const targetUrl = (event.notification.data && event.notification.data.url) || './';
+  const notifData = event.notification.data || {};
+  const isUpdateNotif =
+    event.notification.tag === 'minetask-1835-app-update' || notifData.action === 'apply_update';
+  const targetUrl = notifData.url || './';
+
   event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+    (async () => {
+      if (isUpdateNotif && notifData.version) {
+        await setStoredKnownVersion(notifData.version);
+      }
+
+      const clientList = await clients.matchAll({ type: 'window', includeUncontrolled: true });
       for (const client of clientList) {
         if (client.url && 'focus' in client) {
-          return client.focus();
+          await client.focus();
+          if (isUpdateNotif) {
+            client.postMessage({ type: 'APPLY_UPDATE', version: notifData.version });
+          }
+          return;
         }
       }
+
       if (clients.openWindow) {
-        return clients.openWindow(targetUrl);
+        const openUrl = isUpdateNotif
+          ? `./?v_sync=${encodeURIComponent(String(notifData.version || Date.now()))}`
+          : targetUrl;
+        return clients.openWindow(openUrl);
       }
-    })
+    })()
   );
 });
 
@@ -211,10 +220,10 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 1. Navigation requests (Opening the site or reloading) - Network First with Cache Fallback
+  // 1. Navigation requests (Opening the site or reloading) - Network First (no-store) with Cache Fallback
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request)
+      fetch(event.request, { cache: 'no-store' })
         .then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200) {
             const clone = networkResponse.clone();

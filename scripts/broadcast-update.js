@@ -50,22 +50,24 @@ async function broadcastUpdate() {
 
   console.log('✅ Đã cập nhật app_meta/latest_version thành công!');
 
-  // 2. Gửi một tin nhắn hệ thống vào kênh chat để tất cả thành viên đều thấy thông báo
-  const msgId = `chat_sys_${Date.now()}`;
-  const chatDoc = doc(db, 'chat_messages', msgId);
-  await setDoc(chatDoc, {
-    id: msgId,
-    senderId: 'system',
-    senderName: 'HỆ THỐNG 1835',
-    senderRole: 'Thông báo',
-    senderColor: '#ED1B24',
-    text: `🚀 ĐÃ CÓ BẢN CẬP NHẬT MỚI!\n${note}\n👉 Hãy chạm vào thanh "CẬP NHẬT 🔄" ở đầu màn hình hoặc tải lại trang để nạp ngay!`,
-    type: 'system',
-    createdAt: Date.now(),
-    readBy: []
-  }, { merge: true });
+  // 2. Chỉ gửi tin nhắn hệ thống vào kênh chat khi có cờ --with-chat để tránh spam mỗi lần deploy
+  if (process.argv.includes('--with-chat')) {
+    const msgId = `chat_sys_${Date.now()}`;
+    const chatDoc = doc(db, 'chat_messages', msgId);
+    await setDoc(chatDoc, {
+      id: msgId,
+      senderId: 'system',
+      senderName: 'HỆ THỐNG 1835',
+      senderRole: 'Thông báo',
+      senderColor: '#ED1B24',
+      text: `🚀 ĐÃ CÓ BẢN CẬP NHẬT MỚI!\n${note}\n👉 Hãy chạm vào thanh "CẬP NHẬT 🔄" ở đầu màn hình hoặc tải lại trang để nạp ngay!`,
+      type: 'system',
+      createdAt: Date.now(),
+      readBy: []
+    }, { merge: true });
 
-  console.log('✅ Đã gửi thông báo hệ thống vào Kênh Chat Đội 1835 thành công!');
+    console.log('✅ Đã gửi thông báo hệ thống vào Kênh Chat Đội 1835 thành công!');
+  }
   process.exit(0);
 }
 

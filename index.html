@@ -78,15 +78,19 @@
         } else {
           // Production / PWA mode
           window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js').then((reg) => {
+            navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((reg) => {
               reg.update();
-              setInterval(() => reg.update(), 30000);
+              setInterval(() => reg.update(), 60000);
 
-              // Đăng ký Periodic Background Sync để kiểm tra cập nhật kể cả khi đóng app
+              // Gỡ bỏ periodicSync cũ để tránh tự động bắn thông báo cập nhật ngầm liên tục
               if ('periodicSync' in reg) {
                 try {
-                  reg.periodicSync.register('minetask-check-update', {
-                    minInterval: 12 * 60 * 1000 // Kiểm tra mỗi 12 phút trong nền
+                  reg.periodicSync.getTags().then((tags) => {
+                    tags.forEach((tag) => {
+                      if (tag === 'minetask-check-update' || tag === 'check-updates') {
+                        reg.periodicSync.unregister(tag).catch(() => {});
+                      }
+                    });
                   }).catch(() => {});
                 } catch (e) {}
               }

@@ -91,11 +91,12 @@ const MainContent: React.FC = () => {
     if (ver) {
       try {
         localStorage.setItem('minetask_1835_installed_version', String(ver));
+        localStorage.setItem('minetask_1835_notified_version', String(ver));
       } catch {}
     }
     setHasNewUpdate(false);
 
-    // Clean caches and service worker cleanly
+    // Clean caches and service worker cleanly (preserve version meta cache)
     try {
       if ('serviceWorker' in navigator) {
         const regs = await navigator.serviceWorker.getRegistrations();
@@ -103,7 +104,11 @@ const MainContent: React.FC = () => {
       }
       if ('caches' in window) {
         const keys = await caches.keys();
-        await Promise.all(keys.map((k) => caches.delete(k)));
+        await Promise.all(
+          keys
+            .filter((k) => k !== 'minetask-1835s-version-meta')
+            .map((k) => caches.delete(k))
+        );
       }
     } catch (err) {
       console.warn('[1835 Update] Cache purge error:', err);
@@ -115,7 +120,7 @@ const MainContent: React.FC = () => {
     window.location.replace(targetUrl.toString());
   }, [updateVersion]);
 
-  // Trigger notification to device and UI
+  // Trigger notification to device and UI (at most once per version across reloads/tabs)
   const triggerUpdateAlert = useCallback(
     (version: number, note?: string) => {
       if (!isNewerVersion(version)) return;
@@ -125,14 +130,39 @@ const MainContent: React.FC = () => {
       setUpdateVersion(version);
       if (note) setUpdateNote(note);
 
-      if (!hasNotifiedRef.current) {
+      let lastNotifiedVersion = 0;
+      try {
+        const raw = localStorage.getItem('minetask_1835_notified_version');
+        if (raw) lastNotifiedVersion = Number(raw);
+      } catch {}
+
+      if (!hasNotifiedRef.current && version > lastNotifiedVersion) {
         hasNotifiedRef.current = true;
-        soundEngine.playTurnNotification();
+        try {
+          localStorage.setItem('minetask_1835_notified_version', String(version));
+        } catch {}
         sendUpdateAvailableNotification(version, handleApplyUpdate);
       }
     },
     [isNewerVersion, handleApplyUpdate]
   );
+
+  // Listen to Service Worker APPLY_UPDATE messages when user clicks device update notification
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+    const onSwMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'APPLY_UPDATE') {
+        if (event.data.version) {
+          targetUpdateVersionRef.current = Number(event.data.version);
+        }
+        handleApplyUpdate();
+      }
+    };
+    navigator.serviceWorker.addEventListener('message', onSwMessage);
+    return () => {
+      navigator.serviceWorker.removeEventListener('message', onSwMessage);
+    };
+  }, [handleApplyUpdate]);
 
   // Sync current running version to Service Worker so background periodicsync knows our baseline
   useEffect(() => {

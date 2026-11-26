@@ -108,6 +108,11 @@ export async function sendUpdateAvailableNotification(
     badge: './badge-96.png',
     tag: 'minetask-1835-app-update',
     requireInteraction: true,
+    data: {
+      url: './',
+      action: 'apply_update',
+      version: versionNumber,
+    },
     onClick: () => {
       if (onApplyUpdate) {
         onApplyUpdate();
