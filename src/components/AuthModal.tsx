@@ -273,7 +273,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
                 name="mc_auth_login_id"
                 id="mc_auth_login_id"
                 required
-                placeholder="Tên tài khoản hoặc Email (Username or Email)"
+                placeholder="Tên tài khoản hoặc Email"
                 value={loginEmail}
                 onChange={(e) => {
                   setLoginEmail(e.target.value);
@@ -351,19 +351,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
             )}
 
             {/* Remember Login on Machine Checkbox */}
-            <div className="flex items-center justify-between pt-1">
-              <label className="flex items-center gap-2 cursor-pointer select-none group">
+            <div className="flex items-center justify-between gap-2 flex-wrap pt-1">
+              <label className="flex items-center gap-2 cursor-pointer select-none group min-w-0">
                 <input
                   type="checkbox"
                   checked={rememberOnMachine}
                   onChange={(e) => setRememberOnMachine(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 text-[#10b981] accent-[#10b981] cursor-pointer"
+                  className="w-4 h-4 rounded border-gray-300 text-[#10b981] accent-[#10b981] cursor-pointer shrink-0"
                 />
-                <span className="text-[12px] font-medium text-[#4b5563] group-hover:text-[#111827] flex items-center gap-1">
-                  💾 Lưu đăng nhập trên máy này
+                <span className="text-[12px] font-medium text-[#4b5563] group-hover:text-[#111827] leading-snug">
+                  💾 Lưu đăng nhập
                 </span>
               </label>
-              <span className="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-semibold">
+              <span className="text-[10px] text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 font-semibold whitespace-nowrap shrink-0">
                 Tự động vào app
               </span>
             </div>
@@ -377,7 +377,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
             </button>
 
             {/* Bottom Links: Forgot Password & Not a Member Yet */}
-            <div className="flex items-center justify-between pt-2 text-[11px] sm:text-xs text-[#737373]">
+            <div className="flex items-center justify-between gap-x-3 gap-y-1.5 flex-wrap pt-2 text-[11px] sm:text-xs text-[#737373]">
               <button
                 type="button"
                 onClick={() => {

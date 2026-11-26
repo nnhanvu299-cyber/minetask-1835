@@ -3,6 +3,7 @@ import { UserProfile, UserId, World, Task, TaskStatus, NotificationItem, ChatMes
 import { soundEngine } from '../utils/audio';
 import { sendOtpEmail } from '../utils/emailService';
 import { sendDeviceNotification, sendChatMessageDeviceNotification } from '../utils/deviceNotification';
+import { hashPassword, verifyPassword } from '../utils/passwordHash';
 import {
   isFirebaseReady,
   subscribeToFirebaseUsers,
@@ -401,7 +402,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       soundEngine.playChatMessage();
     } catch {}
 
-    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+    if (
+      typeof navigator !== 'undefined' &&
+      typeof navigator.vibrate === 'function' &&
+      (!(navigator as any).userActivation || (navigator as any).userActivation.hasBeenActive)
+    ) {
       try {
         navigator.vibrate([120, 60, 120]);
       } catch {}
@@ -1489,17 +1494,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
 
     const storedPass = (found.password || '').trim();
+    const { valid: hashValid, needsUpgrade } = await verifyPassword(cleanPass, storedPass);
+    const isLegacyFallbackValid =
+      !storedPass.startsWith('sha256:') &&
+      (!storedPass ||
+        storedPass.toLowerCase() === cleanPass.toLowerCase() ||
+        removeDiacritics(storedPass) === removeDiacritics(cleanPass));
 
-    // Multi-layer flexible password validation:
-    // 1. Empty/no password set -> allow
-    // 2. Exact match
-    // 3. Case-insensitive match (catches mobile keyboards auto-capitalizing first letter e.g. Nhanvu2004 vs nhanvu2004)
-    // 4. Diacritics normalization (catches VNI/Telex tone-mark issues when typing numbers like 'nhanvu2' -> 'nhanvú004')
-    const isPassValid =
-      !storedPass ||
-      storedPass === cleanPass ||
-      storedPass.toLowerCase() === cleanPass.toLowerCase() ||
-      removeDiacritics(storedPass) === removeDiacritics(cleanPass);
+    const isPassValid = hashValid || isLegacyFallbackValid;
 
     if (!isPassValid) {
       return {
@@ -1508,11 +1510,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       };
     }
 
-    setCurrentUser(found);
+    let activeProfile = found;
+    if (needsUpgrade && cleanPass) {
+      const upgradedHash = await hashPassword(cleanPass);
+      if (upgradedHash.startsWith('sha256:')) {
+        activeProfile = { ...found, password: upgradedHash };
+        if (isFirebaseReady()) {
+          updateUserInFirestore(found.id, { password: upgradedHash }).catch(() => {});
+        }
+      }
+    }
+
+    setCurrentUser(activeProfile);
     setActiveWorldId(null); // Direct entry into the Workspace screen (Không gian làm việc)!
     try {
-      localStorage.setItem(STORAGE_KEY_CURRENT_USER, found.id);
-      localStorage.setItem(STORAGE_KEY_CURRENT_USER_PROFILE, JSON.stringify(found));
+      localStorage.setItem(STORAGE_KEY_CURRENT_USER, activeProfile.id);
+      localStorage.setItem(STORAGE_KEY_CURRENT_USER_PROFILE, JSON.stringify(activeProfile));
       localStorage.setItem(STORAGE_KEY_REMEMBER_LOGIN, 'true');
       localStorage.setItem(STORAGE_KEY_REMEMBERED_ACCOUNT, input);
     } catch {}
@@ -1538,11 +1551,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
 
     const newId = `user_${Date.now()}`;
+    const hashedPass = await hashPassword(pass);
     const newUser: UserProfile = {
       id: newId,
       name: trimmedName,
       email: trimmedEmail,
-      password: pass,
+      password: hashedPass,
       role: 'Thành viên Co-op 1835',
       title: 'Thợ Mỏ Co-op',
       level: 1,
@@ -1944,6 +1958,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       return { success: false, message: 'Mã xác thực OTP không chính xác hoặc đã hết hạn. Vui lòng kiểm tra lại hòm thư.' };
     }
 
+    const hashedPass = await hashPassword(cleanPass);
     const currentUsers = getStoredUsers();
     let userFound = false;
     const updated = currentUsers.map((u) => {
@@ -1957,7 +1972,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         (emailPrefix && emailPrefix === normalized)
       ) {
         userFound = true;
-        return { ...u, password: cleanPass };
+        return { ...u, password: hashedPass };
       }
       return u;
     });
@@ -1986,7 +2001,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return uEmail === normalized || uName === normalized;
       });
       if (targetReset) {
-        updateUserInFirestore(targetReset.id, { password: cleanPass }).catch(() => {});
+        updateUserInFirestore(targetReset.id, { password: hashedPass }).catch(() => {});
       }
     }
     await pushToServer(updated, undefined, undefined, true);

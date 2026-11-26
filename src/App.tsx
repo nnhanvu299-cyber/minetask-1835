@@ -1,21 +1,42 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { Header } from './components/Header';
 import { WorldsView } from './views/WorldsView';
 import { WorldDetailView } from './views/WorldDetailView';
 import { AuthModal } from './components/AuthModal';
-import { UserProfileModal } from './components/UserProfileModal';
-import { CreateWorldModal } from './components/CreateWorldModal';
-import { CreateTaskModal } from './components/CreateTaskModal';
-import { WinStateModal } from './components/WinStateModal';
-import { ArcadeModal } from './components/ArcadeModal';
-import { TimelineModal } from './components/TimelineModal';
 import { NotificationToast } from './components/NotificationToast';
-import { NotificationDrawer } from './components/NotificationDrawer';
-import { OnlineStatusModal } from './components/OnlineStatusModal';
-import { TeamChatModal } from './components/TeamChatModal';
-import { ConfirmDeleteModal } from './components/ConfirmDeleteModal';
 import { ErrorBoundary } from './components/ErrorBoundary';
+
+const UserProfileModal = lazy(() =>
+  import('./components/UserProfileModal').then((m) => ({ default: m.UserProfileModal }))
+);
+const CreateWorldModal = lazy(() =>
+  import('./components/CreateWorldModal').then((m) => ({ default: m.CreateWorldModal }))
+);
+const CreateTaskModal = lazy(() =>
+  import('./components/CreateTaskModal').then((m) => ({ default: m.CreateTaskModal }))
+);
+const WinStateModal = lazy(() =>
+  import('./components/WinStateModal').then((m) => ({ default: m.WinStateModal }))
+);
+const ArcadeModal = lazy(() =>
+  import('./components/ArcadeModal').then((m) => ({ default: m.ArcadeModal }))
+);
+const TimelineModal = lazy(() =>
+  import('./components/TimelineModal').then((m) => ({ default: m.TimelineModal }))
+);
+const NotificationDrawer = lazy(() =>
+  import('./components/NotificationDrawer').then((m) => ({ default: m.NotificationDrawer }))
+);
+const OnlineStatusModal = lazy(() =>
+  import('./components/OnlineStatusModal').then((m) => ({ default: m.OnlineStatusModal }))
+);
+const TeamChatModal = lazy(() =>
+  import('./components/TeamChatModal').then((m) => ({ default: m.TeamChatModal }))
+);
+const ConfirmDeleteModal = lazy(() =>
+  import('./components/ConfirmDeleteModal').then((m) => ({ default: m.ConfirmDeleteModal }))
+);
 import { Gamepad2, Globe, Calendar, Bell, User, RefreshCw, MessageSquare, X } from 'lucide-react';
 import { PixelAvatar } from './utils/pixelAvatars';
 import { soundEngine } from './utils/audio';
@@ -629,95 +650,111 @@ const MainContent: React.FC = () => {
         </button>
       </div>
 
-      {/* Modals */}
-      <TeamChatModal
-        isOpen={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
-        onNavigateToTask={(worldId, taskId) => {
-          setIsChatOpen(false);
-          setActiveWorldId(worldId);
-        }}
-      />
-
-      <OnlineStatusModal
-        isOpen={isOnlineModalOpen}
-        onClose={() => setIsOnlineModalOpen(false)}
-      />
-
-      <NotificationDrawer
-        isOpen={isNotificationsOpen}
-        onClose={() => setIsNotificationsOpen(false)}
-      />
-
-      <ConfirmDeleteModal
-        state={confirmDeleteState}
-        onClose={closeConfirmDelete}
-      />
-
-      <ArcadeModal
-        isOpen={isArcadeOpen}
-        onClose={() => setIsArcadeOpen(false)}
-      />
-
-      <UserProfileModal
-        isOpen={isProfileOpen}
-        onClose={() => setIsProfileOpen(false)}
-      />
-
-      <CreateWorldModal
-        isOpen={isCreateWorldOpen}
-        onClose={() => setIsCreateWorldOpen(false)}
-        onWorldCreated={(worldId) => setActiveWorldId(worldId)}
-      />
-
-      {activeWorld && (
-        <CreateTaskModal
-          worldId={activeWorld.id}
-          isOpen={isCreateTaskOpen}
-          onClose={() => setIsCreateTaskOpen(false)}
-        />
-      )}
-
-      {activeWorld && (
-        <WinStateModal
-          world={activeWorld}
-          isOpen={isWinStateOpen}
-          onClose={() => setIsWinStateOpen(false)}
-          onBackToWorlds={() => {
-            setIsWinStateOpen(false);
-            setActiveWorldId(null);
-          }}
-        />
-      )}
-
-      {/* Timeline Modal rendered conditionally */}
-      {isTimelineOpen && (
-        <ErrorBoundary
-          fallbackTitle="LỖI HIỂN THỊ TIMELINE"
-          onReset={() => {
-            setIsTimelineOpen(false);
-            setTimelineWorldId(null);
-          }}
-        >
-          <TimelineModal
-            isOpen={true}
-            initialWorldId={timelineWorldId}
-            onClose={() => {
-              setIsTimelineOpen(false);
-              setTimelineWorldId(null);
-            }}
-            onNavigateToTasks={(targetWorldId) => {
-              setIsTimelineOpen(false);
-              setTimelineWorldId(null);
-              if (targetWorldId) {
-                setActiveWorldId(targetWorldId);
-              } else if (!activeWorld && worlds && worlds.length > 0) {
-                setActiveWorldId(worlds[0].id);
-              }
+      {/* Modals (Lazy-loaded on demand) */}
+      <Suspense fallback={null}>
+        {isChatOpen && (
+          <TeamChatModal
+            isOpen={isChatOpen}
+            onClose={() => setIsChatOpen(false)}
+            onNavigateToTask={(worldId, taskId) => {
+              setIsChatOpen(false);
+              setActiveWorldId(worldId);
             }}
           />
-        </ErrorBoundary>
-      )}
+        )}
+
+        {isOnlineModalOpen && (
+          <OnlineStatusModal
+            isOpen={isOnlineModalOpen}
+            onClose={() => setIsOnlineModalOpen(false)}
+          />
+        )}
+
+        {isNotificationsOpen && (
+          <NotificationDrawer
+            isOpen={isNotificationsOpen}
+            onClose={() => setIsNotificationsOpen(false)}
+          />
+        )}
+
+        {confirmDeleteState?.isOpen && (
+          <ConfirmDeleteModal
+            state={confirmDeleteState}
+            onClose={closeConfirmDelete}
+          />
+        )}
+
+        {isArcadeOpen && (
+          <ArcadeModal
+            isOpen={isArcadeOpen}
+            onClose={() => setIsArcadeOpen(false)}
+          />
+        )}
+
+        {isProfileOpen && (
+          <UserProfileModal
+            isOpen={isProfileOpen}
+            onClose={() => setIsProfileOpen(false)}
+          />
+        )}
+
+        {isCreateWorldOpen && (
+          <CreateWorldModal
+            isOpen={isCreateWorldOpen}
+            onClose={() => setIsCreateWorldOpen(false)}
+            onWorldCreated={(worldId) => setActiveWorldId(worldId)}
+          />
+        )}
+
+        {activeWorld && isCreateTaskOpen && (
+          <CreateTaskModal
+            worldId={activeWorld.id}
+            isOpen={isCreateTaskOpen}
+            onClose={() => setIsCreateTaskOpen(false)}
+          />
+        )}
+
+        {activeWorld && isWinStateOpen && (
+          <WinStateModal
+            world={activeWorld}
+            isOpen={isWinStateOpen}
+            onClose={() => setIsWinStateOpen(false)}
+            onBackToWorlds={() => {
+              setIsWinStateOpen(false);
+              setActiveWorldId(null);
+            }}
+          />
+        )}
+
+        {/* Timeline Modal rendered conditionally */}
+        {isTimelineOpen && (
+          <ErrorBoundary
+            fallbackTitle="LỖI HIỂN THỊ TIMELINE"
+            onReset={() => {
+              setIsTimelineOpen(false);
+              setTimelineWorldId(null);
+            }}
+          >
+            <TimelineModal
+              isOpen={true}
+              initialWorldId={timelineWorldId}
+              onClose={() => {
+                setIsTimelineOpen(false);
+                setTimelineWorldId(null);
+              }}
+              onNavigateToTasks={(targetWorldId) => {
+                setIsTimelineOpen(false);
+                setTimelineWorldId(null);
+                if (targetWorldId) {
+                  setActiveWorldId(targetWorldId);
+                } else if (!activeWorld && worlds && worlds.length > 0) {
+                  setActiveWorldId(worlds[0].id);
+                }
+              }}
+            />
+          </ErrorBoundary>
+        )}
+      </Suspense>
     </div>
   );
 };
