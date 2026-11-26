@@ -23,7 +23,7 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({ isOpen, 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-end p-2 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-end p-2 sm:p-4 bg-black/65 animate-fadeIn" onClick={onClose}>
       <div
         className="mc-panel w-full max-w-md bg-[#FAF2DC] text-[#2D1A11] border-3 sm:border-4 border-[#2D1A11] shadow-[6px_6px_0px_#2D1A11] h-[88vh] max-h-[88dvh] flex flex-col"
         onClick={(e) => e.stopPropagation()}

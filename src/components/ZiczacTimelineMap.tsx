@@ -79,7 +79,7 @@ export const ZiczacTimelineMap: React.FC<ZiczacTimelineMapProps> = ({
 
       {/* Empty State */}
       {sortedTasks.length === 0 ? (
-        <div className="mc-panel p-10 text-center text-[#52372A] bg-[#FAF2DC]/90 backdrop-blur-sm border-4 border-[#2D1A11]">
+        <div className="mc-panel p-10 text-center text-[#52372A] bg-[#FAF2DC]/95 border-4 border-[#2D1A11]">
           <div className="text-5xl mb-3">🗺️</div>
           <h3 className="text-base font-bold text-[#2D1A11] mb-1">
             CHƯA CÓ NHIỆM VỤ NÀO
@@ -93,7 +93,7 @@ export const ZiczacTimelineMap: React.FC<ZiczacTimelineMapProps> = ({
         </div>
       ) : (
         /* The Serpentine Board Map Canvas */
-        <div className="relative p-3 sm:p-6 bg-[#FAF2DC]/85 backdrop-blur-md border-4 border-[#2D1A11] shadow-[6px_6px_0px_#2D1A11] overflow-hidden">
+        <div className="relative p-3 sm:p-6 bg-[#FAF2DC]/95 border-4 border-[#2D1A11] shadow-[6px_6px_0px_#2D1A11] overflow-hidden">
           {/* Subtle Grid Pattern */}
           <div className="absolute inset-0 bg-[radial-gradient(#2D1A11_1px,transparent_1px)] [background-size:24px_24px] opacity-10 pointer-events-none" />
 

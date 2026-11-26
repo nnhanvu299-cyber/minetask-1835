@@ -347,7 +347,7 @@ const MainContent: React.FC = () => {
     <aside
       role="alert"
       aria-label="Thông báo bản cập nhật mới"
-      className="fixed top-3 left-1/2 -translate-x-1/2 z-[99999] w-[94%] max-w-md animate-bounce"
+      className="fixed top-3 left-1/2 -translate-x-1/2 z-[99999] w-[94%] max-w-md animate-bounceIn"
     >
       <div className="mc-panel p-2.5 sm:p-3 bg-gradient-to-r from-[#F37022] to-[#ED1B24] text-white border-3 border-[#2D1A11] shadow-[0_6px_24px_rgba(0,0,0,0.6),4px_4px_0px_#2D1A11] flex items-center justify-between gap-2.5 rounded">
         <div className="flex items-center gap-2 min-w-0">
@@ -380,7 +380,7 @@ const MainContent: React.FC = () => {
         {UpdateNotificationBanner}
         {/* Gentle falling cherry petals in background */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-          {[...Array(12)].map((_, i) => (
+          {[...Array(8)].map((_, i) => (
             <div
               key={i}
               className="sakura-leaf"
@@ -523,7 +523,7 @@ const MainContent: React.FC = () => {
         </footer>
 
         {/* Mobile Bottom Navigation Bar (Thumb-Friendly on Android & iOS) */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#FAF2DC]/98 border-t-3 border-[#2D1A11] pb-[max(0.5rem,env(safe-area-inset-bottom,0.5rem))] pt-1 px-1 sm:px-2 shadow-[0_-4px_12px_rgba(45,26,17,0.15)] backdrop-blur-md">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#FAF2DC]/98 border-t-3 border-[#2D1A11] pb-[max(0.5rem,env(safe-area-inset-bottom,0.5rem))] pt-1 px-1 sm:px-2 shadow-[0_-4px_12px_rgba(45,26,17,0.15)]">
           <div className="flex items-center justify-around max-w-lg mx-auto">
             {/* Tab 1: Thế Giới (Worlds) */}
             <button

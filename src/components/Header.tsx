@@ -42,7 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
   if (!activeUser) return null;
 
   return (
-    <header className="sticky top-0 z-40 bg-[#FDF7E7]/95 border-b-4 border-[#2D1A11] backdrop-blur-md px-3 md:px-6 pt-[max(0.625rem,env(safe-area-inset-top,0px))] pb-2.5 shadow-sm">
+    <header className="sticky top-0 z-40 bg-[#FDF7E7]/98 border-b-4 border-[#2D1A11] px-3 md:px-6 pt-[max(0.625rem,env(safe-area-inset-top,0px))] pb-2.5 shadow-sm">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-3">
         {/* Brand / Logo 1835s */}
         <div

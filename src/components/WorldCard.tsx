@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 import { World } from '../types';
 import { useApp } from '../context/AppContext';
 import { BIOME_CONFIGS } from '../utils/pixelBlocks';
@@ -12,14 +12,22 @@ interface WorldCardProps {
   onOpenTimeline?: (worldId: string) => void;
 }
 
-export const WorldCard: React.FC<WorldCardProps> = ({ world, onSelect, onOpenTimeline }) => {
+export const WorldCard: React.FC<WorldCardProps> = memo(({ world, onSelect, onOpenTimeline }) => {
   const { tasks, deleteWorld, getWorldProgress, requestConfirmDelete } = useApp();
   const progress = getWorldProgress(world.id);
   const biomeCfg = BIOME_CONFIGS[world.biome] || BIOME_CONFIGS.diamond_cavern;
 
   // Find unique assigned users in this world
-  const worldTasks = tasks.filter((t) => t.worldId === world.id);
-  const assignedUserIds = Array.from(new Set(worldTasks.flatMap((t) => (Array.isArray(t.assigneeIds) && t.assigneeIds.length > 0 ? t.assigneeIds : [t.assigneeId]))));
+  const assignedUserIds = useMemo(() => {
+    const worldTasks = tasks.filter((t) => t.worldId === world.id);
+    return Array.from(
+      new Set(
+        worldTasks.flatMap((t) =>
+          Array.isArray(t.assigneeIds) && t.assigneeIds.length > 0 ? t.assigneeIds : [t.assigneeId]
+        )
+      )
+    );
+  }, [tasks, world.id]);
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -171,4 +179,4 @@ export const WorldCard: React.FC<WorldCardProps> = ({ world, onSelect, onOpenTim
       </div>
     </div>
   );
-};
+});

@@ -36,7 +36,7 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
   const isConnected = isOnlineMode && networkOnline && serverConnected;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/70 animate-fadeIn">
       <div className="mc-panel w-full max-w-lg p-4 sm:p-6 bg-[#FDF7E7] text-[#2D1A11] max-h-[92vh] max-h-[92dvh] overflow-y-auto touch-scroll border-4 border-[#2D1A11] shadow-[6px_6px_0px_#2D1A11]">
         {/* Modal Header */}
         <div className="flex items-center justify-between pb-3 mb-4 border-b-2 border-[#2D1A11]">

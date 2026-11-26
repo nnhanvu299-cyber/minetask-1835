@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useApp } from '../context/AppContext';
 import { WorldCard } from '../components/WorldCard';
 import { BiomeType } from '../types';
@@ -22,20 +22,25 @@ export const WorldsView: React.FC<WorldsViewProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Overall Global Progress
-  const totalTasks = tasks.length;
-  const completedTasks = tasks.filter((t) => t.status === 'done').length;
-  const totalXp = tasks.reduce((sum, t) => sum + (t.xpValue || 100), 0);
-  const earnedXp = tasks.filter((t) => t.status === 'done').reduce((sum, t) => sum + (t.xpValue || 100), 0);
-  const overallPercentage = totalTasks === 0 ? 0 : Math.round((completedTasks / totalTasks) * 100);
+  const { totalTasks, completedTasks, totalXp, earnedXp, overallPercentage } = useMemo(() => {
+    const total = tasks.length;
+    const completed = tasks.filter((t) => t.status === 'done').length;
+    const tXp = tasks.reduce((sum, t) => sum + (t.xpValue || 100), 0);
+    const eXp = tasks.filter((t) => t.status === 'done').reduce((sum, t) => sum + (t.xpValue || 100), 0);
+    const pct = total === 0 ? 0 : Math.round((completed / total) * 100);
+    return { totalTasks: total, completedTasks: completed, totalXp: tXp, earnedXp: eXp, overallPercentage: pct };
+  }, [tasks]);
 
   // Filter worlds
-  const filteredWorlds = worlds.filter((w) => {
-    const matchesBiome = selectedBiome === 'all' || w.biome === selectedBiome;
-    const matchesSearch =
-      w.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      w.description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesBiome && matchesSearch;
-  });
+  const filteredWorlds = useMemo(() => {
+    const q = searchQuery.toLowerCase();
+    return worlds.filter((w) => {
+      const matchesBiome = selectedBiome === 'all' || w.biome === selectedBiome;
+      const matchesSearch =
+        !q || w.name.toLowerCase().includes(q) || w.description.toLowerCase().includes(q);
+      return matchesBiome && matchesSearch;
+    });
+  }, [worlds, selectedBiome, searchQuery]);
 
   return (
     <div className="space-y-6 animate-fadeIn">
