@@ -262,11 +262,14 @@ const MainContent: React.FC = () => {
     if (typeof window === 'undefined') return;
 
     let isChecking = false;
-    const checkVersion = async () => {
-      if (isChecking) return;
+    let lastCheckedAt = 0;
+    const checkVersion = async (force = false) => {
+      const now = Date.now();
+      if (isChecking || (!force && now - lastCheckedAt < 5000)) return;
       isChecking = true;
+      lastCheckedAt = now;
       try {
-        const res = await fetch(`./version.json?t=${Date.now()}`, { cache: 'no-store' });
+        const res = await fetch(`./version.json?t=${now}`, { cache: 'no-store' });
         if (res.ok) {
           const data = await res.json();
           if (data && data.version) {
@@ -281,8 +284,8 @@ const MainContent: React.FC = () => {
       }
     };
 
-    checkVersion();
-    const interval = setInterval(checkVersion, 20000); // Quét cập nhật mỗi 20 giây
+    checkVersion(true);
+    const interval = setInterval(() => checkVersion(true), 20000); // Quét cập nhật mỗi 20 giây
 
     const onVisibilityChange = () => {
       if (document.visibilityState === 'visible') {

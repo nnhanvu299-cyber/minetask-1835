@@ -273,7 +273,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, isMandatory = fals
                 name="mc_auth_login_id"
                 id="mc_auth_login_id"
                 required
-                placeholder="Tên tài khoản hoặc Email"
+                placeholder="Tài khoản hoặc Email"
                 value={loginEmail}
                 onChange={(e) => {
                   setLoginEmail(e.target.value);
