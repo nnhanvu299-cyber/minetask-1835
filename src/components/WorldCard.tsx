@@ -13,7 +13,7 @@ interface WorldCardProps {
 }
 
 export const WorldCard: React.FC<WorldCardProps> = memo(({ world, onSelect, onOpenTimeline }) => {
-  const { tasks, deleteWorld, getWorldProgress, requestConfirmDelete } = useApp();
+  const { tasks, users, deleteWorld, getWorldProgress, requestConfirmDelete } = useApp();
   const progress = getWorldProgress(world.id);
   const biomeCfg = BIOME_CONFIGS[world.biome] || BIOME_CONFIGS.diamond_cavern;
 
@@ -26,7 +26,7 @@ export const WorldCard: React.FC<WorldCardProps> = memo(({ world, onSelect, onOp
           Array.isArray(t.assigneeIds) && t.assigneeIds.length > 0 ? t.assigneeIds : [t.assigneeId]
         )
       )
-    );
+    ).filter(Boolean);
   }, [tasks, world.id]);
 
   const handleDelete = (e: React.MouseEvent) => {
@@ -133,15 +133,25 @@ export const WorldCard: React.FC<WorldCardProps> = memo(({ world, onSelect, onOp
         {/* Footer: Assignees & Action Buttons */}
         <div className="mt-4 pt-3 border-t-2 border-[#2D1A11]/20 flex items-center justify-between gap-2">
           {/* Assigned Minions */}
-          <div className="flex items-center -space-x-1.5 overflow-hidden">
+          <div className="flex items-center -space-x-1.5 min-w-0 overflow-hidden">
             {assignedUserIds.length > 0 ? (
-              assignedUserIds.map((uid) => (
-                <div key={uid} title={`Phân công cho ${uid}`}>
-                  <PixelAvatar userId={uid} size={24} showBorder={true} />
-                </div>
-              ))
+              <>
+                {assignedUserIds.slice(0, 4).map((uid) => {
+                  const userName = users.find((u) => u.id === uid)?.name || uid;
+                  return (
+                    <div key={uid} title={`Phân công: ${userName}`} className="shrink-0">
+                      <PixelAvatar userId={uid} size={24} showBorder={true} />
+                    </div>
+                  );
+                })}
+                {assignedUserIds.length > 4 && (
+                  <span className="ml-2 text-[10px] font-bold text-[#52372A] bg-[#EFE4CA] px-1.5 py-0.5 border border-[#2D1A11] shrink-0">
+                    +{assignedUserIds.length - 4}
+                  </span>
+                )}
+              </>
             ) : (
-              <span className="text-[10px] text-[#836251] italic">Chưa giao thợ mỏ</span>
+              <span className="text-[10px] text-[#836251] italic truncate">Chưa giao thợ mỏ</span>
             )}
           </div>
 
@@ -155,7 +165,7 @@ export const WorldCard: React.FC<WorldCardProps> = memo(({ world, onSelect, onOp
                   soundEngine.playClick();
                   onOpenTimeline(world.id);
                 }}
-                className="mc-btn bg-[#2D1A11] hover:bg-[#3D251A] text-[#FAF2DC] text-xs px-2.5 py-1.5 font-bold flex items-center gap-1 cursor-pointer border border-white/40 shadow-xs"
+                className="mc-btn bg-[#2D1A11] hover:bg-[#3D251A] text-[#FAF2DC] text-xs px-2.5 py-1.5 font-bold flex items-center gap-1 cursor-pointer border border-white/40 shadow-xs whitespace-nowrap"
                 title={`Xem Timeline theo thế giới ${world.name}`}
               >
                 <Calendar size={12} className="text-[#F37022] shrink-0" />
@@ -169,7 +179,7 @@ export const WorldCard: React.FC<WorldCardProps> = memo(({ world, onSelect, onOp
                 e.stopPropagation();
                 handleEnterWorld();
               }}
-              className="mc-btn mc-btn-1835 text-xs px-3.5 py-1.5 font-bold"
+              className="mc-btn mc-btn-1835 text-xs px-3 sm:px-3.5 py-1.5 font-bold whitespace-nowrap"
             >
               <Play size={12} className="inline fill-current mr-1" />
               VÀO THẾ GIỚI

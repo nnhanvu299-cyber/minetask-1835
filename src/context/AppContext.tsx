@@ -488,12 +488,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     isSelf?: boolean;
   }>>(new Map());
 
-  // Nhịp tick định kỳ mỗi 5s để cập nhật trạng thái online và dọn dẹp người dùng hết hạn
+  // Nhịp tick định kỳ mỗi 25s để cập nhật trạng thái online (tránh re-render toàn cây mỗi 5s)
   const [presenceTick, setPresenceTick] = useState<number>(0);
   useEffect(() => {
     const tickInterval = setInterval(() => {
       setPresenceTick((t) => (t + 1) % 100000);
-    }, 5000);
+    }, 25000);
     return () => clearInterval(tickInterval);
   }, []);
 

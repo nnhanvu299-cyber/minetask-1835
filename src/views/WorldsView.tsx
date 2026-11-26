@@ -66,18 +66,18 @@ export const WorldsView: React.FC<WorldsViewProps> = ({
                 soundEngine.playClick();
                 onOpenTimeline();
               }}
-              className="mc-btn bg-[#2D1A11] hover:bg-[#3D251A] text-[#FAF2DC] text-xs md:text-sm px-4 py-2.5 sm:py-3 font-bold tracking-wider flex items-center justify-center gap-2 shadow-[2px_2px_0px_#836251] border-2 border-[#FFFFFF] cursor-pointer flex-1 sm:flex-none"
+              className="mc-btn bg-[#2D1A11] hover:bg-[#3D251A] text-[#FAF2DC] text-xs md:text-sm px-3.5 sm:px-4 py-2.5 sm:py-3 font-bold tracking-wider flex items-center justify-center gap-2 shadow-[2px_2px_0px_#836251] border-2 border-[#FFFFFF] cursor-pointer flex-1 sm:flex-none whitespace-nowrap"
               title="Xem bản đồ timeline tổng theo tháng & tuần"
             >
-              <Calendar size={16} className="text-[#F37022]" />
-              TIMELINE TỔNG
+              <Calendar size={16} className="text-[#F37022] shrink-0" />
+              <span>TIMELINE TỔNG</span>
             </button>
             <button
               onClick={onOpenCreateWorld}
-              className="mc-btn mc-btn-1835 text-xs md:text-sm px-5 py-2.5 sm:py-3 font-bold tracking-wider flex items-center justify-center flex-1 sm:flex-none"
+              className="mc-btn mc-btn-1835 text-xs md:text-sm px-4 sm:px-5 py-2.5 sm:py-3 font-bold tracking-wider flex items-center justify-center flex-1 sm:flex-none whitespace-nowrap"
             >
-              <Plus size={16} className="inline mr-1 stroke-[3]" />
-              TẠO THẾ GIỚI MỚI
+              <Plus size={16} className="inline mr-1 stroke-[3] shrink-0" />
+              <span>TẠO THẾ GIỚI MỚI</span>
             </button>
           </div>
         </div>
@@ -122,7 +122,7 @@ export const WorldsView: React.FC<WorldsViewProps> = ({
             type="text"
             name="mc_search_world"
             id="mc_search_world"
-            placeholder="Tìm kiếm theo tên thế giới hoặc mục tiêu..."
+            placeholder="Tìm thế giới hoặc mục tiêu..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             autoComplete="off"
@@ -132,20 +132,20 @@ export const WorldsView: React.FC<WorldsViewProps> = ({
             data-lpignore="true"
             data-1p-ignore="true"
             data-android-autofill="false"
-            className="mc-input pl-8 text-xs font-medium w-full"
+            className="mc-input !pl-9 text-xs font-medium w-full"
           />
-          <Search size={14} className="absolute left-2.5 top-3 text-[#52372A]" />
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#52372A] pointer-events-none" />
         </div>
 
         {/* Biome Filter Dropdown (Danh sách chọn gọn gàng) */}
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="flex items-center gap-2 bg-[#FFFDF7] border-2 border-[#2D1A11] px-2.5 py-1.5 shadow-[2px_2px_0px_#2D1A11] w-full sm:w-auto">
+        <div className="flex items-center gap-2 w-full sm:w-auto min-w-0">
+          <div className="flex items-center gap-2 bg-[#FFFDF7] border-2 border-[#2D1A11] px-2.5 py-1.5 shadow-[2px_2px_0px_#2D1A11] w-full sm:w-auto min-w-0 overflow-hidden">
             <Filter size={13} className="text-[#F37022] shrink-0" />
             <span className="font-bold text-xs text-[#52372A] shrink-0">MÔI TRƯỜNG:</span>
             <select
               value={selectedBiome}
               onChange={(e) => setSelectedBiome(e.target.value)}
-              className="bg-transparent font-bold text-xs text-[#2D1A11] outline-none cursor-pointer flex-1 sm:w-56"
+              className="bg-transparent font-bold text-xs text-[#2D1A11] outline-none cursor-pointer flex-1 min-w-0 sm:w-56 truncate"
             >
               <option value="all">TẤT CẢ ({worlds.length})</option>
               {(Object.keys(BIOME_CONFIGS) as BiomeType[]).map((bKey) => {

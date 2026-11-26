@@ -587,7 +587,7 @@ const MainContent: React.FC = () => {
               <div className="w-9 h-9 sm:w-10 sm:h-10 -mt-3 sm:-mt-3.5 bg-gradient-to-r from-[#1aa64e] to-[#13803c] border-2 border-[#2D1A11] flex items-center justify-center shadow-[2px_2px_0px_#2D1A11] relative">
                 <MessageSquare size={17} className="text-white drop-shadow" />
                 {unreadChatCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 bg-[#ED1B24] text-white text-[8px] sm:text-[9px] font-bold px-1.5 py-0.2 rounded-full border border-[#2D1A11] animate-bounce">
+                  <span className="absolute -top-1.5 -right-1.5 bg-[#ED1B24] text-white text-[8px] sm:text-[9px] font-bold px-1.5 py-0.2 rounded-full border border-[#2D1A11]">
                     {unreadChatCount}
                   </span>
                 )}
@@ -606,7 +606,7 @@ const MainContent: React.FC = () => {
               <div className="relative">
                 <Bell size={17} />
                 {unreadNotificationCount > 0 && (
-                  <span className="absolute -top-1.5 -right-2 bg-[#ED1B24] text-white text-[8px] font-bold px-1 rounded-full border border-[#2D1A11] animate-bounce">
+                  <span className="absolute -top-1.5 -right-2 bg-[#ED1B24] text-white text-[8px] font-bold px-1 rounded-full border border-[#2D1A11]">
                     {unreadNotificationCount}
                   </span>
                 )}
@@ -642,7 +642,7 @@ const MainContent: React.FC = () => {
           <div className="relative flex items-center justify-center">
             <MessageSquare size={18} className="text-white drop-shadow" />
             {unreadChatCount > 0 && (
-              <span className="absolute -top-2.5 -right-2.5 bg-[#ED1B24] text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full border border-[#2D1A11] animate-bounce">
+              <span className="absolute -top-2.5 -right-2.5 bg-[#ED1B24] text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full border border-[#2D1A11]">
                 {unreadChatCount}
               </span>
             )}

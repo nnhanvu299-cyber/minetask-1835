@@ -58,7 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="text-base sm:text-2xl font-bold tracking-wider text-[#2D1A11] mc-title leading-none truncate">
                 MINETASK
               </span>
-              <span className="text-[9px] sm:text-[10px] bg-gradient-to-r from-[#F37022] to-[#ED1B24] text-white font-bold px-1.5 py-0.2 border border-[#2D1A11] shrink-0">
+              <span className="text-[9px] sm:text-[10px] bg-gradient-to-r from-[#F37022] to-[#ED1B24] text-white font-bold px-1.5 py-0.2 border border-[#2D1A11] shrink-0 hidden min-[380px]:inline">
                 1835s
               </span>
             </div>
@@ -144,7 +144,7 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <Bell size={18} className="text-[#FAF2DC] shrink-0" />
             {unreadNotificationCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-[#ED1B24] text-white text-[9px] font-bold px-1 py-0.2 border border-[#2D1A11] animate-bounce">
+              <span className="absolute -top-1.5 -right-1.5 bg-[#ED1B24] text-white text-[9px] font-bold px-1 py-0.2 border border-[#2D1A11]">
                 {unreadNotificationCount}
               </span>
             )}
@@ -162,7 +162,7 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <MessageSquare size={18} className="text-[#1aa64e] shrink-0" />
             {unreadChatCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-[#ED1B24] text-white text-[9px] font-bold px-1 py-0.2 border border-[#2D1A11] animate-bounce">
+              <span className="absolute -top-1.5 -right-1.5 bg-[#ED1B24] text-white text-[9px] font-bold px-1 py-0.2 border border-[#2D1A11]">
                 {unreadChatCount}
               </span>
             )}
