@@ -135,20 +135,23 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
-      <div className="mc-panel w-full max-w-xl p-4 sm:p-6 bg-[#FDF7E7] text-[#2D1A11] max-h-[92vh] max-h-[92dvh] overflow-y-auto touch-scroll border-4 border-[#2D1A11] shadow-[6px_6px_0px_#2D1A11]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/70 animate-fadeIn">
+      <div className="mc-panel w-full max-w-xl bg-[#FDF7E7] text-[#2D1A11] max-h-[92vh] max-h-[92dvh] flex flex-col overflow-hidden border-4 border-[#2D1A11] shadow-[6px_6px_0px_#2D1A11]">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 mb-3 border-b-2 border-[#2D1A11]">
+        <div className="flex items-center justify-between px-4 sm:px-6 pt-4 pb-3 border-b-2 border-[#2D1A11] shrink-0">
           <div className="flex items-center gap-2">
             <span className="text-xl">📜</span>
             <h2 className="text-base font-bold text-[#2D1A11]">
               HỆ THỐNG THÀNH VIÊN 1835
             </h2>
           </div>
-          <button onClick={onClose} className="mc-btn mc-btn-obsidian px-2.5 py-1 text-xs text-[#FAF2DC]">
+          <button onClick={onClose} className="mc-btn mc-btn-obsidian !px-2.5 !py-1 text-xs text-[#FAF2DC]">
             <X size={15} />
           </button>
         </div>
+
+        {/* Scrollable Body */}
+        <div className="flex-1 overflow-y-auto touch-scroll px-4 sm:px-6 py-3 min-h-0">
 
         {/* Tab Navigation */}
         <div className="flex gap-2 mb-4">
@@ -566,8 +569,10 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
           </div>
         )}
 
-        {/* Footer Actions */}
-        <div className="pt-3 mt-4 border-t-2 border-[#2D1A11] flex flex-wrap items-center justify-between gap-3">
+        </div>
+
+        {/* Sticky Footer Actions */}
+        <div className="px-4 sm:px-6 py-3 bg-[#FAF2DC] border-t-2 border-[#2D1A11] flex flex-wrap items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2">
             <button
               type="button"

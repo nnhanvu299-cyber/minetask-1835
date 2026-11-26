@@ -106,7 +106,7 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
           <div className="flex-shrink-0 flex items-center gap-2 flex-wrap w-full md:w-auto">
             <button
               onClick={onOpenTimeline}
-              className="mc-btn bg-[#2D1A11] hover:bg-[#3D251A] text-[#FAF2DC] text-xs md:text-sm px-3.5 py-2.5 sm:py-3 font-bold tracking-wider flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_#836251] border-2 border-[#FFFFFF] cursor-pointer flex-1 sm:flex-none"
+              className="mc-btn bg-[#2D1A11] hover:bg-[#3D251A] text-[#FAF2DC] text-xs md:text-sm !px-3.5 !py-2.5 sm:!py-3 font-bold tracking-wider flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_#836251] border-2 border-[#FFFFFF] cursor-pointer flex-1 sm:flex-none whitespace-nowrap"
               title={`Xem bản đồ Timeline theo thế giới ${world.name}`}
             >
               <Calendar size={16} className="text-[#F37022] shrink-0" />
@@ -114,10 +114,10 @@ export const WorldDetailView: React.FC<WorldDetailViewProps> = ({
             </button>
             <button
               onClick={onOpenCreateTask}
-              className="mc-btn mc-btn-1835 text-xs md:text-sm px-4 py-2.5 sm:py-3 font-bold tracking-wider flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_#2D1A11] flex-1 sm:flex-none"
+              className="mc-btn mc-btn-1835 text-xs md:text-sm !px-3.5 sm:!px-4 !py-2.5 sm:!py-3 font-bold tracking-wider flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_#2D1A11] flex-1 sm:flex-none whitespace-nowrap"
             >
-              <Plus size={16} className="stroke-[3]" />
-              THÊM NHIỆM VỤ
+              <Plus size={16} className="stroke-[3] shrink-0" />
+              <span>THÊM NHIỆM VỤ</span>
             </button>
           </div>
         </div>

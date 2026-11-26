@@ -887,11 +887,17 @@ export const TeamChatModal: React.FC<TeamChatModalProps> = ({
   const inputAreaRef = useRef<ChatInputAreaHandle>(null);
   const isSendingRef = useRef(false);
 
-  // Auto-scroll to bottom on new message
+  // Auto-scroll to bottom on open & new message
   useEffect(() => {
     if (isOpen) {
       markChatAsRead();
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      requestAnimationFrame(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      });
+      const t = setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+      }, 120);
+      return () => clearTimeout(t);
     }
   }, [isOpen, chatMessages.length, markChatAsRead]);
 
@@ -1063,7 +1069,7 @@ export const TeamChatModal: React.FC<TeamChatModalProps> = ({
               <div className="min-w-0 flex-1 truncate">
                 <div className="flex items-center gap-1.5">
                   <h3 className="font-bold text-xs sm:text-sm tracking-wide text-[#2D1A11] truncate">
-                    KÊNH TRÒ CHUYỆN ĐỘI 1835
+                    CHAT ĐỘI 1835
                   </h3>
                   <span className="relative flex h-2 w-2 shrink-0">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>

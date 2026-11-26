@@ -60,8 +60,8 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
 
         {/* Big Online Mode Switch Banner */}
         <div className="p-3.5 bg-[#FFFDF7] border-2 border-[#2D1A11] rounded shadow-xs mb-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5">
+          <div className="flex items-center justify-between gap-2.5 flex-wrap">
+            <div className="flex items-center gap-2.5 min-w-0">
               <div
                 className={`w-9 h-9 rounded-full flex items-center justify-center border-2 border-[#2D1A11] shrink-0 ${
                   isConnected ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-800'
@@ -69,11 +69,11 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
               >
                 {isConnected ? <Radio size={20} className="animate-pulse" /> : <WifiOff size={18} />}
               </div>
-              <div>
-                <div className="text-xs sm:text-sm font-bold text-[#2D1A11] flex items-center gap-1.5">
+              <div className="min-w-0">
+                <div className="text-xs sm:text-sm font-bold text-[#2D1A11] flex items-center gap-1.5 flex-wrap">
                   <span>{isOnlineMode ? 'CHẾ ĐỘ ONLINE' : 'CHẾ ĐỘ OFFLINE'}</span>
                   <span
-                    className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${
+                    className={`text-[9px] font-bold px-1.5 py-0.2 rounded border whitespace-nowrap ${
                       isConnected
                         ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
                         : 'bg-amber-50 text-amber-800 border-amber-300'
@@ -88,7 +88,7 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
             {/* Toggle Button */}
             <button
               onClick={() => toggleOnlineMode()}
-              className={`mc-btn shrink-0 text-xs px-3 py-1.5 font-bold cursor-pointer transition-all ${
+              className={`mc-btn shrink-0 text-xs !px-3 !py-1.5 font-bold cursor-pointer transition-transform whitespace-nowrap ml-auto ${
                 isOnlineMode
                   ? 'mc-btn-emerald text-white'
                   : 'bg-[#836251] hover:bg-[#684c3d] text-white'
@@ -160,13 +160,13 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
         </div>
 
         {/* Device Notification Actions */}
-        <div className="p-2.5 bg-[#FFFDF7] border-2 border-[#E5D6B6] rounded space-y-1.5">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-xs font-bold text-[#2D1A11]">
+        <div className="p-2.5 bg-[#FFFDF7] border-2 border-[#E5D6B6] rounded space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#2D1A11] shrink-0">
               <Bell size={14} className="text-[#F37022]" />
               <span>THÔNG BÁO THIẾT BỊ</span>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
               <button
                 onClick={async () => {
                   setUpdateCheckMessage('Đang kiểm tra phiên bản...');
@@ -193,7 +193,7 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
                     setUpdateCheckMessage('Lỗi khi kiểm tra cập nhật.');
                   }
                 }}
-                className="mc-btn mc-btn-1835 text-[10px] px-2.5 py-1 font-bold text-white cursor-pointer shadow-xs active:scale-95 whitespace-nowrap"
+                className="mc-btn mc-btn-1835 text-[10px] !px-2.5 !py-1.5 font-bold text-white cursor-pointer shadow-xs active:scale-95 whitespace-nowrap"
               >
                 KIỂM TRA CẬP NHẬT 🔄
               </button>
@@ -202,7 +202,7 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
                   await requestDeviceNotificationPermission();
                   await sendTestDeviceNotification();
                 }}
-                className="mc-btn text-[10px] px-2.5 py-1 font-bold bg-[#FAF2DC] border border-[#2D1A11] hover:bg-[#F3E6C8] cursor-pointer whitespace-nowrap"
+                className="mc-btn text-[10px] !px-2.5 !py-1.5 font-bold bg-[#FAF2DC] border border-[#2D1A11] hover:bg-[#F3E6C8] cursor-pointer whitespace-nowrap"
               >
                 THỬ CHUÔNG 🔔
               </button>

@@ -131,9 +131,9 @@ export const WorldCard: React.FC<WorldCardProps> = memo(({ world, onSelect, onOp
         </div>
 
         {/* Footer: Assignees & Action Buttons */}
-        <div className="mt-4 pt-3 border-t-2 border-[#2D1A11]/20 flex items-center justify-between gap-2">
+        <div className="mt-4 pt-3 border-t-2 border-[#2D1A11]/20 flex flex-wrap items-center justify-between gap-2 min-w-0">
           {/* Assigned Minions */}
-          <div className="flex items-center -space-x-1.5 min-w-0 overflow-hidden">
+          <div className="flex items-center -space-x-1.5 min-w-0 max-w-full overflow-hidden">
             {assignedUserIds.length > 0 ? (
               <>
                 {assignedUserIds.slice(0, 4).map((uid) => {
@@ -151,11 +151,11 @@ export const WorldCard: React.FC<WorldCardProps> = memo(({ world, onSelect, onOp
                 )}
               </>
             ) : (
-              <span className="text-[10px] text-[#836251] italic truncate">Chưa giao thợ mỏ</span>
+              <span className="text-[11px] text-[#836251] italic whitespace-nowrap">Chưa giao thợ mỏ</span>
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0 ml-auto">
             {/* Timeline button for this specific world */}
             {onOpenTimeline && (
               <button
@@ -165,7 +165,7 @@ export const WorldCard: React.FC<WorldCardProps> = memo(({ world, onSelect, onOp
                   soundEngine.playClick();
                   onOpenTimeline(world.id);
                 }}
-                className="mc-btn bg-[#2D1A11] hover:bg-[#3D251A] text-[#FAF2DC] text-xs px-2.5 py-1.5 font-bold flex items-center gap-1 cursor-pointer border border-white/40 shadow-xs whitespace-nowrap"
+                className="mc-btn bg-[#2D1A11] hover:bg-[#3D251A] text-[#FAF2DC] text-[11px] sm:text-xs !px-2.5 !py-1.5 font-bold flex items-center gap-1 cursor-pointer border border-white/40 shadow-xs whitespace-nowrap"
                 title={`Xem Timeline theo thế giới ${world.name}`}
               >
                 <Calendar size={12} className="text-[#F37022] shrink-0" />
@@ -179,7 +179,7 @@ export const WorldCard: React.FC<WorldCardProps> = memo(({ world, onSelect, onOp
                 e.stopPropagation();
                 handleEnterWorld();
               }}
-              className="mc-btn mc-btn-1835 text-xs px-3 sm:px-3.5 py-1.5 font-bold whitespace-nowrap"
+              className="mc-btn mc-btn-1835 text-[11px] sm:text-xs !px-2.5 sm:!px-3.5 !py-1.5 font-bold whitespace-nowrap"
             >
               <Play size={12} className="inline fill-current mr-1" />
               VÀO THẾ GIỚI

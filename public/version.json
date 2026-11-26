@@ -1,5 +1,5 @@
 {
-  "version": 1795657655416,
-  "buildTime": "2026-11-26T01:47:35.417Z",
-  "note": "Tối ưu trang chủ mượt hơn và căn chỉnh bố cục mobile/desktop"
+  "version": 1795659222411,
+  "buildTime": "2026-11-26T02:13:42.411Z",
+  "note": "Sửa tràn khung trên WorldCard, XPBar, OnlineStatusModal, TimelineModal, Chat và Profile"
 }

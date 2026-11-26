@@ -371,7 +371,7 @@ export const TimelineModal: React.FC<TimelineModalProps> = ({
             {/* Mobile Close Button */}
             <button
               onClick={onClose}
-              className="sm:hidden mc-btn mc-btn-obsidian px-2 py-1 text-xs text-[#FAF2DC] cursor-pointer"
+              className="sm:!hidden mc-btn mc-btn-obsidian !px-2 !py-1 text-xs text-[#FAF2DC] cursor-pointer shrink-0"
               title="Đóng timeline"
             >
               <X size={14} />
@@ -449,7 +449,7 @@ export const TimelineModal: React.FC<TimelineModalProps> = ({
             {/* Desktop Close Button */}
             <button
               onClick={onClose}
-              className="hidden sm:inline-flex mc-btn mc-btn-obsidian px-2 py-1 text-xs text-[#FAF2DC] cursor-pointer ml-1"
+              className="!hidden sm:!inline-flex mc-btn mc-btn-obsidian !px-2 !py-1 text-xs text-[#FAF2DC] cursor-pointer ml-1 shrink-0"
               title="Đóng timeline"
             >
               <X size={14} />
@@ -499,11 +499,11 @@ export const TimelineModal: React.FC<TimelineModalProps> = ({
                   onNavigateToTasks(filterWorldId !== 'all' ? filterWorldId : undefined);
                 }
               }}
-              className="mc-btn mc-btn-green px-3.5 py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer text-white shadow-xs active:scale-95 transition-all shrink-0"
+              className="mc-btn mc-btn-emerald !px-3.5 !py-1.5 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer text-white shadow-xs active:scale-95 transition-transform shrink-0 whitespace-nowrap"
               title="Chuyển thẳng vào danh sách nhiệm vụ"
             >
               <span>Xem thêm: Danh sách nhiệm vụ</span>
-              <ArrowRight size={14} className="text-yellow-200" />
+              <ArrowRight size={14} className="text-white shrink-0" />
             </button>
           </div>
 
@@ -540,8 +540,8 @@ export const TimelineModal: React.FC<TimelineModalProps> = ({
         </div>
 
         {/* ==================== COMPACT TOOLBAR: FILTERS & STATS ==================== */}
-        <div className="bg-[#FAF2DC] border-b-2 border-[#2D1A11] px-2.5 py-1.5 sm:px-4 flex items-center justify-between gap-1.5 text-xs shrink-0 select-none overflow-x-auto no-scrollbar touch-scroll">
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="bg-[#FAF2DC] border-b-2 border-[#2D1A11] px-2.5 py-1.5 sm:px-4 flex flex-wrap items-center justify-between gap-1.5 text-xs shrink-0 select-none">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0">
             {/* Filter by Member (Người phụ trách) */}
             <div className="flex items-center gap-1 bg-[#FFFDF7] border border-[#2D1A11] px-1.5 py-0.5 shadow-xs">
               <User size={12} className="text-[#F37022] shrink-0" />

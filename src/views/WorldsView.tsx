@@ -21,15 +21,17 @@ export const WorldsView: React.FC<WorldsViewProps> = ({
   const [selectedBiome, setSelectedBiome] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Overall Global Progress
+  // Overall Global Progress (only count tasks belonging to active worlds)
   const { totalTasks, completedTasks, totalXp, earnedXp, overallPercentage } = useMemo(() => {
-    const total = tasks.length;
-    const completed = tasks.filter((t) => t.status === 'done').length;
-    const tXp = tasks.reduce((sum, t) => sum + (t.xpValue || 100), 0);
-    const eXp = tasks.filter((t) => t.status === 'done').reduce((sum, t) => sum + (t.xpValue || 100), 0);
+    const validWorldIds = new Set(worlds.map((w) => w.id));
+    const activeTasks = tasks.filter((t) => validWorldIds.has(t.worldId));
+    const total = activeTasks.length;
+    const completed = activeTasks.filter((t) => t.status === 'done').length;
+    const tXp = activeTasks.reduce((sum, t) => sum + (t.xpValue || 100), 0);
+    const eXp = activeTasks.filter((t) => t.status === 'done').reduce((sum, t) => sum + (t.xpValue || 100), 0);
     const pct = total === 0 ? 0 : Math.round((completed / total) * 100);
     return { totalTasks: total, completedTasks: completed, totalXp: tXp, earnedXp: eXp, overallPercentage: pct };
-  }, [tasks]);
+  }, [tasks, worlds]);
 
   // Filter worlds
   const filteredWorlds = useMemo(() => {
@@ -43,7 +45,7 @@ export const WorldsView: React.FC<WorldsViewProps> = ({
   }, [worlds, selectedBiome, searchQuery]);
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-6 pb-14 animate-fadeIn">
       {/* Top Banner Hero: Welcome & Team Stats in 1835s Palette */}
       <div className="mc-panel p-4 md:p-6 bg-[#FAF2DC] border-4 border-[#2D1A11] shadow-[4px_4px_0px_#2D1A11]">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
