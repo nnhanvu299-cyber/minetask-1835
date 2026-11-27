@@ -1,4 +1,4 @@
-const CACHE_NAME = 'minetask-1835s-v49-clean-update';
+const CACHE_NAME = 'minetask-1835s-v50-silent-update';
 const VERSION_META_CACHE = 'minetask-1835s-version-meta';
 const VERSION_META_KEY = './__sw_known_version__';
 

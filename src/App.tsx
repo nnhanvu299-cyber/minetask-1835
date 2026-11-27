@@ -43,7 +43,6 @@ import { soundEngine } from './utils/audio';
 import {
   requestDeviceNotificationPermission,
   checkAndTriggerDailyTaskNotification,
-  sendUpdateAvailableNotification,
 } from './utils/deviceNotification';
 import { subscribeToAppVersion } from './services/firebase';
 
@@ -75,13 +74,9 @@ const MainContent: React.FC = () => {
     }
   }, [activeChatToast, dismissChatToast]);
 
-  // Instant Auto-Update Detection & Device Notification
+  // Silent Auto-Update (no OS notifications, no sound, no banner, loop-safe)
   const CURRENT_BUILD_VERSION = typeof __APP_BUILD_VERSION__ === 'number' ? __APP_BUILD_VERSION__ : 0;
-  const [hasNewUpdate, setHasNewUpdate] = useState(false);
-  const [updateVersion, setUpdateVersion] = useState<number | null>(null);
-  const [updateNote, setUpdateNote] = useState<string>('');
-  const targetUpdateVersionRef = useRef<number | null>(null);
-  const hasNotifiedRef = useRef<boolean>(false);
+  const isSilentUpdatingRef = useRef<boolean>(false);
 
   // Check if incoming version is truly newer than both running bundle AND last applied update
   const isNewerVersion = useCallback((incomingVersion: number | undefined | null): boolean => {
@@ -107,17 +102,30 @@ const MainContent: React.FC = () => {
     return incomingVersion > effectiveLocal;
   }, [CURRENT_BUILD_VERSION]);
 
-  const handleApplyUpdate = useCallback(async () => {
-    const ver = targetUpdateVersionRef.current || updateVersion;
-    if (ver) {
-      try {
-        localStorage.setItem('minetask_1835_installed_version', String(ver));
-        localStorage.setItem('minetask_1835_notified_version', String(ver));
-      } catch {}
-    }
-    setHasNewUpdate(false);
+  const applySilentUpdate = useCallback(async (version: number) => {
+    if (!isNewerVersion(version) || isSilentUpdatingRef.current) return;
 
-    // Clean caches and service worker cleanly (preserve version meta cache)
+    // Never reload Capacitor native APK (bundled local assets cannot be updated via reload)
+    const isNativeCapacitor =
+      typeof window !== 'undefined' && Boolean((window as any).Capacitor?.isNativePlatform?.());
+    if (isNativeCapacitor) {
+      try {
+        localStorage.setItem('minetask_1835_installed_version', String(version));
+      } catch {}
+      return;
+    }
+
+    // Loop guard: never silent-reload more than once per session for the same version
+    try {
+      if (sessionStorage.getItem('minetask_1835_silent_reloaded_ver') === String(version)) {
+        return;
+      }
+      sessionStorage.setItem('minetask_1835_silent_reloaded_ver', String(version));
+      localStorage.setItem('minetask_1835_installed_version', String(version));
+    } catch {}
+
+    isSilentUpdatingRef.current = true;
+
     try {
       if ('serviceWorker' in navigator) {
         const regs = await navigator.serviceWorker.getRegistrations();
@@ -131,59 +139,12 @@ const MainContent: React.FC = () => {
             .map((k) => caches.delete(k))
         );
       }
-    } catch (err) {
-      console.warn('[1835 Update] Cache purge error:', err);
-    }
+    } catch {}
 
-    // Force hard reload bypassing cache with cache-buster
     const targetUrl = new URL(window.location.href);
-    targetUrl.searchParams.set('v_sync', String(ver || Date.now()));
+    targetUrl.searchParams.set('v_sync', String(version));
     window.location.replace(targetUrl.toString());
-  }, [updateVersion]);
-
-  // Trigger notification to device and UI (at most once per version across reloads/tabs)
-  const triggerUpdateAlert = useCallback(
-    (version: number, note?: string) => {
-      if (!isNewerVersion(version)) return;
-
-      targetUpdateVersionRef.current = version;
-      setHasNewUpdate(true);
-      setUpdateVersion(version);
-      if (note) setUpdateNote(note);
-
-      let lastNotifiedVersion = 0;
-      try {
-        const raw = localStorage.getItem('minetask_1835_notified_version');
-        if (raw) lastNotifiedVersion = Number(raw);
-      } catch {}
-
-      if (!hasNotifiedRef.current && version > lastNotifiedVersion) {
-        hasNotifiedRef.current = true;
-        try {
-          localStorage.setItem('minetask_1835_notified_version', String(version));
-        } catch {}
-        sendUpdateAvailableNotification(version, handleApplyUpdate);
-      }
-    },
-    [isNewerVersion, handleApplyUpdate]
-  );
-
-  // Listen to Service Worker APPLY_UPDATE messages when user clicks device update notification
-  useEffect(() => {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
-    const onSwMessage = (event: MessageEvent) => {
-      if (event.data && event.data.type === 'APPLY_UPDATE') {
-        if (event.data.version) {
-          targetUpdateVersionRef.current = Number(event.data.version);
-        }
-        handleApplyUpdate();
-      }
-    };
-    navigator.serviceWorker.addEventListener('message', onSwMessage);
-    return () => {
-      navigator.serviceWorker.removeEventListener('message', onSwMessage);
-    };
-  }, [handleApplyUpdate]);
+  }, [isNewerVersion]);
 
   // Sync current running version to Service Worker so background periodicsync knows our baseline
   useEffect(() => {
@@ -241,13 +202,13 @@ const MainContent: React.FC = () => {
     }
   }, []);
 
-  // Real-time Firebase Cloud Version Listener (Sub-second cross-device push)
+  // Real-time Firebase Cloud Version Listener (Silent auto-load)
   useEffect(() => {
     const unsub = subscribeToAppVersion((data) => {
       if (data && data.version) {
         const cloudVersion = Number(data.version);
         if (isNewerVersion(cloudVersion)) {
-          triggerUpdateAlert(cloudVersion, data.note);
+          applySilentUpdate(cloudVersion);
         }
       }
     });
@@ -255,9 +216,9 @@ const MainContent: React.FC = () => {
     return () => {
       if (unsub) unsub();
     };
-  }, [isNewerVersion, triggerUpdateAlert]);
+  }, [isNewerVersion, applySilentUpdate]);
 
-  // Polling version.json as automatic background checker
+  // Polling version.json as automatic silent background checker
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
@@ -275,7 +236,7 @@ const MainContent: React.FC = () => {
           if (data && data.version) {
             const serverVersion = Number(data.version);
             if (isNewerVersion(serverVersion)) {
-              triggerUpdateAlert(serverVersion, data.note);
+              applySilentUpdate(serverVersion);
             }
           }
         }
@@ -304,7 +265,7 @@ const MainContent: React.FC = () => {
       document.removeEventListener('visibilitychange', onVisibilityChange);
       window.removeEventListener('focus', onWindowFocus);
     };
-  }, [isNewerVersion, triggerUpdateAlert]);
+  }, [isNewerVersion, applySilentUpdate]);
 
   // Automatic Daily Task Notification (Yêu cầu 4: Nhắc việc hàng ngày - bạn đang trong task nào & hạn chót)
   useEffect(() => {
@@ -367,41 +328,10 @@ const MainContent: React.FC = () => {
     setIsTimelineOpen(true);
   };
 
-  const UpdateNotificationBanner = hasNewUpdate ? (
-    <aside
-      role="alert"
-      aria-label="Thông báo bản cập nhật mới"
-      className="fixed top-3 left-1/2 -translate-x-1/2 z-[99999] w-[94%] max-w-md animate-bounceIn"
-    >
-      <div className="mc-panel p-2.5 sm:p-3 bg-gradient-to-r from-[#F37022] to-[#ED1B24] text-white border-3 border-[#2D1A11] shadow-[0_6px_24px_rgba(0,0,0,0.6),4px_4px_0px_#2D1A11] flex items-center justify-between gap-2.5 rounded">
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-2xl animate-pulse shrink-0">🚀</span>
-          <div className="min-w-0">
-            <div className="text-xs font-bold uppercase tracking-wider text-white truncate flex items-center gap-1.5">
-              <span>CÓ BẢN CẬP NHẬT MỚI!</span>
-              <span className="w-2 h-2 rounded-full bg-yellow-300 animate-ping"></span>
-            </div>
-            <div className="text-[10px] text-white/95 truncate">
-              {updateNote || 'Chạm để tải lại và nạp tính năng mới ngay'}
-            </div>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={handleApplyUpdate}
-          className="mc-btn bg-[#2D1A11] hover:bg-[#3D251A] text-[#FAF2DC] text-xs font-bold px-3 py-1.5 border-2 border-white cursor-pointer shrink-0 shadow-sm active:scale-95 transition-transform"
-        >
-          CẬP NHẬT 🔄
-        </button>
-      </div>
-    </aside>
-  ) : null;
-
   // If not logged in, ALWAYS display login screen directly!
   if (!currentUser) {
     return (
       <div className="min-h-screen min-h-[100dvh] flex items-center justify-center p-3 sm:p-4 login-cherry-bg relative overflow-hidden">
-        {UpdateNotificationBanner}
         {/* Gentle falling cherry petals in background */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
           {[...Array(8)].map((_, i) => (
@@ -433,7 +363,6 @@ const MainContent: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col text-[#2D1A11] relative overflow-x-hidden mc-minecraft-landscape w-full max-w-full min-w-0 touch-pan-y">
-      {UpdateNotificationBanner}
       <div className="relative z-10 flex flex-col min-h-screen w-full max-w-full min-w-0 overflow-x-hidden">
         {/* Top Header */}
         <Header

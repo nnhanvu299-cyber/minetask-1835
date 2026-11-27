@@ -12,7 +12,6 @@ import {
 import {
   requestDeviceNotificationPermission,
   sendTestDeviceNotification,
-  sendUpdateAvailableNotification,
 } from '../utils/deviceNotification';
 
 interface OnlineStatusModalProps {
@@ -183,9 +182,13 @@ export const OnlineStatusModal: React.FC<OnlineStatusModalProps> = ({ isOpen, on
                     const effectiveLocal = Math.max(localBuild, installedRaw ? Number(installedRaw) : 0);
 
                     if (serverVer > effectiveLocal && effectiveLocal > 0) {
-                      setUpdateCheckMessage('Đã phát hiện bản cập nhật mới!');
-                      await requestDeviceNotificationPermission();
-                      await sendUpdateAvailableNotification(serverVer);
+                      setUpdateCheckMessage('Đang nạp bản cập nhật mới...');
+                      try {
+                        localStorage.setItem('minetask_1835_installed_version', String(serverVer));
+                      } catch {}
+                      const targetUrl = new URL(window.location.href);
+                      targetUrl.searchParams.set('v_sync', String(serverVer));
+                      window.location.replace(targetUrl.toString());
                     } else {
                       setUpdateCheckMessage('Bạn đang dùng phiên bản mới nhất.');
                     }
