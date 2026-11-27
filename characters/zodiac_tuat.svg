@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="100%" height="100%">
+  <defs>
+    <radialGradient id="tuatHead" cx="38%" cy="32%" r="65%">
+      <stop offset="0%" stop-color="#fdba74"/>
+      <stop offset="60%" stop-color="#fb923c"/>
+      <stop offset="100%" stop-color="#c2410c"/>
+    </radialGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <ellipse cx="64" cy="116" rx="38" ry="7" fill="rgba(45,26,17,0.25)"/>
+  <!-- Pointy Ears -->
+  <polygon points="24,50 34,16 54,42" fill="#ea580c" filter="url(#shadow)"/>
+  <polygon points="28,44 36,22 49,38" fill="#fed7aa"/>
+  <polygon points="104,50 94,16 74,42" fill="#c2410c" filter="url(#shadow)"/>
+  <polygon points="100,44 92,22 79,38" fill="#fed7aa"/>
+  <!-- Head -->
+  <circle cx="64" cy="66" r="39" fill="url(#tuatHead)" filter="url(#shadow)"/>
+  <!-- White Eyebrow Dots (Iconic Shiba) -->
+  <circle cx="46" cy="46" r="4" fill="#ffffff"/>
+  <circle cx="82" cy="46" r="4" fill="#ffffff"/>
+  <!-- White Cheeks & Muzzle -->
+  <ellipse cx="44" cy="76" rx="16" ry="14" fill="#ffffff" filter="url(#shadow)"/>
+  <ellipse cx="84" cy="76" rx="16" ry="14" fill="#ffffff" filter="url(#shadow)"/>
+  <ellipse cx="64" cy="78" rx="14" ry="12" fill="#ffffff"/>
+  <!-- Eyes -->
+  <ellipse cx="46" cy="60" rx="7" ry="8.5" fill="#1e1e1e"/>
+  <ellipse cx="82" cy="60" rx="7" ry="8.5" fill="#1e1e1e"/>
+  <circle cx="43" cy="56" r="3" fill="#ffffff"/>
+  <circle cx="48" cy="63" r="1.2" fill="#ffffff"/>
+  <circle cx="79" cy="56" r="3" fill="#ffffff"/>
+  <circle cx="84" cy="63" r="1.2" fill="#ffffff"/>
+  <!-- Blush -->
+  <circle cx="34" cy="74" r="5" fill="#f43f5e" opacity="0.45"/>
+  <circle cx="94" cy="74" r="5" fill="#f43f5e" opacity="0.45"/>
+  <!-- Wet Black Nose -->
+  <ellipse cx="64" cy="72" rx="4.5" ry="3.5" fill="#1e1e1e"/>
+  <circle cx="62.5" cy="71" r="1.2" fill="#ffffff"/>
+  <!-- Open Smiling Mouth with Tongue -->
+  <path d="M 58 78 Q 64 88 70 78 Z" fill="#991b1b"/>
+  <ellipse cx="64" cy="83" rx="4" ry="3.5" fill="#f43f5e"/>
+</svg>
