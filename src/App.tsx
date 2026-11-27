@@ -78,37 +78,33 @@ const MainContent: React.FC = () => {
   const CURRENT_BUILD_VERSION = typeof __APP_BUILD_VERSION__ === 'number' ? __APP_BUILD_VERSION__ : 0;
   const isSilentUpdatingRef = useRef<boolean>(false);
 
-  // Check if incoming version is truly newer than both running bundle AND last applied update
+  // Check if incoming version is truly newer than the currently running JS bundle
   const isNewerVersion = useCallback((incomingVersion: number | undefined | null): boolean => {
     if (!incomingVersion || isNaN(incomingVersion) || incomingVersion <= 0) return false;
 
     // 1. If currently running JS bundle is already at or ahead of incomingVersion -> NO UPDATE NEEDED
-    if (CURRENT_BUILD_VERSION > 0 && incomingVersion <= CURRENT_BUILD_VERSION) {
-      return false;
+    if (CURRENT_BUILD_VERSION > 0) {
+      return incomingVersion > CURRENT_BUILD_VERSION;
     }
 
-    // 2. If user already applied/installed this version in localStorage -> NO UPDATE NEEDED
+    // 2. Fallback if CURRENT_BUILD_VERSION is unavailable (e.g. dev mode)
     let lastInstalled = 0;
     try {
       const raw = localStorage.getItem('minetask_1835_installed_version');
       if (raw) lastInstalled = Number(raw);
     } catch {}
-
-    if (lastInstalled > 0 && incomingVersion <= lastInstalled) {
-      return false;
-    }
-
-    const effectiveLocal = Math.max(CURRENT_BUILD_VERSION, lastInstalled);
-    return incomingVersion > effectiveLocal;
+    return lastInstalled > 0 && incomingVersion > lastInstalled;
   }, [CURRENT_BUILD_VERSION]);
 
   const applySilentUpdate = useCallback(async (version: number) => {
     if (!isNewerVersion(version) || isSilentUpdatingRef.current) return;
 
-    // Never reload Capacitor native APK (bundled local assets cannot be updated via reload)
-    const isNativeCapacitor =
-      typeof window !== 'undefined' && Boolean((window as any).Capacitor?.isNativePlatform?.());
-    if (isNativeCapacitor) {
+    // Never reload Capacitor native local bundle if running from localhost
+    const isNativeLocal =
+      typeof window !== 'undefined' &&
+      Boolean((window as any).Capacitor?.isNativePlatform?.()) &&
+      window.location.hostname === 'localhost';
+    if (isNativeLocal) {
       try {
         localStorage.setItem('minetask_1835_installed_version', String(version));
       } catch {}
@@ -121,7 +117,6 @@ const MainContent: React.FC = () => {
         return;
       }
       sessionStorage.setItem('minetask_1835_silent_reloaded_ver', String(version));
-      localStorage.setItem('minetask_1835_installed_version', String(version));
     } catch {}
 
     isSilentUpdatingRef.current = true;
